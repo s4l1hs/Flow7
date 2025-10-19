@@ -6,7 +6,7 @@ __pycache__/
 # C extensions
 *.so
 
-# Distribution / packaging
+# Distribution / packaging (Python)
 .Python
 build/
 develop-eggs/
@@ -14,8 +14,11 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# Python lib directories, but not Flutter's lib
+/lib/
+/lib64/
+backend/lib/
+backend/lib64/
 parts/
 sdist/
 var/
@@ -205,3 +208,20 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Flutter/Dart specific
+flutter_app/.dart_tool/
+flutter_app/.flutter-plugins
+flutter_app/.flutter-plugins-dependencies
+flutter_app/.packages
+flutter_app/pubspec.lock
+flutter_app/ios/
+flutter_app/android/
+flutter_app/windows/
+flutter_app/linux/
+flutter_app/macos/
+flutter_app/web/
+
+# Firebase
+backend/serviceAccountKey.json
+backend/.env
