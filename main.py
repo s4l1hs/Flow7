@@ -1,4 +1,4 @@
-from datetime import datetime, date as Date, time as Time, timedelta, timezone
+from datetime import datetime, date as PyDate, time as PyTime, timedelta, timezone
 from typing import List, Optional
 from uuid import uuid4
 import os
@@ -10,24 +10,23 @@ from pydantic import BaseModel, Field, validator
 from sqlalchemy import (
     Column,
     String,
-    Date,
-    Time,
     Text,
     create_engine,
     select,
     and_,
     func,
+    DateTime as SA_DateTime,
 )
+from sqlalchemy.types import Date as SA_Date, Time as SA_Time
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 # ----------------------------------------------------------------------
 # KyroTech Flow7 Backend (FastAPI)
-# Geliştirilmiş: SQLite (SQLAlchemy), auth header, zaman doğrulama,
+# Geliştirilmiş: SQLite (SQLAlchemy), header-based auth, zaman doğrulama,
 # çakışma kontrolü, okuma/yazma abonelik limitleri, thread-safe DB.
 # ----------------------------------------------------------------------
 
 # --- CONFIG / DB SETUP ---
-# load .env from project folder (falls back to defaults if missing)
 env_path = Path(__file__).resolve().parent / ".env"
 if env_path.exists():
     load_dotenv(env_path)
@@ -46,13 +45,13 @@ class PlanORM(Base):
     __tablename__ = "plans"
     id = Column(String, primary_key=True, index=True)
     user_id = Column(String, index=True, nullable=False)
-    date = Column(Date, index=True, nullable=False)
-    start_time = Column(Time, nullable=False)
-    end_time = Column(Time, nullable=False)
+    date = Column(SA_Date, index=True, nullable=False)
+    start_time = Column(SA_Time, nullable=False)
+    end_time = Column(SA_Time, nullable=False)
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
-    created_at = Column(Date, nullable=False)
-    updated_at = Column(Date, nullable=False)
+    created_at = Column(SA_DateTime(timezone=True), nullable=False)
+    updated_at = Column(SA_DateTime(timezone=True), nullable=False)
 
 
 Base.metadata.create_all(bind=engine)
@@ -63,9 +62,10 @@ TIME_PATTERN = r"^\d{2}:\d{2}$"
 
 
 class PlanBase(BaseModel):
-    date: Date
-    start_time: str = Field(..., pattern=TIME_PATTERN)
-    end_time: str = Field(..., pattern=TIME_PATTERN)
+    # use Python date/time types for pydantic schema generation
+    date: PyDate
+    start_time: str = Field(..., regex=TIME_PATTERN)
+    end_time: str = Field(..., regex=TIME_PATTERN)
     title: str = Field(..., min_length=1)
     description: Optional[str] = None
 
@@ -105,43 +105,31 @@ class PlanOut(PlanBase):
     user_id: str
 
 
-# --- MOCK SUBSCRIPTIONS (should be in DB/service in prod) ---
-MOCK_SUBSCRIPTIONS = {
-    "user_free_123": "FREE",
-    "user_pro_456": "PRO",
-    "user_ultra_789": "ULTRA",
-    "user_default": "FREE",
-}
-
+# --- SUBSCRIPTION LIMITS (keep service-level limits) ---
 SUBSCRIPTION_LIMITS = {"FREE": 14, "PRO": 30, "ULTRA": 60}
 
 
 # --- UTILITIES ---
-def utc_today() -> Date:
+def utc_today() -> PyDate:
     return datetime.now(timezone.utc).date()
 
 
-def parse_time_str(t: str) -> Time:
+def parse_time_str(t: str) -> PyTime:
     hh, mm = map(int, t.split(":"))
-    return Time(hour=hh, minute=mm)
+    return PyTime(hour=hh, minute=mm)
 
 
-def get_user_subscription(user_id: str) -> str:
-    return MOCK_SUBSCRIPTIONS.get(user_id, "FREE")
-
-
-def get_planning_limit(subscription_level: str) -> Date:
+def get_planning_limit(subscription_level: str) -> PyDate:
     days = SUBSCRIPTION_LIMITS.get(subscription_level, 14)
     return utc_today() + timedelta(days=days)
 
 
-def check_planning_limit(user_id: str, target_date: Date):
-    sub_level = get_user_subscription(user_id)
-    limit_date = get_planning_limit(sub_level)
+def check_planning_limit(subscription_level: str, target_date: PyDate):
+    limit_date = get_planning_limit(subscription_level)
     if target_date > limit_date:
         raise HTTPException(
             status_code=403,
-            detail=f"Erişim Reddedildi. {sub_level} planı ile maksimum planlama tarihi: {limit_date.isoformat()}",
+            detail=f"Erişim Reddedildi. {subscription_level} planı ile maksimum planlama tarihi: {limit_date.isoformat()}",
         )
 
 
@@ -156,9 +144,19 @@ def get_db():
 
 def get_current_user_id(x_user_id: Optional[str] = Header(None)) -> str:
     """
-    Basit auth: X-User-Id header okunur. Prod: JWT/OpenID entegrasyonu kullanılmalı.
+    Gerçek yetkilendirme bekleniyor: X-User-Id header zorunlu.
+    Prod: Burayı JWT/OpenID doğrulaması ile değiştirin.
     """
-    return x_user_id or "user_default"
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized: X-User-Id header required.")
+    return x_user_id
+
+
+def get_user_subscription_header(x_subscription: Optional[str] = Header(None)) -> str:
+    """
+    Abonelik seviyesi header'dan okunur (X-Subscription). Prod: DB'den gerçek kullanıcı aboneliği alın.
+    """
+    return x_subscription or "FREE"
 
 
 # --- APP ---
@@ -180,11 +178,12 @@ def get_status():
 def create_plan(
     plan_data: PlanCreate,
     user_id: str = Depends(get_current_user_id),
+    subscription: str = Depends(get_user_subscription_header),
     db: Session = Depends(get_db),
 ):
     """Yeni plan oluştur. Çakışma ve abonelik limitleri kontrol edilir."""
-    # limit kontrolü
-    check_planning_limit(user_id, plan_data.date)
+    # limit kontrolü (now subscription-level driven)
+    check_planning_limit(subscription, plan_data.date)
 
     # zaman nesneleri
     st = parse_time_str(plan_data.start_time)
@@ -207,7 +206,7 @@ def create_plan(
     if res:
         raise HTTPException(status_code=409, detail="Zaman çakışması: başka bir plan ile çakışıyor.")
 
-    now_date = utc_today()
+    now_dt = datetime.now(timezone.utc)
     new_id = str(uuid4())
     orm = PlanORM(
         id=new_id,
@@ -217,8 +216,8 @@ def create_plan(
         end_time=et,
         title=plan_data.title,
         description=plan_data.description,
-        created_at=now_date,
-        updated_at=now_date,
+        created_at=now_dt,
+        updated_at=now_dt,
     )
     db.add(orm)
     db.commit()
@@ -236,21 +235,22 @@ def create_plan(
 
 @app.get("/api/plans", response_model=List[PlanOut])
 def get_plans_by_range(
-    start_date: Date,
-    end_date: Date,
+    start_date: PyDate,
+    end_date: PyDate,
     user_id: str = Depends(get_current_user_id),
+    subscription: str = Depends(get_user_subscription_header),
     db: Session = Depends(get_db),
 ):
     """
     Belirli bir tarih aralığındaki planları getirir.
     Okuma için abonelik limiti kontrolü uygulanır (gelecek tarihleri sınırla).
     """
-    limit_date = get_planning_limit(get_user_subscription(user_id))
+    limit_date = get_planning_limit(subscription)
     # Eğer istemci geleceğe doğru veri istiyorsa limit'i aşamaz
     if end_date > limit_date and end_date > utc_today():
         raise HTTPException(
             status_code=403,
-            detail=f"Okuma Aralığı Reddedildi. {get_user_subscription(user_id)} planı, {limit_date.isoformat()} tarihini aşan veriye erişemez.",
+            detail=f"Okuma Aralığı Reddedildi. {subscription} planı, {limit_date.isoformat()} tarihini aşan veriye erişemez.",
         )
 
     q = (
@@ -301,6 +301,7 @@ def update_plan(
     plan_id: str,
     plan_data: PlanUpdate,
     user_id: str = Depends(get_current_user_id),
+    subscription: str = Depends(get_user_subscription_header),
     db: Session = Depends(get_db),
 ):
     """Plan güncelle. Limit ve çakışma kontrolü yapılır."""
@@ -309,7 +310,7 @@ def update_plan(
         raise HTTPException(status_code=404, detail="Plan bulunamadı.")
 
     # limit kontrolü
-    check_planning_limit(user_id, plan_data.date)
+    check_planning_limit(subscription, plan_data.date)
 
     st = parse_time_str(plan_data.start_time)
     et = parse_time_str(plan_data.end_time)
@@ -337,7 +338,7 @@ def update_plan(
     p.end_time = et
     p.title = plan_data.title
     p.description = plan_data.description
-    p.updated_at = utc_today()
+    p.updated_at = datetime.now(timezone.utc)
     db.add(p)
     db.commit()
     db.refresh(p)

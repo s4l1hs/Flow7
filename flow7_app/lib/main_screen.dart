@@ -27,9 +27,10 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    // Keep pages in the order: Program (plans), Subscriptions, Settings
     _pages = <Widget>[
-      SubscriptionPage(idToken: widget.idToken),
       ProgramPage(idToken: widget.idToken),
+      SubscriptionPage(idToken: widget.idToken),
       const SettingsPage(),
     ];
     _bounceController = AnimationController(vsync: this, duration: const Duration(milliseconds: 420));
@@ -45,12 +46,11 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final localizations = AppLocalizations.of(context)!;
+    // Only three icons, no labels: Program (plans), Subscriptions, Settings
     _navItems = [
-      {'icon': Icons.leaderboard_outlined, 'label': localizations.navMainMenu, 'color': Colors.indigo},
-      {'icon': Icons.subscriptions, 'label': localizations.subscriptions, 'color': Colors.teal},
-      {'icon': Icons.quiz_outlined, 'label': localizations.navQuiz, 'color': Colors.deepOrange},
-      {'icon': Icons.whatshot_outlined, 'label': localizations.navChallenge, 'color': Colors.amber},
-      {'icon': Icons.settings_outlined, 'label': localizations.navSettings, 'color': Colors.grey},
+      {'icon': Icons.event_note_outlined, 'tooltip': localizations.programCalendar, 'color': Colors.indigo},
+      {'icon': Icons.subscriptions_outlined, 'tooltip': localizations.subscriptions, 'color': Colors.teal},
+      {'icon': Icons.settings_outlined, 'tooltip': localizations.navSettings, 'color': Colors.grey},
     ];
   }
 
@@ -113,7 +113,7 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         padding: EdgeInsets.only(left: 12.w, right: 12.w, bottom: 6.h),
         child: LayoutBuilder(builder: (context, constraints) {
           final totalWidth = constraints.maxWidth;
-          final itemCount = _navItems.length;
+          final itemCount = _navItems.length; // should be 3 now
           final itemWidth = (totalWidth) / itemCount;
           final leftPaddingForHighlight = 4.w; // inside container offset used for AnimatedPositioned
 
@@ -122,7 +122,7 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           highlightLeft = highlightLeft.clamp(0.0, (totalWidth - itemWidth).clamp(0.0, totalWidth));
 
           // reduce highlight width a bit to avoid edge overflows on very small screens
-          final double highlightWidth = (itemWidth * 0.82).clamp(56.0, (itemWidth - 8.0).clamp(56.0, totalWidth));
+          final double highlightWidth = (itemWidth * 0.6).clamp(56.0, (itemWidth - 8.0).clamp(56.0, totalWidth));
 
           return ClipRRect(
             borderRadius: BorderRadius.circular(24.r),
@@ -176,24 +176,24 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       ),
                     ),
 
-                    // nav items row - use Expanded + FittedBox to avoid overflow
+                    // nav items row - icons only (no labels)
                     Row(
                       children: _navItems.asMap().entries.map((entry) {
                         final index = entry.key;
                         final item = entry.value;
                         final isSelected = _selectedIndex == index;
-                        final Color itemColor = isSelected ? getSelectedColor(index) : theme.iconTheme.color!.withOpacity(0.7);
+                        final Color itemColor = isSelected ? getSelectedColor(index) : theme.iconTheme.color!.withOpacity(0.72);
 
                         return Expanded(
                           child: GestureDetector(
                             onTap: () => onItemTapped(index),
                             behavior: HitTestBehavior.opaque,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                ScaleTransition(
-                                  scale: Tween<double>(begin: 1.0, end: 1.12).animate(CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut)),
+                            child: SizedBox(
+                              height: double.infinity,
+                              child: Center(
+                                child: ScaleTransition(
+                                  scale: Tween<double>(begin: 1.0, end: 1.12)
+                                      .animate(CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut)),
                                   child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 260),
                                     curve: Curves.easeOut,
@@ -202,26 +202,15 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                       shape: BoxShape.circle,
                                       color: isSelected ? itemColor.withOpacity(0.06) : Colors.transparent,
                                     ),
-                                    child: Icon(item['icon'] as IconData, size: isSelected ? 30.sp : 26.sp, color: itemColor),
-                                  ),
-                                ),
-                                SizedBox(height: 6.h),
-                                AnimatedDefaultTextStyle(
-                                  duration: const Duration(milliseconds: 260),
-                                  style: TextStyle(
-                                    fontSize: isSelected ? 12.sp : 10.sp,
-                                    color: isSelected ? itemColor : Colors.white70,
-                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                  ),
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: SizedBox(
-                                      width: itemWidth - 6.w,
-                                      child: Text(item['label'] as String, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+                                    child: Icon(
+                                      item['icon'] as IconData,
+                                      size: isSelected ? 30.sp : 26.sp,
+                                      color: itemColor,
+                                      semanticLabel: (item['tooltip'] as String?) ?? '',
                                     ),
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         );

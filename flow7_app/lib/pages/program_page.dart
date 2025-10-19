@@ -170,6 +170,7 @@ class _ProgramPageState extends State<ProgramPage> with TickerProviderStateMixin
     final grouped = _groupPlansByDate();
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Text(loc.programCalendar),
         centerTitle: true,
@@ -181,85 +182,95 @@ class _ProgramPageState extends State<ProgramPage> with TickerProviderStateMixin
           )
         ],
       ),
-      body: Column(
-        children: [
-          SizedBox(height: 12.h),
-          SizedBox(
-            height: 96.h,
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: _totalPages,
-              onPageChanged: (idx) {
-                final s = _startOfWeek(_startDateForPage(idx));
-                setState(() {
-                  _currentWeekStart = s;
-                  _selectedDay = s;
-                });
-                _loadPlansForWeek(s);
-              },
-              itemBuilder: (context, pageIndex) {
-                final weekStart = _startOfWeek(_startDateForPage(pageIndex));
-                final days = _generateWeek(weekStart);
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                  child: Row(
-                    children: days.map((d) {
-                      final isToday = _isSameDate(d, DateTime.now());
-                      final isSelected = _selectedDay != null && _isSameDate(d, _selectedDay!);
-                      final dateKey = DateFormat('yyyy-MM-dd').format(d);
-                      final hasPlans = grouped[dateKey]?.isNotEmpty ?? false;
-                      return Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() => _selectedDay = d);
-                          },
-                          onLongPress: () => _showCreatePlanDialog(d),
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            decoration: BoxDecoration(
-                              color: isSelected ? theme.colorScheme.primary.withOpacity(0.12) : Colors.transparent,
-                              borderRadius: BorderRadius.circular(10.r),
-                              border: Border.all(color: isSelected ? theme.colorScheme.primary.withOpacity(0.22) : Colors.transparent),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(dfDay.format(d), style: TextStyle(color: isSelected ? theme.colorScheme.primary : Colors.white70)),
-                                const SizedBox(height: 6),
-                                CircleAvatar(
-                                  radius: 18.r,
-                                  backgroundColor: isToday ? theme.colorScheme.primary : Colors.white12,
-                                  child: Text(dfNum.format(d), style: TextStyle(color: isToday ? Colors.black : Colors.white)),
-                                ),
-                                const SizedBox(height: 6),
-                                if (hasPlans)
-                                  Container(
-                                    width: 8.w,
-                                    height: 8.w,
-                                    decoration: BoxDecoration(color: theme.colorScheme.secondary, shape: BoxShape.circle),
+      body: SafeArea(
+        child: Padding(
+          // ensure we leave space for system bottom inset (home indicator) plus a small gap
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom + 8.h),
+          child: Column(
+            children: [
+              SizedBox(height: 12.h),
+              // make header flexible so it can shrink on very small screens
+              Flexible(
+                flex: 0,
+                child: SizedBox(
+                  height: 96.h,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: _totalPages,
+                    onPageChanged: (idx) {
+                      final s = _startOfWeek(_startDateForPage(idx));
+                      setState(() {
+                        _currentWeekStart = s;
+                        _selectedDay = s;
+                      });
+                      _loadPlansForWeek(s);
+                    },
+                    itemBuilder: (context, pageIndex) {
+                      final weekStart = _startOfWeek(_startDateForPage(pageIndex));
+                      final days = _generateWeek(weekStart);
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                        child: Row(
+                          children: days.map((d) {
+                            final isToday = _isSameDate(d, DateTime.now());
+                            final isSelected = _selectedDay != null && _isSameDate(d, _selectedDay!);
+                            final dateKey = DateFormat('yyyy-MM-dd').format(d);
+                            final hasPlans = grouped[dateKey]?.isNotEmpty ?? false;
+                            return Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() => _selectedDay = d);
+                                },
+                                onLongPress: () => _showCreatePlanDialog(d),
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? theme.colorScheme.primary.withOpacity(0.12) : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(10.r),
+                                    border: Border.all(color: isSelected ? theme.colorScheme.primary.withOpacity(0.22) : Colors.transparent),
                                   ),
-                              ],
-                            ),
-                          ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(dfDay.format(d), style: TextStyle(color: isSelected ? theme.colorScheme.primary : Colors.white70)),
+                                      const SizedBox(height: 6),
+                                      CircleAvatar(
+                                        radius: 18.r,
+                                        backgroundColor: isToday ? theme.colorScheme.primary : Colors.white12,
+                                        child: Text(dfNum.format(d), style: TextStyle(color: isToday ? Colors.black : Colors.white)),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      if (hasPlans)
+                                        Container(
+                                          width: 8.w,
+                                          height: 8.w,
+                                          decoration: BoxDecoration(color: theme.colorScheme.secondary, shape: BoxShape.circle),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
                         ),
                       );
-                    }).toList(),
+                    },
                   ),
-                );
-              },
-            ),
+                ),
+              ),
+              const Divider(height: 1),
+              // list of plans for selected day
+              Expanded(
+                child: _isLoading
+                    ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
+                    : _error != null
+                        ? Center(child: Text("${loc.errorOccurred}: $_error", style: TextStyle(color: theme.colorScheme.error)))
+                        : _buildPlansListForSelectedDay(grouped),
+              ),
+            ],
           ),
-          const Divider(height: 1),
-          // list of plans for selected day
-          Expanded(
-            child: _isLoading
-                ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
-                : _error != null
-                    ? Center(child: Text("${loc.errorOccurred}: $_error", style: TextStyle(color: theme.colorScheme.error)))
-                    : _buildPlansListForSelectedDay(grouped),
-          ),
-        ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _selectedDay != null ? () => _showCreatePlanDialog(_selectedDay!) : null,

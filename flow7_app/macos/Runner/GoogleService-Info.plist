@@ -3,23 +3,23 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>894503455701-vth3po63emf77qm9vaqv4q7itfu9gcsg.apps.googleusercontent.com</string>
+	<string>1072965725001-ktt676sk3au66i6g2hkaagpag9rgui71.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.894503455701-vth3po63emf77qm9vaqv4q7itfu9gcsg</string>
+	<string>com.googleusercontent.apps.1072965725001-ktt676sk3au66i6g2hkaagpag9rgui71</string>
 	<key>ANDROID_CLIENT_ID</key>
-	<string>894503455701-16hiv3r63s1tqcg98r5o3d1rm2ucfpom.apps.googleusercontent.com</string>
+	<string>1072965725001-0qm0dgrqmqdh0nrhahagm1s6rid81on6.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
-	<string>AIzaSyBGXfDqLPEaPJXqg-YCqYsoBy4GodFCDsw</string>
+	<string>AIzaSyCMnUc-P2wEuVim8EhKnpQkD0xZJPXkmxY</string>
 	<key>GCM_SENDER_ID</key>
-	<string>894503455701</string>
+	<string>1072965725001</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>com.example.sparkupApp</string>
 	<key>PROJECT_ID</key>
-	<string>sparkup-6b9ad</string>
+	<string>flow7-64fce</string>
 	<key>STORAGE_BUCKET</key>
-	<string>sparkup-6b9ad.firebasestorage.app</string>
+	<string>flow7-64fce.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -31,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:894503455701:ios:c94b17c63b59012d0b0b5c</string>
+	<string>1:1072965725001:ios:b1eb690c16ce0da91d0898</string>
 </dict>
 </plist>

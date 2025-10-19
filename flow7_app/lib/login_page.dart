@@ -209,7 +209,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                     gradient: LinearGradient(colors: [theme.colorScheme.secondary, theme.colorScheme.primary]),
                                     boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 20.r, offset: Offset(0, 8.h))],
                                   ),
-                                  child: Icon(Icons.lightbulb_outline, size: 44.sp, color: Colors.white),
+                                  // Flow7 branding: use calendar icon
+                                  child: Icon(Icons.calendar_month_outlined, size: 44.sp, color: Colors.white),
                                 ),
                               ),
                             ),
@@ -221,7 +222,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                               position: _textSlideAnimation,
                               child: Column(
                                 children: [
-                                  // gradient title for a more premium look
+                                  // title changed to Flow7
                                   ShaderMask(
                                     shaderCallback: (bounds) => LinearGradient(
                                       begin: Alignment.topLeft,
@@ -229,15 +230,16 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                       colors: [theme.colorScheme.secondary, theme.colorScheme.primary],
                                     ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
                                     blendMode: BlendMode.srcIn,
-                                    child: Text(
-                                      localizations.appName,
+                                    child: const Text(
+                                      'Flow7',
                                       textAlign: TextAlign.center,
-                                      style: TextStyle(fontSize: 34.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                                      style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.white),
                                     ),
                                   ),
                                   SizedBox(height: 6.h),
+                                  // short Flow7 slogan (static to avoid missing localization keys)
                                   Text(
-                                    localizations.appSlogan,
+                                    'Weekly planner & scheduler',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(fontSize: 13.sp, color: Colors.white70, fontStyle: FontStyle.italic),
                                   ),
