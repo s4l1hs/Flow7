@@ -1,0 +1,40 @@
+name: sparkup_app
+description: "A new Flutter project."
+publish_to: 'none' 
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0' # Daha standart ve stabil bir SDK aralığı belirliyoruz
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  
+  sensors_plus: ^5.0.1
+  cupertino_icons: ^1.0.8
+  firebase_core: ^4.1.1
+  firebase_auth: ^6.1.0
+  google_sign_in: ^6.1.0
+  http: ^1.1.0
+  intl: ^0.20.2
+  collection: ^1.18.0
+  flutter_screenutil: ^5.9.3
+  firebase_messaging: ^16.0.2
+  provider: ^6.1.5+1
+  google_generative_ai: ^0.4.7
+  flutter_slidable: ^4.0.3
+  # Diğer paketleri terminalden ekleyeceğiz
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  flutter_lints: ^3.0.0
+
+flutter:
+  assets:
+    - assets/images/
+  generate: true
+  uses-material-design: true
