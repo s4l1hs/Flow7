@@ -332,4 +332,44 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get limited => 'Ограничено';
+
+  @override
+  String get newProgram => 'Новая программа';
+
+  @override
+  String get titleLabel => 'Заголовок';
+
+  @override
+  String get startLabel => 'Начало (HH:MM)';
+
+  @override
+  String get endLabel => 'Конец (HH:MM)';
+
+  @override
+  String get descriptionLabel => 'Описание';
+
+  @override
+  String get defaultProgramTitle => 'Программа';
+
+  @override
+  String get planCreated => 'Программа создана';
+
+  @override
+  String get errorOccurred => 'Произошла ошибка';
+
+  @override
+  String get planDeleted => 'Программа удалена';
+
+  @override
+  String get programCalendar => 'Программа - Календарь';
+
+  @override
+  String get add => 'Добавить';
+
+  @override
+  String get noPlansMessage =>
+      'На этот день нет программ.\nДлительное нажатие — добавить новую программу.';
+
+  @override
+  String get deleteConfirm => 'Вы уверены, что хотите удалить эту программу?';
 }

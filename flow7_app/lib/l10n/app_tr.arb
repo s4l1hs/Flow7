@@ -106,5 +106,18 @@
   "loadNewChallenge": "Yeni meydan okuma yükle",
   "challengeIntro": "Becerilerinizi geliştirecek kısa ve ilgi çekici meydan okumalar alın.",
   "leaderboard": "Liderlik Tablosu",
-  "limited": "Sınırlı"
+  "limited": "Sınırlı",
+  "newProgram": "Yeni Program",
+  "titleLabel": "Başlık",
+  "startLabel": "Başlangıç (HH:MM)",
+  "endLabel": "Bitiş (HH:MM)",
+  "descriptionLabel": "Açıklama",
+  "defaultProgramTitle": "Program",
+  "planCreated": "Plan oluşturuldu",
+  "errorOccurred": "Bir hata oluştu",
+  "planDeleted": "Plan silindi",
+  "programCalendar": "Program - Takvim",
+  "add": "Ekle",
+  "noPlansMessage": "Bu gün için program bulunmuyor.\nUzun basarak yeni program ekleyin.",
+  "deleteConfirm": "Bu programı silmek istediğinizden emin misiniz?"
 }

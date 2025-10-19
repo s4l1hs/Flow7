@@ -107,5 +107,18 @@
   "loadNewChallenge": "تحميل تحدٍ جديد",
   "challengeIntro": "احصل على تحديات قصيرة وجذابة لتعزيز مهاراتك.",
   "leaderboard": "لوحة المتصدرين",
-  "limited": "محدود"
+  "limited": "محدود",
+  "newProgram": "برنامج جديد",
+  "titleLabel": "العنوان",
+  "startLabel": "ابدأ (HH:MM)",
+  "endLabel": "انتهى (HH:MM)",
+  "descriptionLabel": "الوصف",
+  "defaultProgramTitle": "برنامج",
+  "planCreated": "تم إنشاء البرنامج",
+  "errorOccurred": "حدث خطأ",
+  "planDeleted": "تم حذف البرنامج",
+  "programCalendar": "البرنامج - التقويم",
+  "add": "إضافة",
+  "noPlansMessage": "لا يوجد برنامج لهذا اليوم.\nاضغط مطولاً لإضافة برنامج جديد.",
+  "deleteConfirm": "هل أنت متأكد أنك تريد حذف هذا البرنامج؟"
 }

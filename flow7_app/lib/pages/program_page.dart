@@ -7,8 +7,6 @@ import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import 'package:collection/collection.dart';
 import '../l10n/app_localizations.dart';
-import '../providers/user_provider.dart';
-import '../main_screen.dart';
 
 class ProgramPage extends StatefulWidget {
   final String idToken;
@@ -150,7 +148,7 @@ class _ProgramPageState extends State<ProgramPage> with TickerProviderStateMixin
 
   Future<void> _deletePlan(String id) async {
     try {
-      await _api_service.deletePlan(widget.idToken, id);
+      await _apiService.deletePlan(widget.idToken, id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.planDeleted), backgroundColor: Colors.green));
       await _loadPlansForWeek(_currentWeekStart!);

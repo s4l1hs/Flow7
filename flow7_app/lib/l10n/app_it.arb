@@ -106,5 +106,18 @@
   "loadNewChallenge": "Carica nuova sfida",
   "challengeIntro": "Ricevi brevi sfide coinvolgenti per migliorare le tue abilità.",
   "leaderboard": "Classifica",
-  "limited": "Limitato"
+  "limited": "Limitato",
+  "newProgram": "Nuovo programma",
+  "titleLabel": "Titolo",
+  "startLabel": "Inizio (HH:MM)",
+  "endLabel": "Fine (HH:MM)",
+  "descriptionLabel": "Descrizione",
+  "defaultProgramTitle": "Programma",
+  "planCreated": "Programma creato",
+  "errorOccurred": "Si è verificato un errore",
+  "planDeleted": "Programma eliminato",
+  "programCalendar": "Programma - Calendario",
+  "add": "Aggiungi",
+  "noPlansMessage": "Nessun programma per questo giorno.\nPremere a lungo per aggiungere un nuovo programma.",
+  "deleteConfirm": "Sei sicuro di voler eliminare questo programma?"
 }

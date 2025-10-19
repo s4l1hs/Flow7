@@ -329,4 +329,43 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get limited => '受限';
+
+  @override
+  String get newProgram => '新计划';
+
+  @override
+  String get titleLabel => '标题';
+
+  @override
+  String get startLabel => '开始 (HH:MM)';
+
+  @override
+  String get endLabel => '结束 (HH:MM)';
+
+  @override
+  String get descriptionLabel => '描述';
+
+  @override
+  String get defaultProgramTitle => '计划';
+
+  @override
+  String get planCreated => '计划已创建';
+
+  @override
+  String get errorOccurred => '发生错误';
+
+  @override
+  String get planDeleted => '计划已删除';
+
+  @override
+  String get programCalendar => '计划 - 日历';
+
+  @override
+  String get add => '添加';
+
+  @override
+  String get noPlansMessage => '这一天没有计划。\n长按可添加新计划。';
+
+  @override
+  String get deleteConfirm => '确定要删除此计划吗？';
 }

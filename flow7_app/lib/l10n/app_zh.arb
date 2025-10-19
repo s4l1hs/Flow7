@@ -113,5 +113,19 @@
   "loadNewChallenge": "加载新挑战",
   "challengeIntro": "获取简短、有吸引力的创意挑战以提升您的技能。",
   "leaderboard": "排行榜",
-  "limited": "受限"
+  "limited": "受限",
+
+  "newProgram": "新计划",
+  "titleLabel": "标题",
+  "startLabel": "开始 (HH:MM)",
+  "endLabel": "结束 (HH:MM)",
+  "descriptionLabel": "描述",
+  "defaultProgramTitle": "计划",
+  "planCreated": "计划已创建",
+  "errorOccurred": "发生错误",
+  "planDeleted": "计划已删除",
+  "programCalendar": "计划 - 日历",
+  "add": "添加",
+  "noPlansMessage": "这一天没有计划。\n长按可添加新计划。",
+  "deleteConfirm": "确定要删除此计划吗？"
 }

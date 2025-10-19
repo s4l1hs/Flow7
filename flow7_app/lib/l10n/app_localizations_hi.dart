@@ -332,4 +332,44 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get limited => 'सीमित';
+
+  @override
+  String get newProgram => 'नया प्रोग्राम';
+
+  @override
+  String get titleLabel => 'शीर्षक';
+
+  @override
+  String get startLabel => 'शुरू (HH:MM)';
+
+  @override
+  String get endLabel => 'समाप्त (HH:MM)';
+
+  @override
+  String get descriptionLabel => 'विवरण';
+
+  @override
+  String get defaultProgramTitle => 'प्रोग्राम';
+
+  @override
+  String get planCreated => 'प्रोग्राम बन गया';
+
+  @override
+  String get errorOccurred => 'एक त्रुटि हुई';
+
+  @override
+  String get planDeleted => 'प्रोग्राम हटाया गया';
+
+  @override
+  String get programCalendar => 'प्रोग्राम - कैलेंडर';
+
+  @override
+  String get add => 'जोड़ें';
+
+  @override
+  String get noPlansMessage =>
+      'इस दिन के लिए कोई प्रोग्राम नहीं है।\nनया प्रोग्राम जोड़ने के लिए लंबा दबाएँ।';
+
+  @override
+  String get deleteConfirm => 'क्या आप वाकई इस प्रोग्राम को हटाना चाहते हैं?';
 }

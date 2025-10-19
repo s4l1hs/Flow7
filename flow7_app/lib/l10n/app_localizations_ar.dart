@@ -331,4 +331,44 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get limited => 'محدود';
+
+  @override
+  String get newProgram => 'برنامج جديد';
+
+  @override
+  String get titleLabel => 'العنوان';
+
+  @override
+  String get startLabel => 'ابدأ (HH:MM)';
+
+  @override
+  String get endLabel => 'انتهى (HH:MM)';
+
+  @override
+  String get descriptionLabel => 'الوصف';
+
+  @override
+  String get defaultProgramTitle => 'برنامج';
+
+  @override
+  String get planCreated => 'تم إنشاء البرنامج';
+
+  @override
+  String get errorOccurred => 'حدث خطأ';
+
+  @override
+  String get planDeleted => 'تم حذف البرنامج';
+
+  @override
+  String get programCalendar => 'البرنامج - التقويم';
+
+  @override
+  String get add => 'إضافة';
+
+  @override
+  String get noPlansMessage =>
+      'لا يوجد برنامج لهذا اليوم.\nاضغط مطولاً لإضافة برنامج جديد.';
+
+  @override
+  String get deleteConfirm => 'هل أنت متأكد أنك تريد حذف هذا البرنامج؟';
 }

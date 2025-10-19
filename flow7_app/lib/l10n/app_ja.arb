@@ -107,5 +107,19 @@
   "loadNewChallenge": "新しいチャレンジを読み込む",
   "challengeIntro": "スキルを向上させる短く魅力的なチャレンジを取得しましょう。",
   "leaderboard": "ランキング",
-  "limited": "制限あり"
+  "limited": "制限あり",
+
+  "newProgram": "新しいプログラム",
+  "titleLabel": "タイトル",
+  "startLabel": "開始 (HH:MM)",
+  "endLabel": "終了 (HH:MM)",
+  "descriptionLabel": "説明",
+  "defaultProgramTitle": "プログラム",
+  "planCreated": "プログラムが作成されました",
+  "errorOccurred": "エラーが発生しました",
+  "planDeleted": "プログラムが削除されました",
+  "programCalendar": "プログラム - カレンダー",
+  "add": "追加",
+  "noPlansMessage": "この日のプログラムはありません。\n長押しで新しいプログラムを追加してください。",
+  "deleteConfirm": "このプログラムを削除してもよろしいですか？"
 }

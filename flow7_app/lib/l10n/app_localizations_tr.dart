@@ -333,4 +333,44 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get limited => 'Sınırlı';
+
+  @override
+  String get newProgram => 'Yeni Program';
+
+  @override
+  String get titleLabel => 'Başlık';
+
+  @override
+  String get startLabel => 'Başlangıç (HH:MM)';
+
+  @override
+  String get endLabel => 'Bitiş (HH:MM)';
+
+  @override
+  String get descriptionLabel => 'Açıklama';
+
+  @override
+  String get defaultProgramTitle => 'Program';
+
+  @override
+  String get planCreated => 'Plan oluşturuldu';
+
+  @override
+  String get errorOccurred => 'Bir hata oluştu';
+
+  @override
+  String get planDeleted => 'Plan silindi';
+
+  @override
+  String get programCalendar => 'Program - Takvim';
+
+  @override
+  String get add => 'Ekle';
+
+  @override
+  String get noPlansMessage =>
+      'Bu gün için program bulunmuyor.\nUzun basarak yeni program ekleyin.';
+
+  @override
+  String get deleteConfirm => 'Bu programı silmek istediğinizden emin misiniz?';
 }

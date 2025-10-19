@@ -757,6 +757,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Limited'**
   String get limited;
+
+  /// No description provided for @newProgram.
+  ///
+  /// In en, this message translates to:
+  /// **'New Program'**
+  String get newProgram;
+
+  /// No description provided for @titleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get titleLabel;
+
+  /// No description provided for @startLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start (HH:MM)'**
+  String get startLabel;
+
+  /// No description provided for @endLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End (HH:MM)'**
+  String get endLabel;
+
+  /// No description provided for @descriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get descriptionLabel;
+
+  /// No description provided for @defaultProgramTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Program'**
+  String get defaultProgramTitle;
+
+  /// No description provided for @planCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Program created'**
+  String get planCreated;
+
+  /// No description provided for @errorOccurred.
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred'**
+  String get errorOccurred;
+
+  /// No description provided for @planDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Program deleted'**
+  String get planDeleted;
+
+  /// No description provided for @programCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Program - Calendar'**
+  String get programCalendar;
+
+  /// No description provided for @add.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get add;
+
+  /// No description provided for @noPlansMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No program for this day.\nLong press to add a new program.'**
+  String get noPlansMessage;
+
+  /// No description provided for @deleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this program?'**
+  String get deleteConfirm;
 }
 
 class _AppLocalizationsDelegate

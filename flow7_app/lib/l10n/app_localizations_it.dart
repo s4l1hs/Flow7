@@ -333,4 +333,44 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get limited => 'Limitato';
+
+  @override
+  String get newProgram => 'Nuovo programma';
+
+  @override
+  String get titleLabel => 'Titolo';
+
+  @override
+  String get startLabel => 'Inizio (HH:MM)';
+
+  @override
+  String get endLabel => 'Fine (HH:MM)';
+
+  @override
+  String get descriptionLabel => 'Descrizione';
+
+  @override
+  String get defaultProgramTitle => 'Programma';
+
+  @override
+  String get planCreated => 'Programma creato';
+
+  @override
+  String get errorOccurred => 'Si è verificato un errore';
+
+  @override
+  String get planDeleted => 'Programma eliminato';
+
+  @override
+  String get programCalendar => 'Programma - Calendario';
+
+  @override
+  String get add => 'Aggiungi';
+
+  @override
+  String get noPlansMessage =>
+      'Nessun programma per questo giorno.\nPremere a lungo per aggiungere un nuovo programma.';
+
+  @override
+  String get deleteConfirm => 'Sei sicuro di voler eliminare questo programma?';
 }

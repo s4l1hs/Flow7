@@ -113,5 +113,19 @@
   "loadNewChallenge": "Neue Herausforderung laden",
   "challengeIntro": "Erhalten Sie kurze, ansprechende Herausforderungen zur Verbesserung Ihrer Fähigkeiten.",
   "leaderboard": "Bestenliste",
-  "limited": "Begrenzt"
+  "limited": "Begrenzt",
+
+  "newProgram": "Neues Programm",
+  "titleLabel": "Titel",
+  "startLabel": "Start (HH:MM)",
+  "endLabel": "Ende (HH:MM)",
+  "descriptionLabel": "Beschreibung",
+  "defaultProgramTitle": "Programm",
+  "planCreated": "Programm erstellt",
+  "errorOccurred": "Ein Fehler ist aufgetreten",
+  "planDeleted": "Programm gelöscht",
+  "programCalendar": "Programm - Kalender",
+  "add": "Hinzufügen",
+  "noPlansMessage": "Für diesen Tag sind keine Programme vorhanden.\nZum Hinzufügen lang drücken.",
+  "deleteConfirm": "Sind Sie sicher, dass Sie dieses Programm löschen möchten?"
 }

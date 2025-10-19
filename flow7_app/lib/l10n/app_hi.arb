@@ -106,5 +106,18 @@
   "loadNewChallenge": "नई चुनौती लोड करें",
   "challengeIntro": "अपनी क्षमताओं बढ़ाने के लिए छोटे रुचिकर चुनौतियाँ प्राप्त करें।",
   "leaderboard": "लीडरबोर्ड",
-  "limited": "सीमित"
+  "limited": "सीमित",
+  "newProgram": "नया प्रोग्राम",
+  "titleLabel": "शीर्षक",
+  "startLabel": "शुरू (HH:MM)",
+  "endLabel": "समाप्त (HH:MM)",
+  "descriptionLabel": "विवरण",
+  "defaultProgramTitle": "प्रोग्राम",
+  "planCreated": "प्रोग्राम बन गया",
+  "errorOccurred": "एक त्रुटि हुई",
+  "planDeleted": "प्रोग्राम हटाया गया",
+  "programCalendar": "प्रोग्राम - कैलेंडर",
+  "add": "जोड़ें",
+  "noPlansMessage": "इस दिन के लिए कोई प्रोग्राम नहीं है।\nनया प्रोग्राम जोड़ने के लिए लंबा दबाएँ।",
+  "deleteConfirm": "क्या आप वाकई इस प्रोग्राम को हटाना चाहते हैं?"
 }

@@ -114,5 +114,19 @@
   "loadNewChallenge": "Load new challenge",
   "challengeIntro": "Get short, engaging creative challenges to boost your skills.",
   "leaderboard": "Leaderboard",
-  "limited": "Limited"
+  "limited": "Limited",
+
+  "newProgram": "New Program",
+  "titleLabel": "Title",
+  "startLabel": "Start (HH:MM)",
+  "endLabel": "End (HH:MM)",
+  "descriptionLabel": "Description",
+  "defaultProgramTitle": "Program",
+  "planCreated": "Program created",
+  "errorOccurred": "An error occurred",
+  "planDeleted": "Program deleted",
+  "programCalendar": "Program - Calendar",
+  "add": "Add",
+  "noPlansMessage": "No program for this day.\nLong press to add a new program.",
+  "deleteConfirm": "Are you sure you want to delete this program?"
 }

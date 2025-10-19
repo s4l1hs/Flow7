@@ -106,5 +106,18 @@
   "loadNewChallenge": "Загрузить новый вызов",
   "challengeIntro": "Получайте короткие, увлекательные вызовы для прокачки навыков.",
   "leaderboard": "Таблица лидеров",
-  "limited": "Ограничено"
+  "limited": "Ограничено",
+  "newProgram": "Новая программа",
+  "titleLabel": "Заголовок",
+  "startLabel": "Начало (HH:MM)",
+  "endLabel": "Конец (HH:MM)",
+  "descriptionLabel": "Описание",
+  "defaultProgramTitle": "Программа",
+  "planCreated": "Программа создана",
+  "errorOccurred": "Произошла ошибка",
+  "planDeleted": "Программа удалена",
+  "programCalendar": "Программа - Календарь",
+  "add": "Добавить",
+  "noPlansMessage": "На этот день нет программ.\nДлительное нажатие — добавить новую программу.",
+  "deleteConfirm": "Вы уверены, что хотите удалить эту программу?"
 }

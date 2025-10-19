@@ -329,4 +329,43 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get limited => '制限あり';
+
+  @override
+  String get newProgram => '新しいプログラム';
+
+  @override
+  String get titleLabel => 'タイトル';
+
+  @override
+  String get startLabel => '開始 (HH:MM)';
+
+  @override
+  String get endLabel => '終了 (HH:MM)';
+
+  @override
+  String get descriptionLabel => '説明';
+
+  @override
+  String get defaultProgramTitle => 'プログラム';
+
+  @override
+  String get planCreated => 'プログラムが作成されました';
+
+  @override
+  String get errorOccurred => 'エラーが発生しました';
+
+  @override
+  String get planDeleted => 'プログラムが削除されました';
+
+  @override
+  String get programCalendar => 'プログラム - カレンダー';
+
+  @override
+  String get add => '追加';
+
+  @override
+  String get noPlansMessage => 'この日のプログラムはありません。\n長押しで新しいプログラムを追加してください。';
+
+  @override
+  String get deleteConfirm => 'このプログラムを削除してもよろしいですか？';
 }
