@@ -62,7 +62,7 @@ class MyApp extends StatelessWidget {
           locale: localeProvider.locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          onGenerateTitle: (context) => "Spark Up",
+          onGenerateTitle: (context) => "Flow7",
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
             scaffoldBackgroundColor: Colors.black,
