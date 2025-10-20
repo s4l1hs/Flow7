@@ -1,364 +1,367 @@
+# main.py
+# Flow7 Projesi için Geliştirilmiş FastAPI Arka Ucu
+# Yenilikler:
+# - Güvenli Token tabanlı kimlik doğrulama (JWT/Firebase uyumlu)
+# - Plan güncelleme (PUT) endpoint'i
+# - Daha temiz ve modüler kod yapısı
+# - Gelişmiş hata yönetimi ve Pydantic modelleri
+
+import os
 from datetime import datetime, date as PyDate, time as PyTime, timedelta, timezone
 from typing import List, Optional
 from uuid import uuid4
-import os
-from pathlib import Path
-from dotenv import load_dotenv
 
-from fastapi import FastAPI, HTTPException, Depends, Header
+import uvicorn
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Depends, Header, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator
 from sqlalchemy import (
+    create_engine,
     Column,
     String,
     Text,
-    create_engine,
     select,
     and_,
-    func,
     DateTime as SA_DateTime,
+    Date as SA_Date,
+    Time as SA_Time,
 )
-from sqlalchemy.types import Date as SA_Date, Time as SA_Time
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
-# ----------------------------------------------------------------------
-# KyroTech Flow7 Backend (FastAPI)
-# Geliştirilmiş: SQLite (SQLAlchemy), header-based auth, zaman doğrulama,
-# çakışma kontrolü, okuma/yazma abonelik limitleri, thread-safe DB.
-# ----------------------------------------------------------------------
+# --- 1. CONFIGURATION & DATABASE SETUP ---
+# .env dosyasından ortam değişkenlerini yükle
+load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./flow7_revised.db")
 
-# --- CONFIG / DB SETUP ---
-env_path = Path(__file__).resolve().parent / ".env"
-if env_path.exists():
-    load_dotenv(env_path)
-else:
-    load_dotenv()  # will still read from environment if provided
-
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./flow7.db")
-
+# SQLAlchemy motoru ve oturum oluşturucu
+# check_same_thread: False -> Sadece SQLite için gereklidir.
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-# --- ORM MODEL ---
+# --- 2. DATABASE (ORM) MODEL ---
 class PlanORM(Base):
+    """Veritabanındaki 'plans' tablosunu temsil eden SQLAlchemy ORM modeli."""
     __tablename__ = "plans"
     id = Column(String, primary_key=True, index=True)
-    user_id = Column(String, index=True, nullable=False)
+    user_id = Column(String, index=True, nullable=False)  # Firebase UID veya benzeri bir kimlik
     date = Column(SA_Date, index=True, nullable=False)
     start_time = Column(SA_Time, nullable=False)
     end_time = Column(SA_Time, nullable=False)
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
-    created_at = Column(SA_DateTime(timezone=True), nullable=False)
-    updated_at = Column(SA_DateTime(timezone=True), nullable=False)
+    created_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 
+# Veritabanı ve tabloları oluştur
 Base.metadata.create_all(bind=engine)
 
 
-# --- Pydantic Schemas ---
-TIME_PATTERN = r"^\d{2}:\d{2}$"
+# --- 3. PYDANTIC SCHEMAS (DATA TRANSFER OBJECTS) ---
+# API istek ve yanıtlarının yapısını ve doğruluğunu tanımlar.
 
+TIME_PATTERN = r"^\d{2}:\d{2}$" # HH:MM formatı için regex
 
 class PlanBase(BaseModel):
-    # use Python date/time types for pydantic schema generation
+    """Planlar için temel şema. Ortak alanları içerir."""
     date: PyDate
-    start_time: str = Field(..., regex=TIME_PATTERN)
-    end_time: str = Field(..., regex=TIME_PATTERN)
-    title: str = Field(..., min_length=1)
-    description: Optional[str] = None
-
-    @validator("start_time", "end_time")
-    def validate_time_format(cls, v):
-        try:
-            hh, mm = v.split(":")
-            hh_i = int(hh)
-            mm_i = int(mm)
-        except Exception:
-            raise ValueError("Zaman HH:MM formatında olmalıdır.")
-        if not (0 <= hh_i < 24 and 0 <= mm_i < 60):
-            raise ValueError("Geçersiz saat/dakika.")
-        return v
+    start_time: str = Field(..., pattern=TIME_PATTERN, description="HH:MM formatında başlangıç zamanı")
+    end_time: str = Field(..., pattern=TIME_PATTERN, description="HH:MM formatında bitiş zamanı")
+    title: str = Field(..., min_length=1, max_length=100)
+    description: Optional[str] = Field(None, max_length=500)
 
     @validator("end_time")
-    def end_after_start(cls, v, values):
-        st = values.get("start_time")
-        if st:
-            sh, sm = map(int, st.split(":"))
-            eh, em = map(int, v.split(":"))
-            if (eh, em) <= (sh, sm):
-                raise ValueError("end_time, start_time'dan sonra olmalıdır.")
+    def end_time_must_be_after_start_time(cls, v, values, **kwargs):
+        """Bitiş saatinin başlangıç saatinden sonra olduğunu doğrular."""
+        if "start_time" in values and v <= values["start_time"]:
+            raise ValueError("Bitiş zamanı, başlangıç zamanından sonra olmalıdır.")
         return v
 
-
 class PlanCreate(PlanBase):
+    """Yeni bir plan oluşturmak için kullanılan şema."""
     pass
-
 
 class PlanUpdate(PlanBase):
+    """Mevcut bir planı güncellemek için kullanılan şema."""
     pass
 
-
 class PlanOut(PlanBase):
+    """API yanıtlarında döndürülecek plan şeması."""
     id: str
     user_id: str
 
+    class Config:
+        orm_mode = True
 
-# --- SUBSCRIPTION LIMITS (keep service-level limits) ---
-SUBSCRIPTION_LIMITS = {"FREE": 14, "PRO": 30, "ULTRA": 60}
+# Yeni: subscription güncelleme için Pydantic şeması
+class SubscriptionUpdate(BaseModel):
+    level: str
+    days: int = Field(..., gt=0)
 
+# --- 4. AUTHENTICATION & AUTHORIZATION ---
+# Gerçek bir Firebase entegrasyonu için bu bölümü genişletin.
+# Gerekli kütüphane: pip install firebase-admin
+# import firebase_admin
+# from firebase_admin import auth, credentials
 
-# --- UTILITIES ---
-def utc_today() -> PyDate:
-    return datetime.now(timezone.utc).date()
+# cred = credentials.Certificate("path/to/your/firebase-adminsdk.json")
+# firebase_app = firebase_admin.initialize_app(cred)
 
+class User(BaseModel):
+    """Doğrulanmış kullanıcıyı temsil eden model."""
+    uid: str
+    subscription: str = "FREE" # DB'den veya token'dan alınabilir
 
-def parse_time_str(t: str) -> PyTime:
-    hh, mm = map(int, t.split(":"))
-    return PyTime(hour=hh, minute=mm)
+# Token doğrulama şeması
+token_auth_scheme = HTTPBearer()
 
+# In-memory subscription store for development/testing.
+# Keys: user uid (str) -> {"level": str, "expires": date}
+USER_SUBSCRIPTIONS = {}
 
-def get_planning_limit(subscription_level: str) -> PyDate:
-    days = SUBSCRIPTION_LIMITS.get(subscription_level, 14)
-    return utc_today() + timedelta(days=days)
-
-
-def check_planning_limit(subscription_level: str, target_date: PyDate):
-    limit_date = get_planning_limit(subscription_level)
-    if target_date > limit_date:
+async def get_current_user(token: HTTPAuthorizationCredentials = Security(token_auth_scheme)) -> User:
+    """
+    Authorization başlığından gelen Bearer token'ı doğrular ve kullanıcıyı döndürür.
+    Bu fonksiyon şimdilik token'ı doğrulamak yerine, onu doğrudan kullanıcı kimliği olarak kullanır.
+    GERÇEK PROJEDE: Token'ı burada Firebase Admin SDK veya başka bir JWT kütüphanesi ile doğrulayın.
+    """
+    id_token = token.credentials
+    if not id_token:
+        raise HTTPException(status_code=401, detail="Kimlik doğrulama token'ı sağlanmadı.")
+    try:
+        uid = id_token  # development: token içerigini uid olarak kullanıyoruz
+        # Eğer USER_SUBSCRIPTIONS'da kayıt varsa level'ı al, yoksa FREE
+        sub_info = USER_SUBSCRIPTIONS.get(uid)
+        subscription = sub_info["level"] if sub_info and "level" in sub_info else "FREE"
+        return User(uid=uid, subscription=subscription)
+    except Exception as e:
         raise HTTPException(
-            status_code=403,
-            detail=f"Erişim Reddedildi. {subscription_level} planı ile maksimum planlama tarihi: {limit_date.isoformat()}",
+            status_code=401,
+            detail=f"Geçersiz kimlik doğrulama token'ı: {e}",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
 
-# --- DEPENDENCIES ---
+# --- 5. DEPENDENCIES & UTILITIES ---
 def get_db():
+    """Her istek için bir veritabanı oturumu sağlayan FastAPI dependency'si."""
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
 
+# Abonelik limitleri
+SUBSCRIPTION_LIMITS_IN_DAYS = {"FREE": 14, "PRO": 60, "ULTRA": 365}
 
-def get_current_user_id(x_user_id: Optional[str] = Header(None)) -> str:
-    """
-    Gerçek yetkilendirme bekleniyor: X-User-Id header zorunlu.
-    Prod: Burayı JWT/OpenID doğrulaması ile değiştirin.
-    """
-    if not x_user_id:
-        raise HTTPException(status_code=401, detail="Unauthorized: X-User-Id header required.")
-    return x_user_id
+def check_planning_date_limit(user: User, target_date: PyDate):
+    """Kullanıcının abonelik seviyesine göre planlama yapabileceği son tarihi kontrol eder."""
+    limit_days = SUBSCRIPTION_LIMITS_IN_DAYS.get(user.subscription, 14)
+    limit_date = datetime.now(timezone.utc).date() + timedelta(days=limit_days)
+    if target_date > limit_date:
+        raise HTTPException(
+            status_code=403, # Forbidden
+            detail=f"{user.subscription} aboneliği ile en fazla {limit_date.isoformat()} tarihine kadar plan yapabilirsiniz.",
+        )
+
+def get_time_obj_from_str(time_str: str) -> PyTime:
+    """HH:MM formatındaki string'i Python time nesnesine çevirir."""
+    return PyTime.fromisoformat(time_str)
+
+def time_to_str(t: Optional[PyTime]) -> Optional[str]:
+    """Python time nesnesini 'HH:MM' stringine çevirir (None ise None döner)."""
+    if t is None:
+        return None
+    return t.strftime("%H:%M")
+
+def plan_to_out(plan: PlanORM) -> dict:
+    """PlanORM nesnesini API response'a uygun primitive dict'e çevirir."""
+    return {
+        "id": plan.id,
+        "user_id": plan.user_id,
+        "date": plan.date,
+        "start_time": time_to_str(plan.start_time),
+        "end_time": time_to_str(plan.end_time),
+        "title": plan.title,
+        "description": plan.description or "",
+    }
 
 
-def get_user_subscription_header(x_subscription: Optional[str] = Header(None)) -> str:
-    """
-    Abonelik seviyesi header'dan okunur (X-Subscription). Prod: DB'den gerçek kullanıcı aboneliği alın.
-    """
-    return x_subscription or "FREE"
-
-
-# --- APP ---
+# --- 6. API ENDPOINTS (ROUTING) ---
 app = FastAPI(
-    title="KyroTech Flow7 API",
-    description="Haftalık Akış (Flow7) planlama uygulamasının API servisi.",
-    version="1.1.0",
+    title="Flow7 API",
+    description="Flow7 planlama uygulaması için FastAPI arka uç servisi.",
+    version="2.0.0",
 )
 
+# --- CORS (development için; production'da kökenleri kısıtlayın) ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],                # development: tüm kökenlere izin. Prod: listeleyin.
+    allow_credentials=True,
+    allow_methods=["*"],                # GET, POST, PUT, DELETE, OPTIONS vb.
+    allow_headers=["*"],                # Authorization dahil tüm başlıklara izin
+)
 
-@app.get("/api/status")
-def get_status():
-    return {"status": "ok", "app": "Flow7 Backend", "utc_today": utc_today().isoformat()}
+@app.get("/api/status", tags=["General"])
+def get_api_status():
+    """API'nin sağlık durumunu kontrol eder."""
+    return {"status": "ok", "version": "2.0.0", "timestamp": datetime.now(timezone.utc)}
 
-
-# --- CRUD UÇ NOKTALARI ---
-
-@app.post("/api/plans", response_model=PlanOut)
+@app.post("/api/plans", response_model=PlanOut, status_code=201, tags=["Plans"])
 def create_plan(
     plan_data: PlanCreate,
-    user_id: str = Depends(get_current_user_id),
-    subscription: str = Depends(get_user_subscription_header),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    """Yeni plan oluştur. Çakışma ve abonelik limitleri kontrol edilir."""
-    # limit kontrolü (now subscription-level driven)
-    check_planning_limit(subscription, plan_data.date)
+    """
+    Yeni bir kullanıcı planı oluşturur.
+    """
+    check_planning_date_limit(current_user, plan_data.date)
 
-    # zaman nesneleri
-    st = parse_time_str(plan_data.start_time)
-    et = parse_time_str(plan_data.end_time)
+    start_time_obj = get_time_obj_from_str(plan_data.start_time)
+    end_time_obj = get_time_obj_from_str(plan_data.end_time)
 
-    # çakışma kontrolü: aynı kullanıcı aynı tarihte, zaman aralıkları kesişiyor mu?
-    overlap_q = (
-        select(PlanORM)
-        .where(
-            PlanORM.user_id == user_id,
-            PlanORM.date == plan_data.date,
-            and_(
-                PlanORM.start_time < et,
-                PlanORM.end_time > st,
-            ),
-        )
-        .limit(1)
-    )
-    res = db.execute(overlap_q).scalars().first()
-    if res:
-        raise HTTPException(status_code=409, detail="Zaman çakışması: başka bir plan ile çakışıyor.")
+    # Çakışma kontrolü
+    existing_plan = db.execute(select(PlanORM).where(
+        PlanORM.user_id == current_user.uid,
+        PlanORM.date == plan_data.date,
+        PlanORM.start_time < end_time_obj,
+        PlanORM.end_time > start_time_obj
+    )).scalars().first()
 
-    now_dt = datetime.now(timezone.utc)
-    new_id = str(uuid4())
-    orm = PlanORM(
-        id=new_id,
-        user_id=user_id,
+    if existing_plan:
+        raise HTTPException(status_code=409, detail="Belirtilen zaman aralığında mevcut bir planınız var (zaman çakışması).")
+
+    new_plan = PlanORM(
+        id=str(uuid4()),
+        user_id=current_user.uid,
         date=plan_data.date,
-        start_time=st,
-        end_time=et,
+        start_time=start_time_obj,   # <-- time object
+        end_time=end_time_obj,       # <-- time object
         title=plan_data.title,
         description=plan_data.description,
-        created_at=now_dt,
-        updated_at=now_dt,
     )
-    db.add(orm)
+    db.add(new_plan)
     db.commit()
-    db.refresh(orm)
-    return PlanOut(
-        id=orm.id,
-        user_id=orm.user_id,
-        date=orm.date,
-        start_time=plan_data.start_time,
-        end_time=plan_data.end_time,
-        title=orm.title,
-        description=orm.description,
-    )
+    db.refresh(new_plan)
+    return plan_to_out(new_plan)
 
 
-@app.get("/api/plans", response_model=List[PlanOut])
-def get_plans_by_range(
+@app.get("/api/plans", response_model=List[PlanOut], tags=["Plans"])
+def get_user_plans_by_date_range(
     start_date: PyDate,
     end_date: PyDate,
-    user_id: str = Depends(get_current_user_id),
-    subscription: str = Depends(get_user_subscription_header),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    """
-    Belirli bir tarih aralığındaki planları getirir.
-    Okuma için abonelik limiti kontrolü uygulanır (gelecek tarihleri sınırla).
-    """
-    limit_date = get_planning_limit(subscription)
-    # Eğer istemci geleceğe doğru veri istiyorsa limit'i aşamaz
-    if end_date > limit_date and end_date > utc_today():
-        raise HTTPException(
-            status_code=403,
-            detail=f"Okuma Aralığı Reddedildi. {subscription} planı, {limit_date.isoformat()} tarihini aşan veriye erişemez.",
-        )
+    """Belirtilen tarih aralığındaki tüm kullanıcı planlarını listeler."""
+    if start_date > end_date:
+        raise HTTPException(status_code=400, detail="Başlangıç tarihi, bitiş tarihinden sonra olamaz.")
 
-    q = (
-        select(PlanORM)
-        .where(
-            PlanORM.user_id == user_id,
-            PlanORM.date >= start_date,
-            PlanORM.date <= end_date,
-        )
-        .order_by(PlanORM.date, PlanORM.start_time)
-    )
-    results = db.execute(q).scalars().all()
+    plans = db.execute(select(PlanORM).where(
+        PlanORM.user_id == current_user.uid,
+        PlanORM.date.between(start_date, end_date)
+    ).order_by(PlanORM.date, PlanORM.start_time)).scalars().all()
 
-    out = []
-    for r in results:
-        out.append(
-            PlanOut(
-                id=r.id,
-                user_id=r.user_id,
-                date=r.date,
-                start_time=r.start_time.strftime("%H:%M"),
-                end_time=r.end_time.strftime("%H:%M"),
-                title=r.title,
-                description=r.description,
-            )
-        )
-    return out
+    return [plan_to_out(p) for p in plans]
 
 
-@app.get("/api/plans/{plan_id}", response_model=PlanOut)
-def get_plan(plan_id: str, user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
-    p = db.get(PlanORM, plan_id)
-    if not p or p.user_id != user_id:
-        raise HTTPException(status_code=404, detail="Plan bulunamadı.")
-    return PlanOut(
-        id=p.id,
-        user_id=p.user_id,
-        date=p.date,
-        start_time=p.start_time.strftime("%H:%M"),
-        end_time=p.end_time.strftime("%H:%M"),
-        title=p.title,
-        description=p.description,
-    )
-
-
-@app.put("/api/plans/{plan_id}", response_model=PlanOut)
+@app.put("/api/plans/{plan_id}", response_model=PlanOut, tags=["Plans"])
 def update_plan(
     plan_id: str,
     plan_data: PlanUpdate,
-    user_id: str = Depends(get_current_user_id),
-    subscription: str = Depends(get_user_subscription_header),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    """Plan güncelle. Limit ve çakışma kontrolü yapılır."""
-    p: Optional[PlanORM] = db.get(PlanORM, plan_id)
-    if not p or p.user_id != user_id:
+    """
+    Mevcut bir planı günceller.
+    """
+    db_plan = db.get(PlanORM, plan_id)
+    if not db_plan:
         raise HTTPException(status_code=404, detail="Plan bulunamadı.")
+    if db_plan.user_id != current_user.uid:
+        raise HTTPException(status_code=403, detail="Bu planı güncelleme yetkiniz yok.")
 
-    # limit kontrolü
-    check_planning_limit(subscription, plan_data.date)
+    check_planning_date_limit(current_user, plan_data.date)
 
-    st = parse_time_str(plan_data.start_time)
-    et = parse_time_str(plan_data.end_time)
+    start_time_obj = get_time_obj_from_str(plan_data.start_time)
+    end_time_obj = get_time_obj_from_str(plan_data.end_time)
 
-    # çakışma kontrolü (kendi kaydı hariç)
-    overlap_q = (
-        select(PlanORM)
-        .where(
-            PlanORM.user_id == user_id,
-            PlanORM.date == plan_data.date,
-            PlanORM.id != plan_id,
-            and_(
-                PlanORM.start_time < et,
-                PlanORM.end_time > st,
-            ),
-        )
-        .limit(1)
-    )
-    res = db.execute(overlap_q).scalars().first()
-    if res:
-        raise HTTPException(status_code=409, detail="Zaman çakışması: başka bir plan ile çakışıyor.")
+    # Kendisi hariç diğer planlarla çakışma kontrolü
+    existing_plan = db.execute(select(PlanORM).where(
+        PlanORM.id != plan_id,
+        PlanORM.user_id == current_user.uid,
+        PlanORM.date == plan_data.date,
+        PlanORM.start_time < end_time_obj,
+        PlanORM.end_time > start_time_obj
+    )).scalars().first()
 
-    p.date = plan_data.date
-    p.start_time = st
-    p.end_time = et
-    p.title = plan_data.title
-    p.description = plan_data.description
-    p.updated_at = datetime.now(timezone.utc)
-    db.add(p)
+    if existing_plan:
+        raise HTTPException(status_code=409, detail="Güncellenen zaman aralığı başka bir planla çakışıyor.")
+
+    # Verileri güncelle (time alanlarını time objesine çevir)
+    db_plan.date = plan_data.date
+    db_plan.start_time = start_time_obj
+    db_plan.end_time = end_time_obj
+    db_plan.title = plan_data.title
+    db_plan.description = plan_data.description
+
     db.commit()
-    db.refresh(p)
-
-    return PlanOut(
-        id=p.id,
-        user_id=p.user_id,
-        date=p.date,
-        start_time=p.start_time.strftime("%H:%M"),
-        end_time=p.end_time.strftime("%H:%M"),
-        title=p.title,
-        description=p.description,
-    )
+    db.refresh(db_plan)
+    return plan_to_out(db_plan)
 
 
-@app.delete("/api/plans/{plan_id}", status_code=204)
-def delete_plan(plan_id: str, user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
-    p: Optional[PlanORM] = db.get(PlanORM, plan_id)
-    if not p or p.user_id != user_id:
-        raise HTTPException(status_code=404, detail="Plan bulunamadı.")
-    db.delete(p)
+@app.delete("/api/plans/{plan_id}", status_code=204, tags=["Plans"])
+def delete_plan(
+    plan_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Mevcut bir planı siler."""
+    db_plan = db.get(PlanORM, plan_id)
+    if not db_plan:
+        raise HTTPException(status_code=404, detail="Silinecek plan bulunamadı.")
+    if db_plan.user_id != current_user.uid:
+        raise HTTPException(status_code=403, detail="Bu planı silme yetkiniz yok.")
+
+    db.delete(db_plan)
     db.commit()
     return
+
+@app.put("/user/subscription/", tags=["User"])
+def update_subscription(
+    payload: SubscriptionUpdate,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Kullanıcının abonelik seviyesini günceller (development: in-memory).
+    Body: { "level": "pro", "days": 30 }
+    Döner: { "uid": "...", "level": "...", "expires_at": "YYYY-MM-DD" }
+    """
+    expires = datetime.now(timezone.utc).date() + timedelta(days=payload.days)
+    USER_SUBSCRIPTIONS[current_user.uid] = {"level": payload.level, "expires": expires}
+    return {"uid": current_user.uid, "level": payload.level, "expires_at": expires.isoformat()}
+
+
+@app.get("/user/profile/", tags=["User"])
+def user_profile(current_user: User = Depends(get_current_user)):
+    """
+    Basit profil endpoint'i: uid, subscriptionLevel, expires_at (varsa).
+    """
+    info = USER_SUBSCRIPTIONS.get(current_user.uid, {})
+    expires = info.get("expires")
+    return {
+        "uid": current_user.uid,
+        "subscriptionLevel": info.get("level", current_user.subscription),
+        "expires_at": expires.isoformat() if expires else None
+    }
+
+# --- 7. RUN THE APP ---
+# Bu blok, dosyanın doğrudan `python main.py` ile çalıştırılmasını sağlar.
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -127,5 +127,9 @@
   "programCalendar": "Programm - Kalender",
   "add": "Hinzufügen",
   "noPlansMessage": "Für diesen Tag sind keine Programme vorhanden.\nZum Hinzufügen lang drücken.",
-  "deleteConfirm": "Sind Sie sicher, dass Sie dieses Programm löschen möchten?"
+  "deleteConfirm": "Sind Sie sicher, dass Sie dieses Programm löschen möchten?",
+  "today": "Heute",
+  "editProgram": "Programm bearbeiten",
+  "requiredField": "Dieses Feld ist erforderlich",
+  "endTimeError": "Die Endzeit muss nach der Startzeit liegen"
 }

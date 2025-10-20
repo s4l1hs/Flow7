@@ -381,4 +381,16 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get deleteConfirm =>
       'Sind Sie sicher, dass Sie dieses Programm löschen möchten?';
+
+  @override
+  String get today => 'Heute';
+
+  @override
+  String get editProgram => 'Programm bearbeiten';
+
+  @override
+  String get requiredField => 'Dieses Feld ist erforderlich';
+
+  @override
+  String get endTimeError => 'Die Endzeit muss nach der Startzeit liegen';
 }

@@ -372,4 +372,16 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get deleteConfirm => 'क्या आप वाकई इस प्रोग्राम को हटाना चाहते हैं?';
+
+  @override
+  String get today => 'आज';
+
+  @override
+  String get editProgram => 'प्रोग्राम संपादित करें';
+
+  @override
+  String get requiredField => 'यह फ़ील्ड आवश्यक है';
+
+  @override
+  String get endTimeError => 'समाप्ति समय को प्रारंभ समय के बाद होना चाहिए';
 }

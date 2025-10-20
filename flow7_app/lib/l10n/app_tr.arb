@@ -119,5 +119,9 @@
   "programCalendar": "Program - Takvim",
   "add": "Ekle",
   "noPlansMessage": "Bu gün için program bulunmuyor.\nUzun basarak yeni program ekleyin.",
-  "deleteConfirm": "Bu programı silmek istediğinizden emin misiniz?"
+  "deleteConfirm": "Bu programı silmek istediğinizden emin misiniz?",
+  "today": "Bugün",
+  "editProgram": "Programı Düzenle",
+  "requiredField": "Bu alan gereklidir",
+  "endTimeError": "Bitiş zamanı, başlangıç zamanından sonra olmalıdır"
 }

@@ -368,4 +368,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get deleteConfirm => '确定要删除此计划吗？';
+
+  @override
+  String get today => '今天';
+
+  @override
+  String get editProgram => '编辑计划';
+
+  @override
+  String get requiredField => '此字段为必填项';
+
+  @override
+  String get endTimeError => '结束时间必须晚于开始时间';
 }

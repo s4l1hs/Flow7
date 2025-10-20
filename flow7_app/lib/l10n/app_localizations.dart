@@ -835,6 +835,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to delete this program?'**
   String get deleteConfirm;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// No description provided for @editProgram.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Program'**
+  String get editProgram;
+
+  /// No description provided for @requiredField.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required'**
+  String get requiredField;
+
+  /// No description provided for @endTimeError.
+  ///
+  /// In en, this message translates to:
+  /// **'End time must be after start time'**
+  String get endTimeError;
 }
 
 class _AppLocalizationsDelegate

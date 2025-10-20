@@ -121,5 +121,9 @@
   "programCalendar": "プログラム - カレンダー",
   "add": "追加",
   "noPlansMessage": "この日のプログラムはありません。\n長押しで新しいプログラムを追加してください。",
-  "deleteConfirm": "このプログラムを削除してもよろしいですか？"
+  "deleteConfirm": "このプログラムを削除してもよろしいですか？",
+  "today": "今日",
+  "editProgram": "プログラムを編集",
+  "requiredField": "この項目は必須です",
+  "endTimeError": "終了時刻は開始時刻より後でなければなりません"
 }

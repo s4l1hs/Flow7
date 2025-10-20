@@ -368,4 +368,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deleteConfirm => 'このプログラムを削除してもよろしいですか？';
+
+  @override
+  String get today => '今日';
+
+  @override
+  String get editProgram => 'プログラムを編集';
+
+  @override
+  String get requiredField => 'この項目は必須です';
+
+  @override
+  String get endTimeError => '終了時刻は開始時刻より後でなければなりません';
 }

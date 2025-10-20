@@ -380,4 +380,17 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get deleteConfirm =>
       'Êtes-vous sûr de vouloir supprimer ce programme ?';
+
+  @override
+  String get today => 'Aujourd\'hui';
+
+  @override
+  String get editProgram => 'Modifier le programme';
+
+  @override
+  String get requiredField => 'Ce champ est requis';
+
+  @override
+  String get endTimeError =>
+      'L\'heure de fin doit être après l\'heure de début';
 }

@@ -119,5 +119,9 @@
   "programCalendar": "Programma - Calendario",
   "add": "Aggiungi",
   "noPlansMessage": "Nessun programma per questo giorno.\nPremere a lungo per aggiungere un nuovo programma.",
-  "deleteConfirm": "Sei sicuro di voler eliminare questo programma?"
+  "deleteConfirm": "Sei sicuro di voler eliminare questo programma?",
+  "today": "Oggi",
+  "editProgram": "Modifica programma",
+  "requiredField": "Questo campo è obbligatorio",
+  "endTimeError": "L'orario di fine deve essere successivo all'orario di inizio"
 }

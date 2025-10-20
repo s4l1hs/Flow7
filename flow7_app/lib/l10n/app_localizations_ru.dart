@@ -372,4 +372,16 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get deleteConfirm => 'Вы уверены, что хотите удалить эту программу?';
+
+  @override
+  String get today => 'Сегодня';
+
+  @override
+  String get editProgram => 'Редактировать программу';
+
+  @override
+  String get requiredField => 'Это поле обязательно';
+
+  @override
+  String get endTimeError => 'Время окончания должно быть позже времени начала';
 }

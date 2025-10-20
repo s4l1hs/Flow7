@@ -127,5 +127,9 @@
   "programCalendar": "计划 - 日历",
   "add": "添加",
   "noPlansMessage": "这一天没有计划。\n长按可添加新计划。",
-  "deleteConfirm": "确定要删除此计划吗？"
+  "deleteConfirm": "确定要删除此计划吗？",
+  "today": "今天",
+  "editProgram": "编辑计划",
+  "requiredField": "此字段为必填项",
+  "endTimeError": "结束时间必须晚于开始时间"
 }

@@ -23,13 +23,15 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   late final List<Widget> _pages; // pages are retained in memory
   late List<Map<String, dynamic>> _navItems;
   late AnimationController _bounceController;
+  // key to access ProgramPage state to open the add-dialog from here
+  final GlobalKey<ProgramPageState> _programKey = GlobalKey<ProgramPageState>();
 
   @override
   void initState() {
     super.initState();
     // Keep pages in the order: Program (plans), Subscriptions, Settings
     _pages = <Widget>[
-      ProgramPage(idToken: widget.idToken),
+      ProgramPage(key: _programKey, idToken: widget.idToken),
       SubscriptionPage(idToken: widget.idToken),
       const SettingsPage(),
     ];
@@ -90,6 +92,57 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         ],
       ),
       bottomNavigationBar: _buildCustomBottomNav(),
+      // Floating + button lives in MainScreen so it renders above the custom bottom nav.
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: Visibility(
+        visible: _selectedIndex == 0,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: 14.h, right: 14.w),
+          child: FloatingActionButton(
+            onPressed: () {
+              // if program page mounted, open its dialog
+              final state = _programKey.currentState;
+              if (state != null) {
+                state.showPlanDialog();
+              }
+            },
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            heroTag: 'main_add_plan_fab',
+            child: Container(
+              width: 64.r,
+              height: 64.r,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.primaryContainer,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(64.r),
+                  onTap: () {
+                    final state = _programKey.currentState;
+                    if (state != null) state.showPlanDialog();
+                  },
+                  child: Center(
+                    child: Icon(Icons.add, color: Colors.white, size: 32.r),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

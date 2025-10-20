@@ -373,4 +373,17 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get deleteConfirm => 'Bu programı silmek istediğinizden emin misiniz?';
+
+  @override
+  String get today => 'Bugün';
+
+  @override
+  String get editProgram => 'Programı Düzenle';
+
+  @override
+  String get requiredField => 'Bu alan gereklidir';
+
+  @override
+  String get endTimeError =>
+      'Bitiş zamanı, başlangıç zamanından sonra olmalıdır';
 }

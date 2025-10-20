@@ -128,5 +128,9 @@
   "programCalendar": "Program - Calendar",
   "add": "Add",
   "noPlansMessage": "No program for this day.\nLong press to add a new program.",
-  "deleteConfirm": "Are you sure you want to delete this program?"
+  "deleteConfirm": "Are you sure you want to delete this program?",
+  "today": "Today",
+  "editProgram": "Edit Program",
+  "requiredField": "This field is required",
+  "endTimeError": "End time must be after start time"
 }
