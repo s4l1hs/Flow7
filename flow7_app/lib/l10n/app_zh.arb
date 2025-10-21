@@ -131,5 +131,9 @@
   "today": "今天",
   "editProgram": "编辑计划",
   "requiredField": "此字段为必填项",
-  "endTimeError": "结束时间必须晚于开始时间"
+  "endTimeError": "结束时间必须晚于开始时间",
+
+  "theme": "外观",
+  "darkMode": "深色模式",
+  "lightMode": "浅色模式"
 }

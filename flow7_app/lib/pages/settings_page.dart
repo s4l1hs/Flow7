@@ -20,6 +20,8 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderStateMixin {
   bool _isSavingLanguage = false;
   bool _isSavingNotifications = false;
+  String _currentTheme = 'LIGHT';
+  bool _isSavingTheme = false; // <- yeni alan
   // ignore: unused_field
   bool _isLoadingProfile = false;
 
@@ -72,15 +74,19 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
         final languageCode = (profile['language_code'] as String?) ?? 'en';
         final score = (profile['score'] as int?) ?? 0;
         final notifications = (profile['notifications_enabled'] as bool?) ?? true;
+        final themePreference = (profile['theme_preference'] as String?) ?? 'LIGHT';
 
         setState(() {
           _currentLanguageCode = languageCode;
           _username = (firebaseName != null && firebaseName.isNotEmpty) ? firebaseName : (backendUsername.isNotEmpty ? backendUsername : null);
           _userScore = score;
           _notificationsEnabled = notifications;
+          _currentTheme = themePreference;
         });
 
         Provider.of<LocaleProvider>(context, listen: false).setLocale(_currentLanguageCode);
+        // apply theme preference from backend immediately
+        Provider.of<ThemeNotifier>(context, listen: false).setTheme(_currentTheme);
       } else {
         throw Exception('Failed to load profile: ${response.statusCode}');
       }
@@ -88,6 +94,44 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
       if (mounted) _showErrorSnackBar(AppLocalizations.of(context)?.failedToLoadProfile ?? "Failed to load profile");
     } finally {
       if (mounted) setState(() => _isLoadingProfile = false);
+    }
+  }
+
+  Future<void> _saveThemePreference(String newTheme) async {
+    if (_isSavingTheme) return;
+    setState(() => _isSavingTheme = true);
+    final oldTheme = _currentTheme; // Hata olursa geri dönmek için
+    
+    // UI'da hemen yansıt, bekleme sırasında loading gösterilir
+    if (mounted) setState(() => _currentTheme = newTheme);
+
+    try {
+      final token = await _getIdToken();
+      if (token == null) throw Exception("User not logged in");
+
+      // Do a direct HTTP request to update theme preference on the backend
+      final uri = Uri.parse("$backendBaseUrl/user/theme/");
+      final body = jsonEncode({'theme': newTheme}); // <-- changed to match backend Pydantic model
+      final response = await http.put(uri, headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json'
+      }, body: body);
+
+      if (response.statusCode != 200) {
+        debugPrint('Failed to save theme preference: ${response.statusCode} ${response.body}');
+        throw Exception('Failed to save theme preference');
+      }
+
+      // Başarılı olursa, uygulama genelinde tema değişikliğini tetikleyin.
+      if (mounted) Provider.of<ThemeNotifier>(context, listen: false).setTheme(newTheme);
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar("Tema tercihi kaydedilemedi: $e");
+        // Hata durumunda UI'ı eski temaya geri çevir
+        setState(() => _currentTheme = oldTheme);
+      }
+    } finally {
+      if (mounted) setState(() => _isSavingTheme = false);
     }
   }
 
@@ -210,6 +254,8 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
                 _buildCardSection(title: localizations.general, child: Column(children: [
                   _buildLanguageTile(localizations, theme),
                   Divider(color: Colors.white12, height: 1, indent: 68),
+                  _buildThemeTile(localizations, theme),
+                  Divider(color: Colors.white12, height: 1, indent: 68),
                   _buildNotificationsTile(localizations, theme),
                 ])),
                 SizedBox(height: 18.h),
@@ -323,6 +369,23 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
       subtitle: Text(_supportedLanguages[_currentLanguageCode] ?? 'English'),
       trailing: _isSavingLanguage ? SizedBox(width: 24.w, height: 24.w, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.keyboard_arrow_right, color: Colors.white70),
       onTap: () => _showLanguageBottomSheet(localizations, theme),
+    );
+  }
+
+  Widget _buildThemeTile(AppLocalizations localizations, ThemeData theme) {
+    final isDark = _currentTheme.toUpperCase() == 'DARK';
+    return SwitchListTile(
+      secondary: Padding(padding: const EdgeInsets.all(8.0), child: Icon(isDark ? Icons.dark_mode : Icons.light_mode, color: theme.colorScheme.primary)),
+      title: Text(localizations.theme),
+      subtitle: Text(isDark ? (localizations.darkMode) : (localizations.lightMode)),
+      value: isDark,
+      activeColor: theme.colorScheme.secondary,
+      onChanged: (enabled) {
+        final newTheme = enabled ? 'DARK' : 'LIGHT';
+        // update UI immediately, backend/save will run in _saveThemePreference
+        setState(() => _currentTheme = newTheme);
+        _saveThemePreference(newTheme);
+      },
     );
   }
 

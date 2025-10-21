@@ -393,4 +393,13 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get endTimeError =>
       'L\'heure de fin doit être après l\'heure de début';
+
+  @override
+  String get theme => 'Apparence';
+
+  @override
+  String get darkMode => 'Mode sombre';
+
+  @override
+  String get lightMode => 'Mode clair';
 }

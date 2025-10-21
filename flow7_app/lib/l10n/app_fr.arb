@@ -44,6 +44,9 @@
   "language": "Français",
   "selectLanguage": "Sélectionner la langue",
   "refresh": "Actualiser",
+  "theme": "Apparence",
+  "darkMode": "Mode sombre",
+  "lightMode": "Mode clair",
 
   "noDataFound": "Aucune donnée trouvée",
   "navLeaderboard": "Classement",

@@ -117,6 +117,7 @@ class User(BaseModel):
     """Doğrulanmış kullanıcıyı temsil eden model."""
     uid: str
     subscription: str = "FREE" # DB'den veya token'dan alınabilir
+    theme_preference: str = "LIGHT"
 
 # Token doğrulama şeması
 token_auth_scheme = HTTPBearer()
@@ -159,7 +160,8 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Security(token_
         # Kullanıcının in-memory abonelik bilgisi varsa al
         sub_info = USER_SUBSCRIPTIONS.get(uid)
         subscription = sub_info["level"] if sub_info and "level" in sub_info else "FREE"
-        return User(uid=uid, subscription=subscription)
+        theme_preference = sub_info["theme"] if sub_info and "theme" in sub_info else "LIGHT"
+        return User(uid=uid, subscription=subscription, theme_preference=theme_preference)
     except Exception as e:
         raise HTTPException(
             status_code=401,
@@ -373,16 +375,41 @@ def update_subscription(
 @app.get("/user/profile/", tags=["User"])
 def user_profile(current_user: User = Depends(get_current_user)):
     """
-    Basit profil endpoint'i: uid, subscriptionLevel, expires_at (varsa).
+    Basit profil endpoint'i: uid, subscriptionLevel, expires_at (varsa), theme_preference.
     """
     info = USER_SUBSCRIPTIONS.get(current_user.uid, {})
     expires = info.get("expires")
     return {
         "uid": current_user.uid,
         "subscriptionLevel": info.get("level", current_user.subscription),
-        "expires_at": expires.isoformat() if expires else None
+        "expires_at": expires.isoformat() if expires else None,
+        "theme_preference": info.get("theme", current_user.theme_preference) 
     }
 
+class ThemePreferenceUpdate(BaseModel):
+    """Kullanıcının tema tercihini güncellemek için kullanılan şema."""
+    # Sadece 'LIGHT' veya 'DARK' kabul eder
+    theme: str = Field(..., pattern=r"^(LIGHT|DARK)$", description="LIGHT veya DARK olmalı")
+
+@app.put("/user/theme/", tags=["User"])
+def update_user_theme(
+    payload: ThemePreferenceUpdate,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Kullanıcının tema (dark/light mode) tercihini günceller.
+    """
+    uid = current_user.uid
+    
+    # In-memory sözlüğü güncelleyelim.
+    # Eğer kullanıcı daha önce abonelik bilgisi kaydetmediyse varsayılanları atarız.
+    user_info = USER_SUBSCRIPTIONS.get(uid, {"level": current_user.subscription, "theme": current_user.theme_preference})
+    
+    # Tema bilgisini güncelleyin
+    user_info["theme"] = payload.theme
+    USER_SUBSCRIPTIONS[uid] = user_info
+    
+    return {"uid": uid, "theme_preference": payload.theme}
 # --- 7. RUN THE APP ---
 # Bu blok, dosyanın doğrudan `python main.py` ile çalıştırılmasını sağlar.
 if __name__ == "__main__":

@@ -148,6 +148,20 @@ class ApiService {
     return _handleResponse(response);
   }
 
+  Future<Map<String, dynamic>> updateThemePreference(String idToken, String theme) async {
+    final uri = Uri.parse("$backendBaseUrl/user/theme/");
+    // Payload, backend'deki ThemePreferenceUpdate şemasına uygun olmalıdır: {"theme": "DARK"}
+    final payload = jsonEncode({'theme': theme.toUpperCase()}); 
+
+    final response = await http.put(
+      uri,
+      headers: _getAuthHeaders(idToken),
+      body: payload,
+    );
+
+    return _handleResponse(response);
+  }
+
   /// Mevcut kullanıcı profilini getirir.
   /// Backend endpoint: GET /user/profile/
   Future<Map<String, dynamic>> getUserProfile(String idToken) async {

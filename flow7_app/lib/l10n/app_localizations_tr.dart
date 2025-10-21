@@ -386,4 +386,13 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get endTimeError =>
       'Bitiş zamanı, başlangıç zamanından sonra olmalıdır';
+
+  @override
+  String get theme => 'Görünüm';
+
+  @override
+  String get darkMode => 'Karanlık Mod';
+
+  @override
+  String get lightMode => 'Açık Mod';
 }

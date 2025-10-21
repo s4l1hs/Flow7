@@ -132,5 +132,9 @@
   "today": "Today",
   "editProgram": "Edit Program",
   "requiredField": "This field is required",
-  "endTimeError": "End time must be after start time"
+  "endTimeError": "End time must be after start time",
+
+  "theme": "Appearance",
+  "darkMode": "Dark Mode",
+  "lightMode": "Light Mode"
 }

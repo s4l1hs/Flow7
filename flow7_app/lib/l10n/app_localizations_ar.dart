@@ -383,4 +383,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get endTimeError => 'يجب أن تكون ساعة الانتهاء بعد ساعة البدء';
+
+  @override
+  String get theme => 'المظهر';
+
+  @override
+  String get darkMode => 'الوضع الداكن';
+
+  @override
+  String get lightMode => 'الوضع الفاتح';
 }

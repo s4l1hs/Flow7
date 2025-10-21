@@ -123,5 +123,8 @@
   "today": "Oggi",
   "editProgram": "Modifica programma",
   "requiredField": "Questo campo è obbligatorio",
-  "endTimeError": "L'orario di fine deve essere successivo all'orario di inizio"
+  "endTimeError": "L'orario di fine deve essere successivo all'orario di inizio",
+  "theme": "Aspetto",
+  "darkMode": "Modalità Scura",
+  "lightMode": "Modalità Chiara"
 }

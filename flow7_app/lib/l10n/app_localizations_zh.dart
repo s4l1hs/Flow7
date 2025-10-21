@@ -380,4 +380,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get endTimeError => '结束时间必须晚于开始时间';
+
+  @override
+  String get theme => '外观';
+
+  @override
+  String get darkMode => '深色模式';
+
+  @override
+  String get lightMode => '浅色模式';
 }

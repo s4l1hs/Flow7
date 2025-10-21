@@ -384,4 +384,13 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get endTimeError => 'Время окончания должно быть позже времени начала';
+
+  @override
+  String get theme => 'Внешний вид';
+
+  @override
+  String get darkMode => 'Тёмная тема';
+
+  @override
+  String get lightMode => 'Светлая тема';
 }

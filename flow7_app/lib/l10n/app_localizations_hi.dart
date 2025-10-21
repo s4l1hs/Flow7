@@ -384,4 +384,13 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get endTimeError => 'समाप्ति समय को प्रारंभ समय के बाद होना चाहिए';
+
+  @override
+  String get theme => 'थीम';
+
+  @override
+  String get darkMode => 'डार्क मोड';
+
+  @override
+  String get lightMode => 'लाइट मोड';
 }

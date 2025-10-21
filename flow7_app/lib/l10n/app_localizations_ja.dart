@@ -380,4 +380,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get endTimeError => '終了時刻は開始時刻より後でなければなりません';
+
+  @override
+  String get theme => '外観';
+
+  @override
+  String get darkMode => 'ダークモード';
+
+  @override
+  String get lightMode => 'ライトモード';
 }

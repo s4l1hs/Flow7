@@ -393,4 +393,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get endTimeError => 'Die Endzeit muss nach der Startzeit liegen';
+
+  @override
+  String get theme => 'Darstellung';
+
+  @override
+  String get darkMode => 'Dunkler Modus';
+
+  @override
+  String get lightMode => 'Heller Modus';
 }

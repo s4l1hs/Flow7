@@ -859,6 +859,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'End time must be after start time'**
   String get endTimeError;
+
+  /// No description provided for @theme.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get theme;
+
+  /// No description provided for @darkMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark Mode'**
+  String get darkMode;
+
+  /// No description provided for @lightMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Light Mode'**
+  String get lightMode;
 }
 
 class _AppLocalizationsDelegate

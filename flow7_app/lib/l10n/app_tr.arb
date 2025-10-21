@@ -123,5 +123,8 @@
   "today": "Bugün",
   "editProgram": "Programı Düzenle",
   "requiredField": "Bu alan gereklidir",
-  "endTimeError": "Bitiş zamanı, başlangıç zamanından sonra olmalıdır"
+  "endTimeError": "Bitiş zamanı, başlangıç zamanından sonra olmalıdır",
+  "theme": "Görünüm",
+  "darkMode": "Karanlık Mod",
+  "lightMode": "Açık Mod"
 }

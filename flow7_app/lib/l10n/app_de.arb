@@ -131,5 +131,9 @@
   "today": "Heute",
   "editProgram": "Programm bearbeiten",
   "requiredField": "Dieses Feld ist erforderlich",
-  "endTimeError": "Die Endzeit muss nach der Startzeit liegen"
+  "endTimeError": "Die Endzeit muss nach der Startzeit liegen",
+
+  "theme": "Darstellung",
+  "darkMode": "Dunkler Modus",
+  "lightMode": "Heller Modus"
 }
