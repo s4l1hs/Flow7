@@ -455,7 +455,7 @@ class ProgramPageState extends State<ProgramPage> {
           children: [
             Icon(Icons.event_note_outlined, size: 72.r, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.18)),
             SizedBox(height: 10.h),
-            Text(AppLocalizations.of(context)!.noPlansHere, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7))),
+            Text(AppLocalizations.of(context)?.noPlansHere ?? "No plans for this day.", style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7))),
           ],
         ),
       );
@@ -467,9 +467,9 @@ class ProgramPageState extends State<ProgramPage> {
       separatorBuilder: (_, __) => SizedBox(height: 12.h),
       itemBuilder: (context, index) {
         final plan = plansForDay[index];
-        final start = plan['start_time'] ?? '';
-        final end = plan['end_time'] ?? '';
-        final title = plan['title'] ?? '';
+        final start = (plan['start_time'] as String?) ?? '';
+        final end = (plan['end_time'] as String?) ?? '';
+        final title = (plan['title'] as String?) ?? '';
         final desc = (plan['description'] ?? '').toString();
         final color = Theme.of(context).colorScheme.primary;
 
@@ -478,24 +478,23 @@ class ProgramPageState extends State<ProgramPage> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Time column + vertical line
               SizedBox(
                 width: 72.w,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(start, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700, color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.85))),
-                    if ((end ?? '').isNotEmpty) Text(end, style: TextStyle(fontSize: 11.sp, color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7))),
+                    if (end.isNotEmpty) Text(end, style: TextStyle(fontSize: 11.sp, color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7))),
                     SizedBox(height: 6.h),
                   ],
                 ),
               ),
-
-              // Timeline indicators
               Container(
                 width: 28.w,
                 alignment: Alignment.topCenter,
                 child: Column(
+                  mainAxisSize: MainAxisSize.min, // unbounded height içinde Expanded/Flexible hatasını önler
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(width: 3.w, height: 12.h, color: Theme.of(context).dividerColor.withOpacity(0.6)),
                     Container(
@@ -508,12 +507,10 @@ class ProgramPageState extends State<ProgramPage> {
                         boxShadow: [BoxShadow(color: color.withOpacity(0.28), blurRadius: 8.r, offset: Offset(0, 4.h))],
                       ),
                     ),
-                    Expanded(child: Container(width: 3.w, color: Theme.of(context).dividerColor.withOpacity(0.06))),
+                    Flexible(fit: FlexFit.loose, child: Container(width: 3.w, color: Theme.of(context).dividerColor.withOpacity(0.06))),
                   ],
                 ),
               ),
-
-              // Card content
               Expanded(
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 360),
@@ -522,9 +519,7 @@ class ProgramPageState extends State<ProgramPage> {
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(14.r),
-                    boxShadow: [
-                      BoxShadow(color: Theme.of(context).brightness == Brightness.dark ? Colors.black45 : Colors.black12, blurRadius: 18.r, offset: Offset(0, 8.h)),
-                    ],
+                    boxShadow: [BoxShadow(color: Theme.of(context).brightness == Brightness.dark ? Colors.black45 : Colors.black12, blurRadius: 18.r, offset: Offset(0, 8.h))],
                     border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.06)),
                   ),
                   child: Column(
@@ -533,9 +528,7 @@ class ProgramPageState extends State<ProgramPage> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(title, style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800, color: Theme.of(context).textTheme.bodyLarge?.color)),
-                          ),
+                          Expanded(child: Text(title, style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800))),
                           PopupMenuButton<String>(
                             padding: EdgeInsets.zero,
                             itemBuilder: (_) => [
@@ -559,31 +552,14 @@ class ProgramPageState extends State<ProgramPage> {
                         children: [
                           Container(
                             padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).brightness == Brightness.dark ? Colors.white10 : Colors.black12,
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.schedule, size: 14.sp, color: Theme.of(context).textTheme.bodySmall?.color),
-                                SizedBox(width: 6.w),
-                                Text('$start ${end.isNotEmpty ? '• $end' : ''}', style: TextStyle(fontSize: 12.sp)),
-                              ],
-                            ),
+                            decoration: BoxDecoration(color: Theme.of(context).brightness == Brightness.dark ? Colors.white10 : Colors.black12, borderRadius: BorderRadius.circular(8.r)),
+                            child: Row(children: [Icon(Icons.schedule, size: 14.sp, color: Theme.of(context).textTheme.bodySmall?.color), SizedBox(width: 6.w), Text('$start ${end.isNotEmpty ? '• $end' : ''}', style: TextStyle(fontSize: 12.sp))]),
                           ),
                           SizedBox(width: 8.w),
-                          // example tag, if plan has tags show them (soft)
                           if (plan['tag'] != null)
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-                              decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8.r)),
-                              child: Text(plan['tag'].toString(), style: TextStyle(fontSize: 12.sp, color: color)),
-                            ),
+                            Container(padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h), decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8.r)), child: Text(plan['tag'].toString(), style: TextStyle(fontSize: 12.sp, color: color))),
                           const Spacer(),
-                          IconButton(
-                            icon: Icon(Icons.delete_outline, color: Colors.red.shade300),
-                            onPressed: () => _showDeleteConfirmation(plan['id']),
-                          ),
+                          IconButton(icon: Icon(Icons.delete_outline, color: Colors.red.shade300), onPressed: () => _showDeleteConfirmation(plan['id'])),
                         ],
                       ),
                     ],
@@ -635,7 +611,6 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
     _startTimeController = TextEditingController(text: plan?['start_time'] ?? '09:00');
     _endTimeController = TextEditingController(text: plan?['end_time'] ?? '10:00');
 
-    // küçük giriş animasyonu için flag'i aç
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) setState(() => _appeared = true);
     });
@@ -649,49 +624,34 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
     _endTimeController.dispose();
     super.dispose();
   }
-  
-  Future<void> _selectTime(BuildContext context, TextEditingController controller) async {
-    final initialParts = controller.text.split(RegExp(r'[:\s]'));
-    int ih = 9, im = 0;
-    if (initialParts.isNotEmpty) {
-      try {
-        final p = initialParts[0].padLeft(2, '0');
-        ih = int.parse(p);
-        if (initialParts.length > 1) im = int.parse(initialParts[1]);
-      } catch (_) {}
-    }
-    final initial = TimeOfDay(hour: ih, minute: im);
-    final selectedTime = await showTimePicker(context: context, initialTime: initial);
-    if (selectedTime != null) {
-      controller.text = '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}';
-    }
+
+  TimeOfDay? _parseHm(String? s) {
+    if (s == null || s.isEmpty) return null;
+    final parts = s.split(':');
+    if (parts.length != 2) return null;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) return null;
+    return TimeOfDay(hour: h, minute: m);
   }
 
-  DateTime? _parseHm(String s) {
-    try {
-      final parts = s.split(':');
-      if (parts.length < 2) return null;
-      final h = int.parse(parts[0]);
-      final m = int.parse(parts[1]);
-      final now = DateTime.now();
-      return DateTime(now.year, now.month, now.day, h, m);
-    } catch (_) {
-      return null;
-    }
+  Future<void> _selectTime(BuildContext context, TextEditingController controller) async {
+    final parsed = _parseHm(controller.text) ?? TimeOfDay(hour: 9, minute: 0);
+    final selected = await showTimePicker(context: context, initialTime: parsed);
+    if (selected != null) controller.text = '${selected.hour.toString().padLeft(2, '0')}:${selected.minute.toString().padLeft(2, '0')}';
   }
-  
+
   void _submit() {
-    if (_formKey.currentState!.validate()) {
-      final data = {
-        'date': DateFormat('yyyy-MM-dd').format(widget.initialDate),
-        'title': _titleController.text.trim(),
-        'description': _descController.text.trim(),
-        'start_time': _startTimeController.text,
-        'end_time': _endTimeController.text,
-      };
-      widget.onSave(data);
-      Navigator.of(context).pop();
-    }
+    if (!_formKey.currentState!.validate()) return;
+    final data = {
+      'title': _titleController.text.trim(),
+      'description': _descController.text.trim(),
+      'start_time': _startTimeController.text.trim(),
+      'end_time': _endTimeController.text.trim(),
+      'date': DateFormat('yyyy-MM-dd').format(widget.initialDate),
+    };
+    widget.onSave(data);
+    Navigator.of(context).pop();
   }
 
   @override
@@ -700,7 +660,6 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
-    // Animated scale + fade for smoother appearance
     return AnimatedScale(
       scale: _appeared ? 1.0 : 0.98,
       duration: const Duration(milliseconds: 280),
@@ -756,9 +715,11 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                       ],
                     ),
                     SizedBox(height: 16.h),
+
                     Form(
                       key: _formKey,
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           TextFormField(
                             controller: _titleController,
@@ -771,20 +732,6 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
                             ),
                             validator: (value) => (value == null || value.trim().isEmpty) ? loc.requiredField : null,
-                          ),
-                          SizedBox(height: 12.h),
-                          TextFormField(
-                            controller: _descController,
-                            decoration: InputDecoration(
-                              labelText: loc.descriptionLabel,
-                              prefixIcon: Icon(Icons.short_text),
-                              filled: true,
-                              fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
-                            ),
-                            minLines: 1,
-                            maxLines: 3,
                           ),
                           SizedBox(height: 12.h),
                           Row(
@@ -836,8 +783,21 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                               ),
                             ],
                           ),
+                          SizedBox(height: 12.h),
+                          TextFormField(
+                            controller: _descController,
+                            decoration: InputDecoration(
+                              labelText: loc.descriptionLabel,
+                              prefixIcon: Icon(Icons.short_text),
+                              filled: true,
+                              fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+                            ),
+                            minLines: 1,
+                            maxLines: 3,
+                          ),
                           SizedBox(height: 18.h),
-
                           Row(
                             children: [
                               Expanded(
@@ -861,7 +821,7 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                                     padding: EdgeInsets.symmetric(vertical: 14.h),
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
                                     backgroundColor: theme.colorScheme.primary,
-                                    foregroundColor: theme.colorScheme.onPrimary, // ensures text/icon contrast
+                                    foregroundColor: theme.colorScheme.onPrimary,
                                   ),
                                   onPressed: _submit,
                                 ),

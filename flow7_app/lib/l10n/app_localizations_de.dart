@@ -83,11 +83,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get selectYourInterests => 'Wählen Sie Ihre Interessen';
 
   @override
-  String get preferencesSaved => 'Präferenzen erfolgreich gespeichert!';
+  String get preferencesSaved => 'Einstellungen erfolgreich gespeichert!';
 
   @override
   String get preferencesCouldNotBeSaved =>
-      'Präferenzen konnten nicht gespeichert werden.';
+      'Einstellungen konnten nicht gespeichert werden.';
 
   @override
   String get error => 'Fehler';
@@ -142,7 +142,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmation =>
-      'Sind Sie sicher, dass Sie Ihr Konto löschen möchten? Diese Aktion ist unumkehrbar und alle Ihre Daten, einschließlich Ihrer Punktzahl, gehen dauerhaft verloren.';
+      'Sind Sie sicher, dass Sie Ihr Konto löschen möchten? Diese Aktion ist unumkehrbar und alle Ihre Daten gehen dauerhaft verloren.';
 
   @override
   String get delete => 'Löschen';
@@ -162,7 +162,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get selected => 'ausgewählt';
 
   @override
-  String get yourRank => 'Dein Rang';
+  String get yourRank => 'Ihr Rang';
 
   @override
   String get rankMaster => 'Meister';
@@ -280,7 +280,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get errorCouldNotLoadData => 'Daten konnten nicht geladen werden.';
 
   @override
-  String get topPlayers => 'Top‑Spieler';
+  String get topPlayers => 'Top Spieler';
 
   @override
   String get yourName => 'Ihr Name';
@@ -314,7 +314,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get failedToSaveLanguage => 'Sprache konnte nicht gespeichert werden';
 
   @override
-  String get failedToLoadProfile => 'Profil konnte nicht geladen werden';
+  String get failedToLoadProfile => 'Fehler beim Laden des Profils';
 
   @override
   String get copiedToClipboard => 'In Zwischenablage kopiert';
@@ -336,7 +336,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get challengeIntro =>
-      'Erhalten Sie kurze, ansprechende Herausforderungen zur Verbesserung Ihrer Fähigkeiten.';
+      'Erhalten Sie kurze, ansprechende Herausforderungen, um Ihre Fähigkeiten zu verbessern.';
 
   @override
   String get leaderboard => 'Bestenliste';
@@ -379,7 +379,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get noPlansMessage =>
-      'Für diesen Tag sind keine Programme vorhanden.\nZum Hinzufügen lang drücken.';
+      'Für diesen Tag sind keine Programme vorhanden.\nZum Hinzufügen lange drücken.';
 
   @override
   String get deleteConfirm =>
@@ -398,13 +398,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get endTimeError => 'Die Endzeit muss nach der Startzeit liegen';
 
   @override
-  String get theme => 'Appearance';
+  String get theme => 'Darstellung';
 
   @override
-  String get darkMode => 'Dark Mode';
+  String get darkMode => 'Dunkelmodus';
 
   @override
-  String get lightMode => 'Light Mode';
+  String get lightMode => 'Heller Modus';
 
   @override
   String get edit => 'Bearbeiten';

@@ -134,5 +134,8 @@
   "requiredField": "Este campo es obligatorio",
   "endTimeError": "La hora de fin debe ser posterior a la hora de inicio",
   "edit": "Editar",
-  "noPlansHere": "No hay programa para este día."
+  "noPlansHere": "No hay programa para este día.",
+  "theme": "Apariencia",
+  "darkMode": "Modo oscuro",
+  "lightMode": "Modo claro"
 }

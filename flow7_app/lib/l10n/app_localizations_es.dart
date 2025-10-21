@@ -395,13 +395,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'La hora de fin debe ser posterior a la hora de inicio';
 
   @override
-  String get theme => 'Appearance';
+  String get theme => 'Apariencia';
 
   @override
-  String get darkMode => 'Dark Mode';
+  String get darkMode => 'Modo oscuro';
 
   @override
-  String get lightMode => 'Light Mode';
+  String get lightMode => 'Modo claro';
 
   @override
   String get edit => 'Editar';
