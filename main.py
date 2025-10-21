@@ -10,6 +10,8 @@ import os
 from datetime import datetime, date as PyDate, time as PyTime, timedelta, timezone
 from typing import List, Optional
 from uuid import uuid4
+import base64
+import json
 
 import uvicorn
 from dotenv import load_dotenv
@@ -126,15 +128,35 @@ USER_SUBSCRIPTIONS = {}
 async def get_current_user(token: HTTPAuthorizationCredentials = Security(token_auth_scheme)) -> User:
     """
     Authorization başlığından gelen Bearer token'ı doğrular ve kullanıcıyı döndürür.
-    Bu fonksiyon şimdilik token'ı doğrulamak yerine, onu doğrudan kullanıcı kimliği olarak kullanır.
+    Development: token ya doğrudan uid olabilir ya da Firebase idToken (JWT) olabilir.
+    Eğer JWT gelirse payload'tan 'sub' / 'user_id' / 'uid' / 'email' alanlarını alarak uid elde etmeye çalışır.
     GERÇEK PROJEDE: Token'ı burada Firebase Admin SDK veya başka bir JWT kütüphanesi ile doğrulayın.
     """
     id_token = token.credentials
     if not id_token:
         raise HTTPException(status_code=401, detail="Kimlik doğrulama token'ı sağlanmadı.")
     try:
-        uid = id_token  # development: token içerigini uid olarak kullanıyoruz
-        # Eğer USER_SUBSCRIPTIONS'da kayıt varsa level'ı al, yoksa FREE
+        uid = id_token  # default: token itself as uid (dev mode)
+
+        # Eğer token JWT formatındaysa (header.payload.signature), payload'tan sub/user_id çıkarmaya çalış
+        if isinstance(id_token, str) and '.' in id_token:
+            try:
+                parts = id_token.split('.')
+                if len(parts) >= 2:
+                    payload_b64 = parts[1]
+                    # base64url padding
+                    rem = len(payload_b64) % 4
+                    if rem:
+                        payload_b64 += '=' * (4 - rem)
+                    payload_json = base64.urlsafe_b64decode(payload_b64.encode('utf-8')).decode('utf-8')
+                    payload = json.loads(payload_json)
+                    # common claim names
+                    uid = payload.get('sub') or payload.get('user_id') or payload.get('uid') or payload.get('email') or uid
+            except Exception:
+                # parsing başarısızsa fallback olarak token'ı uid kabul et
+                uid = id_token
+
+        # Kullanıcının in-memory abonelik bilgisi varsa al
         sub_info = USER_SUBSCRIPTIONS.get(uid)
         subscription = sub_info["level"] if sub_info and "level" in sub_info else "FREE"
         return User(uid=uid, subscription=subscription)
@@ -183,7 +205,7 @@ def plan_to_out(plan: PlanORM) -> dict:
     return {
         "id": plan.id,
         "user_id": plan.user_id,
-        "date": plan.date,
+        "date": plan.date.isoformat(),  # <-- string olarak döndür
         "start_time": time_to_str(plan.start_time),
         "end_time": time_to_str(plan.end_time),
         "title": plan.title,

@@ -62,19 +62,49 @@ class ProgramPageState extends State<ProgramPage> {
     return _getStartOfWeek(DateTime.now()).add(Duration(days: weekOffset * 7));
   }
 
-  void _groupAndSortPlans(List<Map<String, dynamic>> plans) {
-    // Planları tarihe göre grupla
-    final grouped = groupBy(plans, (plan) => (plan['date'] as String).substring(0, 10));
-    
-    // Her günün planlarını başlangıç saatine göre sırala
-    grouped.forEach((date, planList) {
-      planList.sort((a, b) {
-        final startTimeA = a['start_time'] as String? ?? '00:00';
-        final startTimeB = b['start_time'] as String? ?? '00:00';
-        return startTimeA.compareTo(startTimeB);
+  void _groupAndSortPlans(List<Map<String, dynamic>> plans, {bool merge = false}) 
+  {
+    // Eğer birleştirme yapılıyorsa, yeni bir geçici harita oluştur.
+    // Yoksa, sadece mevcut haftanın planlarını içeren geçici harita oluştur.
+    final Map<String, List<Map<String, dynamic>>> newGrouped = {};
+
+      // 1. Yeni verileri grupla
+      final newlyGrouped = groupBy(plans, (plan) {
+        final rawDate = plan['date'];
+        if (rawDate is String && rawDate.length >= 10) {
+          return rawDate.substring(0, 10);
+        } else if (rawDate is DateTime) {
+          return DateFormat('yyyy-MM-dd').format(rawDate);
+        } else {
+          return rawDate.toString().substring(0, 10);
+        }
       });
-    });
-    _groupedPlans = grouped;
+
+      // 2. Birleştirme (Merge) İşlemi
+      if (merge) {
+          // Mevcut haritanın bir kopyasını al (tüm haftalar)
+          newGrouped.addAll(_groupedPlans);
+
+          // Yeni gelen haftalık verileri, mevcut kopyanın üzerine yaz (replace)
+          newlyGrouped.forEach((dateKey, plansList) {
+              newGrouped[dateKey] = plansList;
+          });
+      } else {
+          // Sadece yeni gelen haftalık veriyi kullan (mevcut haftayı ilk yükleme gibi)
+          newGrouped.addAll(newlyGrouped);
+      }
+
+      // 3. Sıralama İşlemi
+      newGrouped.forEach((date, planList) {
+        planList.sort((a, b) {
+          final startTimeA = a['start_time'] as String? ?? '00:00';
+          final startTimeB = b['start_time'] as String? ?? '00:00';
+          return startTimeA.compareTo(startTimeB);
+        });
+      });
+
+      // State'i güncelle
+      _groupedPlans = newGrouped;
   }
 
   bool _isSameDate(DateTime a, DateTime b) {
@@ -98,7 +128,7 @@ class ProgramPageState extends State<ProgramPage> {
       
       if (mounted) {
         setState(() {
-          _groupAndSortPlans(plans);
+          _groupAndSortPlans(plans, merge: true);
           _isLoading = false;
         });
       }
@@ -150,7 +180,7 @@ class ProgramPageState extends State<ProgramPage> {
           final plans = await _apiService.getUserPlans(widget.idToken, rangeStart, rangeEnd);
           if (mounted) {
             setState(() {
-              _groupAndSortPlans(plans);
+              _groupAndSortPlans(plans, merge: true);
               _isLoading = false;
               _errorMessage = null;
             });
