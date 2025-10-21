@@ -20,15 +20,14 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderStateMixin {
   bool _isSavingLanguage = false;
   bool _isSavingNotifications = false;
-  String _currentTheme = 'LIGHT';
+  String _currentTheme = 'DARK';
   bool _isSavingTheme = false; // <- yeni alan
   // ignore: unused_field
   bool _isLoadingProfile = false;
 
   bool _notificationsEnabled = true;
   String _currentLanguageCode = 'en';
-  String? _username; // stored local editable username
-  int _userScore = 0;
+  String? _username; 
 
   late final AnimationController _animationController;
 
@@ -72,20 +71,17 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
         final firebaseName = FirebaseAuth.instance.currentUser?.displayName;
         final backendUsername = (profile['username'] as String?) ?? '';
         final languageCode = (profile['language_code'] as String?) ?? 'en';
-        final score = (profile['score'] as int?) ?? 0;
         final notifications = (profile['notifications_enabled'] as bool?) ?? true;
-        final themePreference = (profile['theme_preference'] as String?) ?? 'LIGHT';
+        final themePreference = (profile['theme_preference'] as String?) ?? 'DARK';
 
         setState(() {
           _currentLanguageCode = languageCode;
           _username = (firebaseName != null && firebaseName.isNotEmpty) ? firebaseName : (backendUsername.isNotEmpty ? backendUsername : null);
-          _userScore = score;
           _notificationsEnabled = notifications;
           _currentTheme = themePreference;
         });
 
         Provider.of<LocaleProvider>(context, listen: false).setLocale(_currentLanguageCode);
-        // apply theme preference from backend immediately
         Provider.of<ThemeNotifier>(context, listen: false).setTheme(_currentTheme);
       } else {
         throw Exception('Failed to load profile: ${response.statusCode}');
@@ -142,17 +138,19 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
       final token = await _getIdToken();
       if (token == null) throw Exception("User not logged in");
 
-      final uri = Uri.parse("$backendBaseUrl/user/language/").replace(queryParameters: {'language_code': langCode});
-      final response = await http.put(uri, headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'});
-
+      final uri = Uri.parse("$backendBaseUrl/user/language/");
+      final body = jsonEncode({'language_code': langCode});
+      final response = await http.put(uri, headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'}, body: body);
       if (response.statusCode == 200) {
         Provider.of<LocaleProvider>(context, listen: false).setLocale(langCode);
         setState(() => _currentLanguageCode = langCode);
       } else {
-        throw Exception('Failed to save language');
+        debugPrint('Failed to save language: ${response.statusCode} ${response.body}');
+        final serverMsg = _extractServerMessage(response.body);
+        throw Exception(serverMsg ?? 'Failed to save language');
       }
     } catch (e) {
-      if (mounted) _showErrorSnackBar(AppLocalizations.of(context)?.failedToSaveLanguage ?? "Failed to save language");
+      if (mounted) _showErrorSnackBar(AppLocalizations.of(context)?.failedToSaveLanguage ?? "Failed to save language: $e");
     } finally {
       if (mounted) setState(() => _isSavingLanguage = false);
     }
@@ -168,21 +166,33 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
       final token = await _getIdToken();
       if (token == null) throw Exception("User not logged in");
 
-      // Send as query parameter (backend may expect ?enabled=true/false)
-      final uri = Uri.parse("$backendBaseUrl/user/notifications/").replace(queryParameters: {'enabled': isEnabled.toString()});
-      final response = await http.put(uri, headers: {'Authorization': 'Bearer $token'});
+      final uri = Uri.parse("$backendBaseUrl/user/notifications/");
+      final body = jsonEncode({'enabled': isEnabled});
+      final response = await http.put(uri, headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'}, body: body);
       if (response.statusCode != 200) {
-        // log server response for debugging
         debugPrint('Failed to save notifications: ${response.statusCode} ${response.body}');
-        throw Exception('Failed to save setting');
+        final serverMsg = _extractServerMessage(response.body);
+        throw Exception(serverMsg ?? 'Failed to save notification setting');
       }
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar(AppLocalizations.of(context)?.failedToSaveNotification ?? "Failed to save notification setting");
+        _showErrorSnackBar(AppLocalizations.of(context)?.failedToSaveNotification ?? "Failed to save notification setting: $e");
         setState(() => _notificationsEnabled = !isEnabled);
       }
     } finally {
       if (mounted) setState(() => _isSavingNotifications = false);
+    }
+  }
+
+  // Helper to try to extract a readable message from backend JSON
+  String? _extractServerMessage(String body) {
+    try {
+      final Map<String, dynamic> m = jsonDecode(body) as Map<String, dynamic>;
+      if (m.containsKey('detail')) return m['detail'].toString();
+      if (m.containsKey('message')) return m['message'].toString();
+      return null;
+    } catch (_) {
+      return null;
     }
   }
 
@@ -289,7 +299,6 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
     final provider = Provider.of<UserProvider?>(context);
     final profile = provider?.profile;
     final displayName = (profile as dynamic)?.username ?? _username ?? localizations.anonymous ?? 'Anonymous';
-    final score = (profile as dynamic)?.score ?? _userScore;
 
     // determine "member since" year: prefer Firebase creation time, fallback to backend field(s) or just show label
     String memberSinceText = localizations.memberSince;
@@ -332,8 +341,8 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
+                      // show only username (no score)
                       Expanded(child: Text(displayName, style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
-                      Container(padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h), decoration: BoxDecoration(color: theme.colorScheme.primary, borderRadius: BorderRadius.circular(12.r)), child: Row(children: [Icon(Icons.star, size: 16.sp, color: Colors.yellow.shade700), SizedBox(width: 6.w), Text('$score', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))])),
                     ]),
                     SizedBox(height: 4.h),
                     // show "Member since YYYY" when possible

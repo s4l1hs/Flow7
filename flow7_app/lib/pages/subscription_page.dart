@@ -5,12 +5,6 @@ import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import '../providers/user_provider.dart';
 
-// UserProfile ve SubscriptionUpdate için (importların artık mevcut olduğunu varsayıyoruz)
-// import '../models/user_models.dart'; 
-
-// NOT: Bu sayfada IAP servisi (örneğin in_app_purchase paketi) entegrasyonu
-// yapılmamıştır. Satın alma butonları sadece simülasyon amaçlı bir API çağrısı yapar.
-
 class SubscriptionPage extends StatefulWidget {
   final String idToken;
   const SubscriptionPage({super.key, required this.idToken});
@@ -92,7 +86,6 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
 
     return Scaffold(
       appBar: AppBar(
-        // remove visible title as requested
         title: const SizedBox.shrink(),
         centerTitle: true,
         elevation: 0,
@@ -103,7 +96,6 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Hero header
             SizedBox(height: 8.h),
             Row(
               children: [
@@ -115,7 +107,9 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                         colors: [theme.colorScheme.primary.withOpacity(0.18), theme.colorScheme.secondary.withOpacity(0.06)],
                       ),
                       borderRadius: BorderRadius.circular(16.r),
-                      boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10.r, offset: Offset(0,6.h))],
+                      boxShadow: [
+                        BoxShadow(color: theme.brightness == Brightness.dark ? Colors.black45 : Colors.black12, blurRadius: 16.r, offset: Offset(0,6.h))
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -134,7 +128,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(colors: [theme.colorScheme.primary, theme.colorScheme.secondary]),
-                    boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 12.r, offset: Offset(0,6.h))],
+                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10.r, offset: Offset(0,6.h))],
                   ),
                   child: Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 32.sp),
                 )
@@ -142,7 +136,6 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
             ),
             SizedBox(height: 20.h),
 
-            // Horizontal plans
             SizedBox(
               height: 420.h,
               child: ListView.builder(
@@ -160,7 +153,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
             ),
             SizedBox(height: 18.h),
             Center(
-              child: Text(localizations.subscriptionNote, style: TextStyle(color: Colors.grey.shade400, fontSize: 12.sp), textAlign: TextAlign.center),
+              child: Text(localizations.subscriptionNote, style: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.7) ?? Colors.grey.shade400, fontSize: 12.sp), textAlign: TextAlign.center),
             ),
             SizedBox(height: 8.h),
             if (_isProcessing) Center(child: Padding(padding: EdgeInsets.only(top: 8.h), child: CircularProgressIndicator()))
@@ -194,11 +187,13 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           padding: EdgeInsets.all(18.w),
           decoration: BoxDecoration(
             gradient: isCurrent
-                ? LinearGradient(colors: [cardColor.withOpacity(0.22), cardColor.withOpacity(0.06)])
-                : LinearGradient(colors: [Colors.white10, Colors.white12]),
+                ? LinearGradient(colors: [cardColor.withOpacity(0.20), cardColor.withOpacity(0.06)])
+                : LinearGradient(colors: [theme.brightness == Brightness.dark ? Colors.white10 : Colors.white.withOpacity(0.02), theme.brightness == Brightness.dark ? Colors.white12 : Colors.white.withOpacity(0.03)]),
             borderRadius: BorderRadius.circular(20.r),
-            border: isCurrent ? Border.all(color: cardColor.withOpacity(0.9), width: 2.w) : Border.all(color: Colors.white12),
-            boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 18.r, offset: Offset(0,10.h))],
+            border: isCurrent ? Border.all(color: cardColor.withOpacity(0.14), width: 1.5.w) : Border.all(color: Colors.transparent),
+            boxShadow: [
+              BoxShadow(color: theme.brightness == Brightness.dark ? Colors.black45 : Colors.black12, blurRadius: 18.r, offset: Offset(0,10.h))
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,13 +205,22 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                     child: Row(
                       children: [
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-                          decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(8.r)),
-                          child: Text(plan['title'] as String, style: TextStyle(color: Colors.black87, fontSize: 18.sp, fontWeight: FontWeight.w900)),
+                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                          decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(10.r), boxShadow: [
+                            BoxShadow(color: cardColor.withOpacity(0.12), blurRadius: 8.r, offset: Offset(0,4.h))
+                          ]),
+                          child: Text(plan['title'] as String, style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900)),
                         ),
-                        SizedBox(width: 8.w),
+                        SizedBox(width: 10.w),
                         if (!isFree)
-                          Text(plan['price'] as String, style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w800)),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                            decoration: BoxDecoration(
+                              color: theme.brightness == Brightness.dark ? Colors.white12 : Colors.black12,
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            child: Text(plan['price'] as String, style: TextStyle(color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87, fontWeight: FontWeight.w700)),
+                          ),
                       ],
                     ),
                   ),
@@ -224,7 +228,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.18),
+                        color: theme.brightness == Brightness.dark ? Colors.white12 : Colors.black12,
                         borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: Text(localizations.current, style: TextStyle(color: cardColor, fontWeight: FontWeight.bold)),
@@ -233,15 +237,14 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
               ),
               SizedBox(height: 12.h),
 
-              // accent separator
-              Container(height: 2.h, width: 60.w, decoration: BoxDecoration(gradient: LinearGradient(colors: [cardColor, cardColor.withOpacity(0.6)]), borderRadius: BorderRadius.circular(12.r))),
+              Container(height: 3.h, width: 60.w, decoration: BoxDecoration(gradient: LinearGradient(colors: [cardColor.withOpacity(0.9), cardColor.withOpacity(0.5)]), borderRadius: BorderRadius.circular(12.r))),
               SizedBox(height: 14.h),
 
               // features
               ...((plan['features'] as List<Map<String, dynamic>>).map((feature) {
                 final bool featureActive = !(planLevel == 'free' && !(feature['is_pro'] as bool));
                 final Color iconColor = featureActive ? (planLevel == 'ultra' ? theme.colorScheme.secondary : (planLevel == 'pro' ? theme.colorScheme.primary : Colors.grey)) : Colors.grey.shade600;
-                final Color textColor = featureActive ? Colors.white : Colors.grey.shade500;
+                final Color textColor = featureActive ? (theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87) : Colors.grey.shade500;
                 return Padding(
                   padding: EdgeInsets.symmetric(vertical: 8.h),
                   child: Row(
@@ -251,7 +254,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                         height: 36.w,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: featureActive ? iconColor.withOpacity(0.18) : Colors.white10,
+                          color: featureActive ? iconColor.withOpacity(0.16) : (theme.brightness == Brightness.dark ? Colors.white10 : Colors.black12),
                         ),
                         child: Icon(feature['icon'] as IconData, size: 18.sp, color: iconColor),
                       ),
@@ -278,7 +281,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                           decoration: BoxDecoration(
                             gradient: LinearGradient(colors: [cardColor.withOpacity(0.95), cardColor.withOpacity(0.7)]),
                             borderRadius: BorderRadius.circular(12.r),
-                            boxShadow: [BoxShadow(color: cardColor.withOpacity(0.24), blurRadius: 12.r, offset: Offset(0,6.h))],
+                            boxShadow: [BoxShadow(color: cardColor.withOpacity(0.18), blurRadius: 12.r, offset: Offset(0,6.h))],
                           ),
                         ),
                       ),
@@ -286,7 +289,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                     ElevatedButton(
                       onPressed: isCurrent || _isProcessing ? null : () => _simulatePurchase(planLevel),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isCurrent ? Colors.grey.shade800 : Colors.transparent,
+                        backgroundColor: isCurrent ? (theme.brightness == Brightness.dark ? Colors.grey.shade800 : Colors.grey.shade300) : Colors.transparent,
                         shadowColor: Colors.transparent,
                         padding: EdgeInsets.symmetric(vertical: 14.h),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),

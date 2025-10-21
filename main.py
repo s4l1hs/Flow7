@@ -117,7 +117,7 @@ class User(BaseModel):
     """Doğrulanmış kullanıcıyı temsil eden model."""
     uid: str
     subscription: str = "FREE" # DB'den veya token'dan alınabilir
-    theme_preference: str = "LIGHT"
+    theme_preference: str = "DARK"
 
 # Token doğrulama şeması
 token_auth_scheme = HTTPBearer()
