@@ -208,8 +208,69 @@ class ProgramPageState extends State<ProgramPage> {
     }
   }
 
-  void _onDeletePlan(String planId) {
-    _handleApiResponse(_apiService.deletePlan(widget.idToken, planId));
+  // Yardımcı: bir planı groupedPlans içine ekle veya güncelle
+  void _insertOrUpdatePlan(Map<String, dynamic> plan) {
+    final dateKey = (plan['date'] as String).substring(0, 10);
+    // önce mevcut her yerde aynı id varsa çıkar
+    final keys = _groupedPlans.keys.toList();
+    for (final k in keys) {
+      _groupedPlans[k]?.removeWhere((p) => p['id'] == plan['id']);
+      if (_groupedPlans[k]?.isEmpty ?? false) _groupedPlans.remove(k);
+    }
+
+    final list = _groupedPlans[dateKey] ?? <Map<String, dynamic>>[];
+    list.add(Map<String, dynamic>.from(plan));
+    list.sort((a, b) {
+      final aStart = a['start_time'] as String? ?? '00:00';
+      final bStart = b['start_time'] as String? ?? '00:00';
+      return aStart.compareTo(bStart);
+    });
+    _groupedPlans[dateKey] = list;
+    if (mounted) setState(() {});
+  }
+
+  // Yardımcı: id'ye göre planı tüm gruplardan çıkar
+  void _removePlanById(String id) {
+    bool changed = false;
+    final keys = _groupedPlans.keys.toList();
+    for (final k in keys) {
+      final before = _groupedPlans[k]?.length ?? 0;
+      _groupedPlans[k]?.removeWhere((p) => p['id'] == id);
+      final after = _groupedPlans[k]?.length ?? 0;
+      if (after == 0) _groupedPlans.remove(k);
+      if (after != before) changed = true;
+    }
+    if (changed && mounted) setState(() {});
+  }
+
+  // DELETE: optimistik olarak UI'dan kaldır, API başarısız olursa geri koy
+  void _onDeletePlan(String planId) async {
+    // yedekle (ilk bulunan plan)
+    Map<String, dynamic>? backup;
+    for (final list in _groupedPlans.values) {
+      for (final p in list) {
+        if (p['id'] == planId) {
+          backup = Map<String, dynamic>.from(p);
+          break;
+        }
+      }
+      if (backup != null) break;
+    }
+
+    // optimistik kaldır
+    _removePlanById(planId);
+
+    try {
+      await _apiService.deletePlan(widget.idToken, planId);
+      // başarılıysa sunucudan mevcut haftayı tazeleyebiliriz (opsiyonel)
+      await _fetchPlansForWeek(_currentWeekStart, showLoading: false);
+    } catch (e) {
+      // hata -> geri koy
+      if (backup != null) _insertOrUpdatePlan(backup);
+      if (!mounted) return;
+      final err = e is ApiException ? e.message : AppLocalizations.of(context)!.errorOccurred;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err), backgroundColor: Theme.of(context).colorScheme.error));
+    }
   }
 
   void _onCreatePlan(Map<String, dynamic> data) {
