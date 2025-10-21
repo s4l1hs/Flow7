@@ -255,6 +255,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get points => 'Points';
 
   @override
+  String get weeks => 'weeks';
+
+  @override
   String get pointsEarned => 'Points Earned';
 
   @override
@@ -393,4 +396,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get lightMode => 'Light Mode';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get noPlansHere => 'No plans for this day.';
 }

@@ -256,6 +256,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get points => 'Puan';
 
   @override
+  String get weeks => 'hafta';
+
+  @override
   String get pointsEarned => 'Kazanılan Puan';
 
   @override
@@ -395,4 +398,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get lightMode => 'Açık Mod';
+
+  @override
+  String get edit => 'Düzenle';
+
+  @override
+  String get noPlansHere => 'Bugün için program bulunmuyor.';
 }

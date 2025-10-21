@@ -255,6 +255,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get points => 'نقاط';
 
   @override
+  String get weeks => 'أسابيع';
+
+  @override
   String get pointsEarned => 'النقاط المكتسبة';
 
   @override
@@ -392,4 +395,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get lightMode => 'الوضع الفاتح';
+
+  @override
+  String get edit => 'تعديل';
+
+  @override
+  String get noPlansHere => 'لا يوجد برنامج لهذا اليوم.';
 }

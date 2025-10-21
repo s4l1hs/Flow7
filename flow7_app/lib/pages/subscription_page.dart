@@ -48,12 +48,15 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
     final userProvider = Provider.of<UserProvider>(context);
     final currentLevel = userProvider.profile?.subscriptionLevel ?? 'free';
 
+    // Plan definitions with week limits + extra perks
     final List<Map<String, dynamic>> plans = [
       {
         'level': 'free',
         'title': localizations.planFree,
         'color': Colors.grey.shade700,
         'price': localizations.free,
+        'limitWeeks': 2,
+        'perks': ['Basic support'],
         'features': [
           {'icon': Icons.quiz_outlined, 'text': '3 ${localizations.questionsPerDay}', 'is_pro': false},
           {'icon': Icons.whatshot_outlined, 'text': '3 ${localizations.challengesPerDay}', 'is_pro': false},
@@ -65,6 +68,8 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
         'title': localizations.planPro,
         'color': theme.colorScheme.primary,
         'price': '\$4.99 / ${localizations.month}',
+        'limitWeeks': 4,
+        'perks': ['Priority support', 'Custom reminders'],
         'features': [
           {'icon': Icons.quiz_outlined, 'text': '5 ${localizations.questionsPerDay}', 'is_pro': true},
           {'icon': Icons.whatshot_outlined, 'text': '5 ${localizations.challengesPerDay}', 'is_pro': true},
@@ -76,6 +81,8 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
         'title': localizations.planUltra,
         'color': theme.colorScheme.secondary,
         'price': '\$9.99 / ${localizations.month}',
+        'limitWeeks': 8,
+        'perks': ['Priority support', 'Offline access', 'Exclusive badge', 'Early access'],
         'features': [
           {'icon': Icons.quiz_outlined, 'text': localizations.unlimitedQuizzes, 'is_pro': true},
           {'icon': Icons.whatshot_outlined, 'text': localizations.unlimitedChallenges, 'is_pro': true},
@@ -239,6 +246,25 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
 
               Container(height: 3.h, width: 60.w, decoration: BoxDecoration(gradient: LinearGradient(colors: [cardColor.withOpacity(0.9), cardColor.withOpacity(0.5)]), borderRadius: BorderRadius.circular(12.r))),
               SizedBox(height: 14.h),
+
+              // visual chips: plan duration limit + perks
+              Wrap(
+                spacing: 8.w,
+                runSpacing: 8.h,
+                children: [
+                  Chip(
+                    label: Text('Up to ${plan['limitWeeks']} ${localizations.weeks}', style: TextStyle(fontWeight: FontWeight.w700, color: theme.brightness == Brightness.dark ? Colors.black : Colors.white)),
+                    backgroundColor: cardColor,
+                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                  ),
+                  ...((plan['perks'] as List<String>).map((p) => Chip(
+                        label: Text(p, style: TextStyle(fontSize: 12.sp)),
+                        backgroundColor: theme.brightness == Brightness.dark ? Colors.white10 : Colors.black12,
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                      ))),
+                ],
+              ),
+              SizedBox(height: 12.h),
 
               // features
               ...((plan['features'] as List<Map<String, dynamic>>).map((feature) {

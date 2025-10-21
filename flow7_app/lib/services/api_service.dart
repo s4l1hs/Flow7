@@ -203,4 +203,28 @@ class ApiService {
     final data = _handleResponse(response);
     return List<Map<String, dynamic>>.from(data);
   }
+
+  /// Kullanıcının dil tercihini günceller.
+  /// Backend endpoint: PUT /user/language/  body: {"language_code": "tr"}
+  Future<void> updateLanguage(String idToken, String languageCode) async {
+    final uri = Uri.parse("$backendBaseUrl/user/language/");
+    final response = await http.put(
+      uri,
+      headers: _getAuthHeaders(idToken),
+      body: jsonEncode({'language_code': languageCode}),
+    );
+    _handleResponse(response);
+  }
+
+  /// Kullanıcının bildirim tercihlerini günceller.
+  /// Backend endpoint: PUT /user/notifications/  body: {"enabled": true}
+  Future<void> updateNotificationSetting(String idToken, bool enabled) async {
+    final uri = Uri.parse("$backendBaseUrl/user/notifications/");
+    final response = await http.put(
+      uri,
+      headers: _getAuthHeaders(idToken),
+      body: jsonEncode({'enabled': enabled}),
+    );
+    _handleResponse(response);
+  }
 }

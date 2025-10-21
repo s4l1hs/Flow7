@@ -62,6 +62,7 @@
   "planUltra": "Ultra Plan",
   "free": "Ücretsiz",
   "month": "Ay",
+  "weeks": "hafta",
   "questionsPerDay": "Soru/Gün",
   "challengesPerDay": "Meydan Okuma/Gün",
   "notificationPerDay": "Bildirim/Gün",
@@ -126,5 +127,7 @@
   "endTimeError": "Bitiş zamanı, başlangıç zamanından sonra olmalıdır",
   "theme": "Görünüm",
   "darkMode": "Karanlık Mod",
-  "lightMode": "Açık Mod"
+  "lightMode": "Açık Mod",
+  "edit": "Düzenle",
+  "noPlansHere": "Bugün için program bulunmuyor."
 }

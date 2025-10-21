@@ -253,6 +253,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get points => '积分';
 
   @override
+  String get weeks => '周';
+
+  @override
   String get pointsEarned => '赢得积分';
 
   @override
@@ -389,4 +392,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get lightMode => '浅色模式';
+
+  @override
+  String get edit => '编辑';
+
+  @override
+  String get noPlansHere => '这一天没有计划。';
 }

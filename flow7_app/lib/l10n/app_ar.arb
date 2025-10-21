@@ -63,6 +63,7 @@
   "planUltra": "خطة ألترا",
   "free": "مجاني",
   "month": "شهر",
+  "weeks": "أسابيع",
   "questionsPerDay": "أسئلة/يوم",
   "challengesPerDay": "تحديات/يوم",
   "notificationPerDay": "إشعار/يوم",
@@ -127,5 +128,7 @@
   "endTimeError": "يجب أن تكون ساعة الانتهاء بعد ساعة البدء",
   "theme": "المظهر",
   "darkMode": "الوضع الداكن",
-  "lightMode": "الوضع الفاتح"
+  "lightMode": "الوضع الفاتح",
+  "edit": "تعديل",
+  "noPlansHere": "لا يوجد برنامج لهذا اليوم."
 }

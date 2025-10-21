@@ -258,6 +258,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get points => 'Puntos';
 
   @override
+  String get weeks => 'semanas';
+
+  @override
   String get pointsEarned => 'Puntos Ganados';
 
   @override
@@ -392,11 +395,17 @@ class AppLocalizationsEs extends AppLocalizations {
       'La hora de fin debe ser posterior a la hora de inicio';
 
   @override
-  String get theme => 'Apariencia';
+  String get theme => 'Appearance';
 
   @override
-  String get darkMode => 'Modo oscuro';
+  String get darkMode => 'Dark Mode';
 
   @override
-  String get lightMode => 'Modo claro';
+  String get lightMode => 'Light Mode';
+
+  @override
+  String get edit => 'Editar';
+
+  @override
+  String get noPlansHere => 'No hay programa para este día.';
 }

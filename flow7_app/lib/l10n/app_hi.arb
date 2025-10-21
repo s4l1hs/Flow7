@@ -62,6 +62,7 @@
   "planUltra": "अल्ट्रा योजना",
   "free": "मुफ्त",
   "month": "माह",
+  "weeks": "सप्ताह",
   "questionsPerDay": "प्रश्न/दिन",
   "challengesPerDay": "चुनौतियाँ/दिन",
   "notificationPerDay": "सूचना/दिन",
@@ -126,5 +127,7 @@
   "endTimeError": "समाप्ति समय को प्रारंभ समय के बाद होना चाहिए",
   "theme": "थीम",
   "darkMode": "डार्क मोड",
-  "lightMode": "लाइट मोड"
+  "lightMode": "लाइट मोड",
+  "edit": "संपादित करें",
+  "noPlansHere": "इस दिन के लिए कोई कार्यक्रम नहीं है।"
 }

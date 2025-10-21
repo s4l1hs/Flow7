@@ -68,6 +68,7 @@
   "planUltra": "Ultra Plan",
   "free": "Kostenlos",
   "month": "Monat",
+  "weeks": "Wochen",
   "questionsPerDay": "Fragen/Tag",
   "challengesPerDay": "Herausforderungen/Tag",
   "notificationPerDay": "Benachrichtigung/Tag",
@@ -132,8 +133,6 @@
   "editProgram": "Programm bearbeiten",
   "requiredField": "Dieses Feld ist erforderlich",
   "endTimeError": "Die Endzeit muss nach der Startzeit liegen",
-
-  "theme": "Darstellung",
-  "darkMode": "Dunkler Modus",
-  "lightMode": "Heller Modus"
+  "edit": "Bearbeiten",
+  "noPlansHere": "Für diesen Tag sind keine Programme vorhanden."
 }

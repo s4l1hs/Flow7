@@ -255,6 +255,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get points => 'Очки';
 
   @override
+  String get weeks => 'недели';
+
+  @override
   String get pointsEarned => 'Очков Заработано';
 
   @override
@@ -393,4 +396,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get lightMode => 'Светлая тема';
+
+  @override
+  String get edit => 'Редактировать';
+
+  @override
+  String get noPlansHere => 'В этот день нет планов.';
 }

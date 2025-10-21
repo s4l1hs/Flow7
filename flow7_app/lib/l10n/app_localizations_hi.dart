@@ -255,6 +255,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get points => 'अंक';
 
   @override
+  String get weeks => 'सप्ताह';
+
+  @override
   String get pointsEarned => 'प्राप्त अंक';
 
   @override
@@ -393,4 +396,10 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get lightMode => 'लाइट मोड';
+
+  @override
+  String get edit => 'संपादित करें';
+
+  @override
+  String get noPlansHere => 'इस दिन के लिए कोई कार्यक्रम नहीं है।';
 }

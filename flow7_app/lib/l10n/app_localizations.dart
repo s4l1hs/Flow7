@@ -602,6 +602,12 @@ abstract class AppLocalizations {
   /// **'Points'**
   String get points;
 
+  /// No description provided for @weeks.
+  ///
+  /// In en, this message translates to:
+  /// **'weeks'**
+  String get weeks;
+
   /// No description provided for @pointsEarned.
   ///
   /// In en, this message translates to:
@@ -877,6 +883,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Light Mode'**
   String get lightMode;
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// No description provided for @noPlansHere.
+  ///
+  /// In en, this message translates to:
+  /// **'No plans for this day.'**
+  String get noPlansHere;
 }
 
 class _AppLocalizationsDelegate

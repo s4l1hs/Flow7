@@ -435,9 +435,7 @@ class ProgramPageState extends State<ProgramPage> {
   }
   
   Widget _buildPlanList() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
     if (_errorMessage != null) {
       return Center(
         child: Padding(
@@ -446,39 +444,153 @@ class ProgramPageState extends State<ProgramPage> {
         ),
       );
     }
-    
+
     final key = _selectedDay != null ? DateFormat('yyyy-MM-dd').format(_selectedDay!) : null;
     final plansForDay = (key != null ? _groupedPlans[key] : null) ?? [];
 
     if (plansForDay.isEmpty) {
-      // Boş gün: kullanıcıya metin ile yönlendirme gösterilmesin.
-      // Sadece hafif bir ikon gösteriyoruz; plan eklemek için sağ-alt + tuşunu kullanın.
       return Center(
-        child: Icon(Icons.event_note_outlined, size: 72.r, color: Colors.grey.shade400),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.event_note_outlined, size: 72.r, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.18)),
+            SizedBox(height: 10.h),
+            Text(AppLocalizations.of(context)!.noPlansHere, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7))),
+          ],
+        ),
       );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.all(8.w),
+    return ListView.separated(
+      padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
       itemCount: plansForDay.length,
+      separatorBuilder: (_, __) => SizedBox(height: 12.h),
       itemBuilder: (context, index) {
         final plan = plansForDay[index];
-        return Card(
-          margin: EdgeInsets.symmetric(vertical: 4.h, horizontal: 8.w),
-          child: ListTile(
-            onTap: () => showPlanDialog(plan: plan), // DÜZENLEME İÇİN
-            leading: Text(
-              plan['start_time'] ?? '',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
-            ),
-            title: Text(plan['title'] ?? ''),
-            subtitle: plan['description'] != null && (plan['description'] as String).isNotEmpty
-                ? Text(plan['description'], maxLines: 1, overflow: TextOverflow.ellipsis)
-                : null,
-            trailing: IconButton(
-              icon: Icon(Icons.delete_outline, color: Colors.red.shade300),
-              onPressed: () => _showDeleteConfirmation(plan['id']),
-            ),
+        final start = plan['start_time'] ?? '';
+        final end = plan['end_time'] ?? '';
+        final title = plan['title'] ?? '';
+        final desc = (plan['description'] ?? '').toString();
+        final color = Theme.of(context).colorScheme.primary;
+
+        return GestureDetector(
+          onTap: () => showPlanDialog(plan: plan),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Time column + vertical line
+              SizedBox(
+                width: 72.w,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(start, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700, color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.85))),
+                    if ((end ?? '').isNotEmpty) Text(end, style: TextStyle(fontSize: 11.sp, color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7))),
+                    SizedBox(height: 6.h),
+                  ],
+                ),
+              ),
+
+              // Timeline indicators
+              Container(
+                width: 28.w,
+                alignment: Alignment.topCenter,
+                child: Column(
+                  children: [
+                    Container(width: 3.w, height: 12.h, color: Theme.of(context).dividerColor.withOpacity(0.6)),
+                    Container(
+                      margin: EdgeInsets.symmetric(vertical: 6.h),
+                      width: 12.w,
+                      height: 12.w,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        boxShadow: [BoxShadow(color: color.withOpacity(0.28), blurRadius: 8.r, offset: Offset(0, 4.h))],
+                      ),
+                    ),
+                    Expanded(child: Container(width: 3.w, color: Theme.of(context).dividerColor.withOpacity(0.06))),
+                  ],
+                ),
+              ),
+
+              // Card content
+              Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 360),
+                  curve: Curves.easeOutCubic,
+                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(14.r),
+                    boxShadow: [
+                      BoxShadow(color: Theme.of(context).brightness == Brightness.dark ? Colors.black45 : Colors.black12, blurRadius: 18.r, offset: Offset(0, 8.h)),
+                    ],
+                    border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.06)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(title, style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800, color: Theme.of(context).textTheme.bodyLarge?.color)),
+                          ),
+                          PopupMenuButton<String>(
+                            padding: EdgeInsets.zero,
+                            itemBuilder: (_) => [
+                              PopupMenuItem(value: 'edit', child: Text(AppLocalizations.of(context)!.edit)),
+                              PopupMenuItem(value: 'delete', child: Text(AppLocalizations.of(context)!.delete)),
+                            ],
+                            onSelected: (v) {
+                              if (v == 'edit') showPlanDialog(plan: plan);
+                              if (v == 'delete') _showDeleteConfirmation(plan['id']);
+                            },
+                            icon: Icon(Icons.more_vert, size: 18.sp, color: Theme.of(context).iconTheme.color?.withOpacity(0.7)),
+                          ),
+                        ],
+                      ),
+                      if (desc.isNotEmpty) ...[
+                        SizedBox(height: 6.h),
+                        Text(desc, style: TextStyle(fontSize: 13.sp, color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8)), maxLines: 2, overflow: TextOverflow.ellipsis),
+                      ],
+                      SizedBox(height: 10.h),
+                      Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).brightness == Brightness.dark ? Colors.white10 : Colors.black12,
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.schedule, size: 14.sp, color: Theme.of(context).textTheme.bodySmall?.color),
+                                SizedBox(width: 6.w),
+                                Text('$start ${end.isNotEmpty ? '• $end' : ''}', style: TextStyle(fontSize: 12.sp)),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          // example tag, if plan has tags show them (soft)
+                          if (plan['tag'] != null)
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                              decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8.r)),
+                              child: Text(plan['tag'].toString(), style: TextStyle(fontSize: 12.sp, color: color)),
+                            ),
+                          const Spacer(),
+                          IconButton(
+                            icon: Icon(Icons.delete_outline, color: Colors.red.shade300),
+                            onPressed: () => _showDeleteConfirmation(plan['id']),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -505,12 +617,14 @@ class PlanDialog extends StatefulWidget {
   State<PlanDialog> createState() => _PlanDialogState();
 }
 
-class _PlanDialogState extends State<PlanDialog> {
+class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _descController;
   late final TextEditingController _startTimeController;
   late final TextEditingController _endTimeController;
+
+  bool _appeared = false;
 
   @override
   void initState() {
@@ -518,9 +632,13 @@ class _PlanDialogState extends State<PlanDialog> {
     final plan = widget.plan;
     _titleController = TextEditingController(text: plan?['title'] ?? '');
     _descController = TextEditingController(text: plan?['description'] ?? '');
-    // normalize to HH:mm (24h) for consistent display/comparison
     _startTimeController = TextEditingController(text: plan?['start_time'] ?? '09:00');
     _endTimeController = TextEditingController(text: plan?['end_time'] ?? '10:00');
+
+    // küçük giriş animasyonu için flag'i aç
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _appeared = true);
+    });
   }
 
   @override
@@ -545,7 +663,6 @@ class _PlanDialogState extends State<PlanDialog> {
     final initial = TimeOfDay(hour: ih, minute: im);
     final selectedTime = await showTimePicker(context: context, initialTime: initial);
     if (selectedTime != null) {
-      // use 24h HH:mm format for consistency
       controller.text = '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}';
     }
   }
@@ -583,164 +700,180 @@ class _PlanDialogState extends State<PlanDialog> {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
-    return Dialog(
-      insetPadding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 24.h),
-      backgroundColor: theme.dialogBackgroundColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: 520.w),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header with date badge and title
-                Row(
+    // Animated scale + fade for smoother appearance
+    return AnimatedScale(
+      scale: _appeared ? 1.0 : 0.98,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutBack,
+      child: AnimatedOpacity(
+        opacity: _appeared ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 220),
+        child: Dialog(
+          insetPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
+          backgroundColor: theme.dialogBackgroundColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: 540.w),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 56.r,
-                      height: 56.r,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))],
-                      ),
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(DateFormat.d().format(widget.initialDate), style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16.sp)),
-                            Text(DateFormat.E(Localizations.localeOf(context).toString()).format(widget.initialDate), style: TextStyle(color: Colors.white70, fontSize: 11.sp)),
-                          ],
+                    // header
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 56.r,
+                          height: 56.r,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.9)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8.r, offset: Offset(0,4.h))],
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(DateFormat.d().format(widget.initialDate), style: TextStyle(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 16.sp)),
+                                Text(DateFormat.E(Localizations.localeOf(context).toString()).format(widget.initialDate), style: TextStyle(color: theme.colorScheme.onPrimary.withOpacity(0.9), fontSize: 11.sp)),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
+                        SizedBox(width: 14.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(isEditing ? loc.editProgram : loc.newProgram, style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700)),
+                              SizedBox(height: 4.h),
+                              Text(DateFormat.yMMMMd(Localizations.localeOf(context).toString()).format(widget.initialDate), style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 12.sp)),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(width: 14.w),
-                    Expanded(
+                    SizedBox(height: 16.h),
+                    Form(
+                      key: _formKey,
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(isEditing ? loc.editProgram : loc.newProgram, style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600)),
-                          SizedBox(height: 4.h),
-                          Text(DateFormat.yMMMMd(Localizations.localeOf(context).toString()).format(widget.initialDate), style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 12.sp)),
+                          TextFormField(
+                            controller: _titleController,
+                            decoration: InputDecoration(
+                              labelText: loc.titleLabel,
+                              prefixIcon: Icon(Icons.title_outlined),
+                              filled: true,
+                              fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+                            ),
+                            validator: (value) => (value == null || value.trim().isEmpty) ? loc.requiredField : null,
+                          ),
+                          SizedBox(height: 12.h),
+                          TextFormField(
+                            controller: _descController,
+                            decoration: InputDecoration(
+                              labelText: loc.descriptionLabel,
+                              prefixIcon: Icon(Icons.short_text),
+                              filled: true,
+                              fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+                            ),
+                            minLines: 1,
+                            maxLines: 3,
+                          ),
+                          SizedBox(height: 12.h),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _startTimeController,
+                                  decoration: InputDecoration(
+                                    labelText: loc.startLabel,
+                                    prefixIcon: Icon(Icons.schedule),
+                                    filled: true,
+                                    fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+                                    suffixIcon: Icon(Icons.access_time_outlined),
+                                  ),
+                                  readOnly: true,
+                                  onTap: () => _selectTime(context, _startTimeController),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) return loc.requiredField;
+                                    return null;
+                                  },
+                                ),
+                              ),
+                              SizedBox(width: 10.w),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _endTimeController,
+                                  decoration: InputDecoration(
+                                    labelText: loc.endLabel,
+                                    prefixIcon: Icon(Icons.schedule),
+                                    filled: true,
+                                    fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+                                    suffixIcon: Icon(Icons.access_time_outlined),
+                                  ),
+                                  readOnly: true,
+                                  onTap: () => _selectTime(context, _endTimeController),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) return loc.requiredField;
+                                    final s = _parseHm(_startTimeController.text);
+                                    final e = _parseHm(value);
+                                    if (s == null || e == null) return null;
+                                    if (!e.isAfter(s)) return loc.endTimeError;
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 18.h),
+
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                                    side: BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.12)),
+                                    foregroundColor: theme.colorScheme.onSurface,
+                                  ),
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: Text(loc.cancel, style: TextStyle(fontSize: 14.sp)),
+                                ),
+                              ),
+                              SizedBox(width: 12.w),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  icon: Icon(Icons.check, size: 18.sp),
+                                  label: Text(loc.save, style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600)),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                                    backgroundColor: theme.colorScheme.primary,
+                                    foregroundColor: theme.colorScheme.onPrimary, // ensures text/icon contrast
+                                  ),
+                                  onPressed: _submit,
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 16.h),
-
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        controller: _titleController,
-                        decoration: InputDecoration(
-                          labelText: loc.titleLabel,
-                          filled: true,
-                          fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
-                        ),
-                        validator: (value) => (value == null || value.trim().isEmpty) ? loc.requiredField : null,
-                      ),
-                      SizedBox(height: 12.h),
-                      TextFormField(
-                        controller: _descController,
-                        decoration: InputDecoration(
-                          labelText: loc.descriptionLabel,
-                          filled: true,
-                          fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
-                        ),
-                        minLines: 1,
-                        maxLines: 3,
-                      ),
-                      SizedBox(height: 12.h),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _startTimeController,
-                              decoration: InputDecoration(
-                                labelText: loc.startLabel,
-                                filled: true,
-                                fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
-                                suffixIcon: Icon(Icons.access_time_outlined),
-                              ),
-                              readOnly: true,
-                              onTap: () => _selectTime(context, _startTimeController),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) return loc.requiredField;
-                                return null;
-                              },
-                            ),
-                          ),
-                          SizedBox(width: 10.w),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _endTimeController,
-                              decoration: InputDecoration(
-                                labelText: loc.endLabel,
-                                filled: true,
-                                fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
-                                suffixIcon: Icon(Icons.access_time_outlined),
-                              ),
-                              readOnly: true,
-                              onTap: () => _selectTime(context, _endTimeController),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) return loc.requiredField;
-                                final s = _parseHm(_startTimeController.text);
-                                final e = _parseHm(value);
-                                if (s == null || e == null) return null;
-                                if (!e.isAfter(s)) return loc.endTimeError;
-                                return null;
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 18.h),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextButton(
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.symmetric(vertical: 14.h),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                                foregroundColor: theme.colorScheme.onSurface,
-                                backgroundColor: theme.colorScheme.surfaceVariant,
-                              ),
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: Text(loc.cancel, style: TextStyle(fontSize: 14.sp)),
-                            ),
-                          ),
-                          SizedBox(width: 12.w),
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                padding: EdgeInsets.symmetric(vertical: 14.h),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                                backgroundColor: theme.colorScheme.primary,
-                                elevation: 3,
-                              ),
-                              onPressed: _submit,
-                              child: Text(loc.save, style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

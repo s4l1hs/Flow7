@@ -68,6 +68,7 @@
   "planUltra": "至尊计划",
   "free": "免费",
   "month": "月",
+  "weeks": "周",
   "questionsPerDay": "问题/天",
   "challengesPerDay": "挑战/天",
   "notificationPerDay": "通知/天",
@@ -135,5 +136,7 @@
 
   "theme": "外观",
   "darkMode": "深色模式",
-  "lightMode": "浅色模式"
+  "lightMode": "浅色模式",
+  "edit": "编辑",
+  "noPlansHere": "这一天没有计划。"
 }

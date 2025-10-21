@@ -1,11 +1,3 @@
-# main.py
-# Flow7 Projesi için Geliştirilmiş FastAPI Arka Ucu
-# Yenilikler:
-# - Güvenli Token tabanlı kimlik doğrulama (JWT/Firebase uyumlu)
-# - Plan güncelleme (PUT) endpoint'i
-# - Daha temiz ve modüler kod yapısı
-# - Gelişmiş hata yönetimi ve Pydantic modelleri
-
 import os
 from datetime import datetime, date as PyDate, time as PyTime, timedelta, timezone
 from typing import List, Optional
@@ -375,7 +367,8 @@ def update_subscription(
 @app.get("/user/profile/", tags=["User"])
 def user_profile(current_user: User = Depends(get_current_user)):
     """
-    Basit profil endpoint'i: uid, subscriptionLevel, expires_at (varsa), theme_preference.
+    Basit profil endpoint'i: uid, subscriptionLevel, expires_at (varsa), theme_preference,
+    language_code ve notifications_enabled.
     """
     info = USER_SUBSCRIPTIONS.get(current_user.uid, {})
     expires = info.get("expires")
@@ -383,7 +376,11 @@ def user_profile(current_user: User = Depends(get_current_user)):
         "uid": current_user.uid,
         "subscriptionLevel": info.get("level", current_user.subscription),
         "expires_at": expires.isoformat() if expires else None,
-        "theme_preference": info.get("theme", current_user.theme_preference) 
+        "theme_preference": info.get("theme", current_user.theme_preference),
+        "language_code": info.get("language_code") or info.get("language") or "en",
+        "notifications_enabled": info.get("notifications_enabled") if "notifications_enabled" in info else True,
+        "username": info.get("username"),
+        "score": info.get("score", 0),
     }
 
 class ThemePreferenceUpdate(BaseModel):
@@ -410,6 +407,40 @@ def update_user_theme(
     USER_SUBSCRIPTIONS[uid] = user_info
     
     return {"uid": uid, "theme_preference": payload.theme}
+
+# --- ADD: Language & Notifications schemas ---
+class LanguageUpdate(BaseModel):
+    language_code: str = Field(..., min_length=2, max_length=8, description="ISO language code, e.g. 'en'")
+
+class NotificationsUpdate(BaseModel):
+    enabled: bool
+
+# --- ADD: language update endpoint ---
+@app.put("/user/language/", tags=["User"])
+def update_user_language(payload: LanguageUpdate, current_user: User = Depends(get_current_user)):
+    """
+    Kullanıcının tercih ettiği dili günceller.
+    Body: { "language_code": "tr" }
+    """
+    uid = current_user.uid
+    user_info = USER_SUBSCRIPTIONS.get(uid, {"level": current_user.subscription, "theme": current_user.theme_preference})
+    user_info["language_code"] = payload.language_code
+    USER_SUBSCRIPTIONS[uid] = user_info
+    return {"uid": uid, "language_code": payload.language_code}
+
+# --- ADD: notifications update endpoint ---
+@app.put("/user/notifications/", tags=["User"])
+def update_user_notifications(payload: NotificationsUpdate, current_user: User = Depends(get_current_user)):
+    """
+    Kullanıcının bildirim tercihlerini günceller.
+    Body: { "enabled": true }
+    """
+    uid = current_user.uid
+    user_info = USER_SUBSCRIPTIONS.get(uid, {"level": current_user.subscription, "theme": current_user.theme_preference})
+    user_info["notifications_enabled"] = bool(payload.enabled)
+    USER_SUBSCRIPTIONS[uid] = user_info
+    return {"uid": uid, "notifications_enabled": user_info["notifications_enabled"]}
+
 # --- 7. RUN THE APP ---
 # Bu blok, dosyanın doğrudan `python main.py` ile çalıştırılmasını sağlar.
 if __name__ == "__main__":

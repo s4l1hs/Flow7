@@ -62,6 +62,7 @@
   "planUltra": "ウルトラプラン",
   "free": "無料",
   "month": "月",
+  "weeks": "週間",
   "questionsPerDay": "質問/日",
   "challengesPerDay": "チャレンジ/日",
   "notificationPerDay": "通知/日",
@@ -128,5 +129,7 @@
   "endTimeError": "終了時刻は開始時刻より後でなければなりません",
   "theme": "外観",
   "darkMode": "ダークモード",
-  "lightMode": "ライトモード"
+  "lightMode": "ライトモード",
+  "edit": "編集",
+  "noPlansHere": "この日の予定はありません。"
 }

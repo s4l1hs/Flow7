@@ -253,6 +253,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get points => 'ポイント';
 
   @override
+  String get weeks => '週間';
+
+  @override
   String get pointsEarned => '獲得ポイント';
 
   @override
@@ -389,4 +392,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get lightMode => 'ライトモード';
+
+  @override
+  String get edit => '編集';
+
+  @override
+  String get noPlansHere => 'この日の予定はありません。';
 }

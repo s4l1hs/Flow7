@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -138,17 +139,10 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
       final token = await _getIdToken();
       if (token == null) throw Exception("User not logged in");
 
-      final uri = Uri.parse("$backendBaseUrl/user/language/");
-      final body = jsonEncode({'language_code': langCode});
-      final response = await http.put(uri, headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'}, body: body);
-      if (response.statusCode == 200) {
-        Provider.of<LocaleProvider>(context, listen: false).setLocale(langCode);
-        setState(() => _currentLanguageCode = langCode);
-      } else {
-        debugPrint('Failed to save language: ${response.statusCode} ${response.body}');
-        final serverMsg = _extractServerMessage(response.body);
-        throw Exception(serverMsg ?? 'Failed to save language');
-      }
+      final api = ApiService();
+      await api.updateLanguage(token, langCode);
+      Provider.of<LocaleProvider>(context, listen: false).setLocale(langCode);
+      setState(() => _currentLanguageCode = langCode);
     } catch (e) {
       if (mounted) _showErrorSnackBar(AppLocalizations.of(context)?.failedToSaveLanguage ?? "Failed to save language: $e");
     } finally {
@@ -166,14 +160,8 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
       final token = await _getIdToken();
       if (token == null) throw Exception("User not logged in");
 
-      final uri = Uri.parse("$backendBaseUrl/user/notifications/");
-      final body = jsonEncode({'enabled': isEnabled});
-      final response = await http.put(uri, headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'}, body: body);
-      if (response.statusCode != 200) {
-        debugPrint('Failed to save notifications: ${response.statusCode} ${response.body}');
-        final serverMsg = _extractServerMessage(response.body);
-        throw Exception(serverMsg ?? 'Failed to save notification setting');
-      }
+      final api = ApiService();
+      await api.updateNotificationSetting(token, isEnabled);
     } catch (e) {
       if (mounted) {
         _showErrorSnackBar(AppLocalizations.of(context)?.failedToSaveNotification ?? "Failed to save notification setting: $e");
@@ -181,18 +169,6 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
       }
     } finally {
       if (mounted) setState(() => _isSavingNotifications = false);
-    }
-  }
-
-  // Helper to try to extract a readable message from backend JSON
-  String? _extractServerMessage(String body) {
-    try {
-      final Map<String, dynamic> m = jsonDecode(body) as Map<String, dynamic>;
-      if (m.containsKey('detail')) return m['detail'].toString();
-      if (m.containsKey('message')) return m['message'].toString();
-      return null;
-    } catch (_) {
-      return null;
     }
   }
 
@@ -274,7 +250,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
                   _buildSignOutTile(localizations, theme),
                 ])),
                 SizedBox(height: 28.h),
-                Center(child: Text('Spark Up • v1.0.0', style: TextStyle(color: Colors.grey.shade400, fontSize: 12.sp))),
+                Center(child: Text('Flow7 • v1.0.0', style: TextStyle(color: Colors.grey.shade400, fontSize: 12.sp))),
                 SizedBox(height: 8.h),
               ],
             ),

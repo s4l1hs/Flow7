@@ -62,6 +62,7 @@
   "planUltra": "Piano Ultra",
   "free": "Gratis",
   "month": "Mese",
+  "weeks": "settimane",
   "questionsPerDay": "Domande/Giorno",
   "challengesPerDay": "Sfide/Giorno",
   "notificationPerDay": "Notifica/Giorno",
@@ -126,5 +127,7 @@
   "endTimeError": "L'orario di fine deve essere successivo all'orario di inizio",
   "theme": "Aspetto",
   "darkMode": "Modalità Scura",
-  "lightMode": "Modalità Chiara"
+  "lightMode": "Modalità Chiara",
+  "edit": "Modifica",
+  "noPlansHere": "Nessun programma per questo giorno."
 }

@@ -262,6 +262,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get points => 'Punkte';
 
   @override
+  String get weeks => 'Wochen';
+
+  @override
   String get pointsEarned => 'Punkte erzielt';
 
   @override
@@ -395,11 +398,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get endTimeError => 'Die Endzeit muss nach der Startzeit liegen';
 
   @override
-  String get theme => 'Darstellung';
+  String get theme => 'Appearance';
 
   @override
-  String get darkMode => 'Dunkler Modus';
+  String get darkMode => 'Dark Mode';
 
   @override
-  String get lightMode => 'Heller Modus';
+  String get lightMode => 'Light Mode';
+
+  @override
+  String get edit => 'Bearbeiten';
+
+  @override
+  String get noPlansHere => 'Für diesen Tag sind keine Programme vorhanden.';
 }

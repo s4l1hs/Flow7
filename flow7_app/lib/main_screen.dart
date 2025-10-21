@@ -9,6 +9,7 @@ import 'l10n/app_localizations.dart';
 import 'pages/subscription_page.dart';
 import 'pages/program_page.dart';
 import 'pages/settings_page.dart';
+import 'services/api_service.dart';
 
 class MainScreen extends StatefulWidget {
   final String idToken;
@@ -24,14 +25,14 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   late List<Map<String, dynamic>> _navItems;
   late AnimationController _bounceController;
   // key to access ProgramPage state to open the add-dialog from here
-  final GlobalKey<ProgramPageState> _programKey = GlobalKey<ProgramPageState>();
+  // final GlobalKey<ProgramPageState> _programKey = GlobalKey<ProgramPageState>();
 
   @override
   void initState() {
     super.initState();
     // Keep pages in the order: Program (plans), Subscriptions, Settings
     _pages = <Widget>[
-      ProgramPage(key: _programKey, idToken: widget.idToken),
+      ProgramPage(idToken: widget.idToken),
       SubscriptionPage(idToken: widget.idToken),
       const SettingsPage(),
     ];
@@ -171,10 +172,29 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut),
             ),
             child: GestureDetector(
-              onTap: () {
-                final state = _programKey.currentState;
-                if (state != null) state.showPlanDialog();
+              onTap: () async {
+                // Open PlanDialog directly to avoid GlobalKey usage
                 _bounceController.forward(from: 0);
+                await showDialog(
+                  context: context,
+                  builder: (ctx) => PlanDialog(
+                    initialDate: DateTime.now(),
+                    onSave: (data) async {
+                      try {
+                        final api = ApiService();
+                        await api.createPlan(widget.idToken, data); // adapt if method name differs
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(AppLocalizations.of(context)!.saved), backgroundColor: Colors.green),
+                          );
+                          setState(() {}); // trigger a refresh; ProgramPage should reload data in didChangeDependencies / on build
+                        }
+                      } catch (e) {
+                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Save failed: $e'), backgroundColor: Theme.of(context).colorScheme.error));
+                      }
+                    },
+                  ),
+                );
               },
               child: Container(
                 width: 66.r,
@@ -206,10 +226,26 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(66.r),
-                    onTap: () {
-                      final state = _programKey.currentState;
-                      if (state != null) state.showPlanDialog();
+                    onTap: () async {
                       _bounceController.forward(from: 0);
+                      await showDialog(
+                        context: context,
+                        builder: (ctx) => PlanDialog(
+                          initialDate: DateTime.now(),
+                          onSave: (data) async {
+                            try {
+                              final api = ApiService();
+                              await api.createPlan(widget.idToken, data);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.saved), backgroundColor: Colors.green));
+                                setState(() {});
+                              }
+                            } catch (e) {
+                              if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Save failed: $e'), backgroundColor: Theme.of(context).colorScheme.error));
+                            }
+                          },
+                        ),
+                      );
                     },
                     child: Center(
                       child: Icon(Icons.add, color: Colors.white, size: 32.r),
@@ -243,113 +279,115 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       bottom: true,
       child: Padding(
         padding: EdgeInsets.only(left: 12.w, right: 12.w, bottom: 6.h),
-        child: LayoutBuilder(builder: (context, constraints) {
-          final totalWidth = constraints.maxWidth;
-          final itemCount = _navItems.length; // should be 3 now
-          final itemWidth = (totalWidth) / itemCount;
-          final leftPaddingForHighlight = 6.w;
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final totalWidth = constraints.maxWidth;
+            final itemCount = _navItems.length; // should be 3 now
+            final itemWidth = (totalWidth) / itemCount;
+            final leftPaddingForHighlight = 6.w;
 
-          double highlightLeft = leftPaddingForHighlight + (_selectedIndex * itemWidth);
-          highlightLeft = highlightLeft.clamp(0.0, (totalWidth - itemWidth).clamp(0.0, totalWidth));
+            double highlightLeft = leftPaddingForHighlight + (_selectedIndex * itemWidth);
+            highlightLeft = highlightLeft.clamp(0.0, (totalWidth - itemWidth).clamp(0.0, totalWidth));
 
-          final double highlightWidth = (itemWidth * 0.58).clamp(56.0, (itemWidth - 12.0).clamp(56.0, totalWidth));
+            final double highlightWidth = (itemWidth * 0.58).clamp(56.0, (itemWidth - 12.0).clamp(56.0, totalWidth));
 
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(24.r),
-            clipBehavior: Clip.hardEdge,
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-              child: Container(
-                height: 96.h + bottomPadding,
-                padding: EdgeInsets.only(bottom: bottomPadding, top: 8.h),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface.withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(24.r),
-                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 18.r, offset: Offset(0, 6.h))],
-                  border: Border.all(color: theme.colorScheme.surface.withOpacity(0.06)),
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // floating highlighted pill behind selected icon
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 420),
-                      curve: Curves.easeOutCubic,
-                      left: math.max(0.0, (highlightLeft + (itemWidth - highlightWidth) / 2).clamp(0.0, totalWidth - highlightWidth)),
-                      top: 4.h,
-                      width: highlightWidth,
-                      height: 58.h,
-                      child: Center(
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 420),
-                          curve: Curves.easeOutCubic,
-                          width: highlightWidth,
-                          height: 52.h,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [currentColor.withOpacity(0.16), currentColor.withOpacity(0.06)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(24.r),
+              clipBehavior: Clip.hardEdge,
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                child: Container(
+                  height: 96.h + bottomPadding,
+                  padding: EdgeInsets.only(bottom: bottomPadding, top: 8.h),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(24.r),
+                    boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 18.r, offset: Offset(0, 6.h))],
+                    border: Border.all(color: theme.colorScheme.surface.withOpacity(0.06)),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // floating highlighted pill behind selected icon
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 420),
+                        curve: Curves.easeOutCubic,
+                        left: math.max(0.0, (highlightLeft + (itemWidth - highlightWidth) / 2).clamp(0.0, totalWidth - highlightWidth)),
+                        top: 4.h,
+                        width: highlightWidth,
+                        height: 58.h,
+                        child: Center(
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 420),
+                            curve: Curves.easeOutCubic,
+                            width: highlightWidth,
+                            height: 52.h,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [currentColor.withOpacity(0.16), currentColor.withOpacity(0.06)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(14.r),
+                              boxShadow: [BoxShadow(color: currentColor.withOpacity(0.10), blurRadius: 20.r, offset: Offset(0, 8.h))],
+                              border: Border.all(color: currentColor.withOpacity(0.08)),
                             ),
-                            borderRadius: BorderRadius.circular(14.r),
-                            boxShadow: [BoxShadow(color: currentColor.withOpacity(0.10), blurRadius: 20.r, offset: Offset(0, 8.h))],
-                            border: Border.all(color: currentColor.withOpacity(0.08)),
                           ),
                         ),
                       ),
-                    ),
 
-                    Row(
-                      children: _navItems.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final item = entry.value;
-                        final isSelected = _selectedIndex == index;
-                        final Color itemColor = isSelected ? getSelectedColor(index) : theme.iconTheme.color!.withOpacity(0.72);
+                      Row(
+                        children: _navItems.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final item = entry.value;
+                          final isSelected = _selectedIndex == index;
+                          final Color itemColor = isSelected ? getSelectedColor(index) : theme.iconTheme.color!.withOpacity(0.72);
 
-                        return Expanded(
-                          child: GestureDetector(
-                            onTap: () => onItemTapped(index),
-                            behavior: HitTestBehavior.opaque,
-                            child: SizedBox(
-                              height: double.infinity,
-                              child: Center(
-                                child: TweenAnimationBuilder<double>(
-                                  tween: Tween(begin: isSelected ? 1.08 : 1.0, end: isSelected ? 1.08 : 1.0),
-                                  duration: const Duration(milliseconds: 360),
-                                  curve: Curves.easeOutCubic,
-                                  builder: (context, scale, child) {
-                                    return Transform.scale(
-                                      scale: scale,
-                                      child: AnimatedContainer(
-                                        duration: const Duration(milliseconds: 320),
-                                        curve: Curves.easeOut,
-                                        padding: EdgeInsets.all(isSelected ? 6.w : 8.w),
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: isSelected ? itemColor.withOpacity(0.04) : Colors.transparent,
+                          return Expanded(
+                            child: GestureDetector(
+                              onTap: () => onItemTapped(index),
+                              behavior: HitTestBehavior.opaque,
+                              child: SizedBox(
+                                height: double.infinity,
+                                child: Center(
+                                  child: TweenAnimationBuilder<double>(
+                                    tween: Tween(begin: isSelected ? 1.08 : 1.0, end: isSelected ? 1.08 : 1.0),
+                                    duration: const Duration(milliseconds: 360),
+                                    curve: Curves.easeOutCubic,
+                                    builder: (context, scale, child) {
+                                      return Transform.scale(
+                                        scale: scale,
+                                        child: AnimatedContainer(
+                                          duration: const Duration(milliseconds: 320),
+                                          curve: Curves.easeOut,
+                                          padding: EdgeInsets.all(isSelected ? 6.w : 8.w),
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: isSelected ? itemColor.withOpacity(0.04) : Colors.transparent,
+                                          ),
+                                          child: Icon(
+                                            item['icon'] as IconData,
+                                            size: isSelected ? 30.sp : 26.sp,
+                                            color: itemColor,
+                                            semanticLabel: (item['tooltip'] as String?) ?? '',
+                                          ),
                                         ),
-                                        child: Icon(
-                                          item['icon'] as IconData,
-                                          size: isSelected ? 30.sp : 26.sp,
-                                          color: itemColor,
-                                          semanticLabel: (item['tooltip'] as String?) ?? '',
-                                        ),
-                                      ),
-                                    );
-                                  },
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        }),
+            );
+          },
+        ),
       ),
     );
   }
