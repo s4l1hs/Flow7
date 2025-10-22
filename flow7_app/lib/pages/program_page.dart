@@ -365,8 +365,9 @@ class ProgramPageState extends State<ProgramPage> {
   }
 
   Widget _buildWeekCalendar() {
+    // Hafifçe yükseltilmiş yükseklik overflow durumunu engeller
     return SizedBox(
-      height: 100.h,
+      height: 116.h,
       child: PageView.builder(
         controller: _pageController,
         itemCount: _totalPages,
@@ -388,8 +389,9 @@ class ProgramPageState extends State<ProgramPage> {
   }
 
   Widget _buildWeekView(DateTime weekStart) {
-    final dfDay = DateFormat.E(AppLocalizations.of(context)!.localeName);
-    final dfNum = DateFormat.d(AppLocalizations.of(context)!.localeName);
+    final locale = Localizations.localeOf(context).toString();
+    final dfDay = DateFormat.E(locale);
+    final dfNum = DateFormat.d(locale);
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 8.h),
@@ -403,29 +405,45 @@ class ProgramPageState extends State<ProgramPage> {
           final hasPlans = _groupedPlans[dateKey]?.isNotEmpty ?? false;
 
           return Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _selectedDay = day),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(dfDay.format(day), style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                  SizedBox(height: 6.h),
-                  CircleAvatar(
-                    radius: 16.r,
-                    backgroundColor: isSelected
-                        ? Theme.of(context).colorScheme.primary
-                        : (isToday ? Colors.grey.shade700 : Colors.transparent),
-                    child: Text(dfNum.format(day), style: TextStyle(color: isSelected ? Colors.white : null)),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4.w),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12.r),
+                onTap: () => setState(() => _selectedDay = day),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeOutCubic,
+                  padding: EdgeInsets.symmetric(vertical: 8.h),
+                  decoration: BoxDecoration(
+                    color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.12) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
-                  SizedBox(height: 6.h),
-                  if (hasPlans)
-                    Container(
-                      width: 6.w, height: 6.w,
-                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondary, shape: BoxShape.circle),
-                    )
-                  else
-                    SizedBox(height: 6.w),
-                ],
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(dfDay.format(day), style: TextStyle(fontSize: 12.sp, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500, color: isSelected ? Theme.of(context).colorScheme.primary : null)),
+                      SizedBox(height: 6.h),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 320),
+                        curve: Curves.easeOut,
+                        width: 36.r,
+                        height: 36.r,
+                        decoration: BoxDecoration(
+                          color: isSelected ? Theme.of(context).colorScheme.primary : (isToday ? Colors.grey.shade700 : Colors.transparent),
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(dfNum.format(day), style: TextStyle(color: isSelected ? Colors.white : (isToday ? Colors.white : null), fontWeight: FontWeight.w600)),
+                      ),
+                      SizedBox(height: 6.h),
+                      AnimatedOpacity(
+                        opacity: hasPlans ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 240),
+                        child: Container(width: 6.w, height: 6.w, decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondary, shape: BoxShape.circle)),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           );
@@ -672,49 +690,60 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
           backgroundColor: theme.dialogBackgroundColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: 540.w),
+            // limit height so content can scroll when keyboard is open and avoid tiny overflows
+            constraints: BoxConstraints(
+              maxWidth: 540.w,
+              maxHeight: MediaQuery.of(context).size.height * 0.86,
+            ),
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+              // add viewInsets + small extra padding so keyboard doesn't cause 7px overflow
               child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // header
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 56.r,
-                          height: 56.r,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.9)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8.r, offset: Offset(0,4.h))],
-                          ),
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(DateFormat.d().format(widget.initialDate), style: TextStyle(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 16.sp)),
-                                Text(DateFormat.E(Localizations.localeOf(context).toString()).format(widget.initialDate), style: TextStyle(color: theme.colorScheme.onPrimary.withOpacity(0.9), fontSize: 11.sp)),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 14.w),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(isEditing ? loc.editProgram : loc.newProgram, style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700)),
-                              SizedBox(height: 4.h),
-                              Text(DateFormat.yMMMMd(Localizations.localeOf(context).toString()).format(widget.initialDate), style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 12.sp)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16.h),
+                padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 12.h),
+                physics: const BouncingScrollPhysics(),
+                child: ConstrainedBox(
+                  // ensure Column takes minimum vertical space but can grow up to constrained maxHeight
+                  constraints: BoxConstraints(minWidth: double.infinity),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                   // header
+                   Row(
+                     crossAxisAlignment: CrossAxisAlignment.center,
+                     children: [
+                       Container(
+                         width: 56.r,
+                         height: 56.r,
+                         decoration: BoxDecoration(
+                           shape: BoxShape.circle,
+                           gradient: LinearGradient(colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.9)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                           boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8.r, offset: Offset(0,4.h))],
+                         ),
+                         child: Center(
+                           child: Column(
+                             mainAxisSize: MainAxisSize.min,
+                             children: [
+                               Text(DateFormat.d().format(widget.initialDate), style: TextStyle(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 16.sp)),
+                               Text(DateFormat.E(Localizations.localeOf(context).toString()).format(widget.initialDate), style: TextStyle(color: theme.colorScheme.onPrimary.withOpacity(0.9), fontSize: 11.sp)),
+                             ],
+                           ),
+                         ),
+                       ),
+                       SizedBox(width: 14.w),
+                       // use Flexible to avoid forcing height in constrained contexts
+                       Flexible(
+                         child: Column(
+                           crossAxisAlignment: CrossAxisAlignment.start,
+                           children: [
+                             Text(isEditing ? loc.editProgram : loc.newProgram, style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700)),
+                             SizedBox(height: 4.h),
+                             Text(DateFormat.yMMMMd(Localizations.localeOf(context).toString()).format(widget.initialDate), style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 12.sp)),
+                           ],
+                         ),
+                       ),
+                     ],
+                   ),
+                   SizedBox(height: 16.h),
 
                     Form(
                       key: _formKey,
@@ -838,6 +867,7 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
           ),
         ),
       ),
+    ),
     );
   }
 }
