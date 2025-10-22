@@ -16,11 +16,14 @@ class ProgramPage extends StatefulWidget {
 class ProgramPageState extends State<ProgramPage> {
   final ApiService _apiService = ApiService();
 
-  // Takvim ve sayfa durumu
-  static const int _totalPages = 20000;
-  late final PageController _pageController;
+  // Takvim ve sayfa durumu (abonelik ile sınırlı)
+  late PageController _pageController;
+  DateTime _baseWeekStart = _getStartOfWeek(DateTime.now()); // page 0 --> current week
   DateTime _currentWeekStart;
   DateTime? _selectedDay;
+
+  // Abonelik limit (hafta sayısı). Varsayılan free.
+  int _weekLimit = 2; // free:2, pro:4, ultra:8
 
   // Veri durumu
   bool _isLoading = true;
@@ -35,7 +38,7 @@ class ProgramPageState extends State<ProgramPage> {
   void initState() {
     super.initState();
     final today = DateTime.now();
-    _pageController = PageController(initialPage: _totalPages ~/ 2);
+    _pageController = PageController(initialPage: 0);
     _selectedDay = DateTime(today.year, today.month, today.day);
     
     // initState'te async işlem yapmak için addPostFrameCallback kullanılır.
@@ -58,9 +61,29 @@ class ProgramPageState extends State<ProgramPage> {
   }
 
   DateTime _getDateForPage(int pageIndex) {
-    final weekOffset = pageIndex - (_totalPages ~/ 2);
-    return _getStartOfWeek(DateTime.now()).add(Duration(days: weekOffset * 7));
+    // pageIndex 0 => base week (this week), 1 => next week, ...
+    return _baseWeekStart.add(Duration(days: pageIndex * 7));
   }
+
+  // Call to update week limit based on subscription tier string (e.g. "free","pro","ultra")
+  void setSubscriptionTier(String tier) {
+    final t = tier.toLowerCase();
+    final newLimit = (t == 'pro') ? 4 : (t == 'ultra' ? 8 : 2);
+    if (newLimit == _weekLimit) return;
+    setState(() {
+      _weekLimit = newLimit;
+      // recreate controller to clamp page range safely
+      final currentPage = (_currentWeekStart.difference(_baseWeekStart).inDays ~/ 7).clamp(0, _weekLimit - 1);
+      _pageController.dispose();
+      _pageController = PageController(initialPage: currentPage);
+      // ensure currentWeekStart not outside new range
+      _currentWeekStart = _getDateForPage(currentPage);
+      _selectedDay = _getDateForPage(currentPage);
+    });
+  }
+
+  // Optional: external update helper
+  void updateSubscription(String tier) => setSubscriptionTier(tier);
 
   void _groupAndSortPlans(List<Map<String, dynamic>> plans, {bool merge = false}) 
   {
@@ -342,8 +365,9 @@ class ProgramPageState extends State<ProgramPage> {
             icon: const Icon(Icons.today),
             tooltip: loc.today,
             onPressed: () {
+              // Jump to the base week (page 0)
               _pageController.animateToPage(
-                _totalPages ~/ 2,
+                0,
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
               );
@@ -365,12 +389,12 @@ class ProgramPageState extends State<ProgramPage> {
   }
 
   Widget _buildWeekCalendar() {
-    // Hafifçe yükseltilmiş yükseklik overflow durumunu engeller
+    // Sabit yükseklik ver: PageView yatay bir viewport ve sabit yükseklik olmalı
     return SizedBox(
       height: 116.h,
       child: PageView.builder(
         controller: _pageController,
-        itemCount: _totalPages,
+        itemCount: _weekLimit,
         onPageChanged: (pageIndex) {
           final newWeekStart = _getDateForPage(pageIndex);
           setState(() {
