@@ -9,46 +9,7 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appName => 'Spark Up';
-
-  @override
-  String get appSlogan => '您每日的知识、挑战和测验。';
-
-  @override
-  String get dailyFact => '每日事实';
-
-  @override
-  String get source => '来源';
-
-  @override
-  String get tapToLoadNewChallenge => '点击加载新挑战';
-
-  @override
-  String get noChallengeAvailable => '暂无新挑战。';
-
-  @override
-  String get challengeCouldNotBeLoaded => '挑战加载失败。';
-
-  @override
-  String get startNewQuiz => '开始新测验';
-
-  @override
-  String get quizFinished => '测验完成!';
-
-  @override
-  String get yourScore => '您的得分';
-
-  @override
   String get great => '太棒了!';
-
-  @override
-  String get question => '问题';
-
-  @override
-  String get quizCouldNotStart => '测验无法启动';
-
-  @override
-  String get questionDataIsEmpty => '测验数据为空。';
 
   @override
   String get navMainMenu => '主题';
@@ -136,7 +97,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmation =>
-      '您确定要删除您的账户吗？此操作不可逆，您的所有数据（包括您的分数）都将被永久删除。';
+      '您确定要删除您的账户吗？此操作不可逆，您的所有数据（包括您的分数）将被永久删除。';
 
   @override
   String get delete => '删除';
@@ -152,27 +113,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get selected => '已选择';
-
-  @override
-  String get yourRank => '你的排名';
-
-  @override
-  String get rankMaster => '大师';
-
-  @override
-  String get rankDiamond => '钻石';
-
-  @override
-  String get rankGold => '黄金';
-
-  @override
-  String get rankSilver => '白银';
-
-  @override
-  String get rankBronze => '青铜';
-
-  @override
-  String get rankIron => '铁';
 
   @override
   String get subscriptions => '订阅';
@@ -238,31 +178,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get limitExceeded => '超出限制';
 
   @override
-  String get streak => '连击';
-
-  @override
-  String get streakBonus => '连击奖励';
-
-  @override
-  String get maxStreak => '最大连击';
-
-  @override
-  String get streakBroken => '连击中断';
-
-  @override
-  String get points => '积分';
-
-  @override
   String get weeks => '周';
 
   @override
-  String get pointsEarned => '赢得积分';
+  String get pointsEarned => '获得积分';
 
   @override
   String get errorSubmittingAnswer => '提交答案时出错。';
 
   @override
-  String get wrongAnswerResetStreak => '回答错误！连击已重置。';
+  String get wrongAnswerResetStreak => '回答错误！连胜已重置。';
 
   @override
   String get correct => '正确';
@@ -320,15 +245,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get hintTapToReload => '点击以重新加载';
-
-  @override
-  String get loadNewChallenge => '加载新挑战';
-
-  @override
-  String get challengeIntro => '获取简短、有吸引力的创意挑战以提升您的技能。';
-
-  @override
-  String get leaderboard => '排行榜';
 
   @override
   String get limited => '受限';

@@ -9,46 +9,7 @@ class AppLocalizationsHi extends AppLocalizations {
   AppLocalizationsHi([String locale = 'hi']) : super(locale);
 
   @override
-  String get appName => 'Spark Up';
-
-  @override
-  String get appSlogan => 'ज्ञान, चुनौती और प्रश्नोत्तरी की आपकी दैनिक खुराक।';
-
-  @override
-  String get dailyFact => 'दैनिक तथ्य';
-
-  @override
-  String get source => 'स्रोत';
-
-  @override
-  String get tapToLoadNewChallenge => 'नई चुनौती लोड करने के लिए टैप करें';
-
-  @override
-  String get noChallengeAvailable => 'कोई नई चुनौती उपलब्ध नहीं है।';
-
-  @override
-  String get challengeCouldNotBeLoaded => 'चुनौती लोड नहीं की जा सकी।';
-
-  @override
-  String get startNewQuiz => 'नई प्रश्नोत्तरी शुरू करें';
-
-  @override
-  String get quizFinished => 'प्रश्नोत्तरी समाप्त!';
-
-  @override
-  String get yourScore => 'आपका स्कोर';
-
-  @override
   String get great => 'महान!';
-
-  @override
-  String get question => 'प्रश्न';
-
-  @override
-  String get quizCouldNotStart => 'प्रश्नोत्तरी शुरू नहीं हो सकी';
-
-  @override
-  String get questionDataIsEmpty => 'प्रश्नोत्तरी डेटा खाली है।';
 
   @override
   String get navMainMenu => 'विषय';
@@ -155,27 +116,6 @@ class AppLocalizationsHi extends AppLocalizations {
   String get selected => 'चयनित';
 
   @override
-  String get yourRank => 'आपकी रैंक';
-
-  @override
-  String get rankMaster => 'मास्टर';
-
-  @override
-  String get rankDiamond => 'हीरा';
-
-  @override
-  String get rankGold => 'स्वर्ण';
-
-  @override
-  String get rankSilver => 'चाँदी';
-
-  @override
-  String get rankBronze => 'कांस्य';
-
-  @override
-  String get rankIron => 'लोहा';
-
-  @override
   String get subscriptions => 'सदस्यताएँ';
 
   @override
@@ -238,21 +178,6 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get limitExceeded => 'सीमा पार हो गई';
-
-  @override
-  String get streak => 'स्ट्रीक';
-
-  @override
-  String get streakBonus => 'स्ट्रीक बोनस';
-
-  @override
-  String get maxStreak => 'अधिकतम स्ट्रीक';
-
-  @override
-  String get streakBroken => 'स्ट्रीक टूटी';
-
-  @override
-  String get points => 'अंक';
 
   @override
   String get weeks => 'सप्ताह';
@@ -322,16 +247,6 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get hintTapToReload => 'रिलोड करने के लिए टैप करें';
-
-  @override
-  String get loadNewChallenge => 'नई चुनौती लोड करें';
-
-  @override
-  String get challengeIntro =>
-      'अपनी क्षमताओं बढ़ाने के लिए छोटे रुचिकर चुनौतियाँ प्राप्त करें।';
-
-  @override
-  String get leaderboard => 'लीडरबोर्ड';
 
   @override
   String get limited => 'सीमित';

@@ -9,46 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appName => 'Spark Up';
-
-  @override
-  String get appSlogan => 'Your daily dose of knowledge, challenge, and quiz.';
-
-  @override
-  String get dailyFact => 'Daily Fact';
-
-  @override
-  String get source => 'Source';
-
-  @override
-  String get tapToLoadNewChallenge => 'Tap to load a new challenge';
-
-  @override
-  String get noChallengeAvailable => 'No new challenge available.';
-
-  @override
-  String get challengeCouldNotBeLoaded => 'Challenge could not be loaded.';
-
-  @override
-  String get startNewQuiz => 'Start New Quiz';
-
-  @override
-  String get quizFinished => 'Quiz Finished!';
-
-  @override
-  String get yourScore => 'Your Score';
-
-  @override
   String get great => 'Great!';
-
-  @override
-  String get question => 'Question';
-
-  @override
-  String get quizCouldNotStart => 'Quiz could not start';
-
-  @override
-  String get questionDataIsEmpty => 'Question data is empty.';
 
   @override
   String get navMainMenu => 'Main Menu';
@@ -155,27 +116,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selected => 'selected';
 
   @override
-  String get yourRank => 'Your Rank';
-
-  @override
-  String get rankMaster => 'Master';
-
-  @override
-  String get rankDiamond => 'Diamond';
-
-  @override
-  String get rankGold => 'Gold';
-
-  @override
-  String get rankSilver => 'Silver';
-
-  @override
-  String get rankBronze => 'Bronze';
-
-  @override
-  String get rankIron => 'Iron';
-
-  @override
   String get subscriptions => 'Subscriptions';
 
   @override
@@ -238,21 +178,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get limitExceeded => 'Limit Exceeded';
-
-  @override
-  String get streak => 'Streak';
-
-  @override
-  String get streakBonus => 'Streak Bonus';
-
-  @override
-  String get maxStreak => 'Max Streak';
-
-  @override
-  String get streakBroken => 'Streak Broken';
-
-  @override
-  String get points => 'Points';
 
   @override
   String get weeks => 'weeks';
@@ -322,16 +247,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hintTapToReload => 'Tap to reload';
-
-  @override
-  String get loadNewChallenge => 'Load new challenge';
-
-  @override
-  String get challengeIntro =>
-      'Get short, engaging creative challenges to boost your skills.';
-
-  @override
-  String get leaderboard => 'Leaderboard';
 
   @override
   String get limited => 'Limited';

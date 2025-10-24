@@ -9,46 +9,7 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
-  String get appName => 'Spark Up';
-
-  @override
-  String get appSlogan => 'Tu dosis diaria de conocimiento, desafío y quiz.';
-
-  @override
-  String get dailyFact => 'Hecho diario';
-
-  @override
-  String get source => 'Fuente';
-
-  @override
-  String get tapToLoadNewChallenge => 'Toca para cargar un nuevo desafío';
-
-  @override
-  String get noChallengeAvailable => 'No hay un nuevo desafío disponible.';
-
-  @override
-  String get challengeCouldNotBeLoaded => 'No se pudo cargar el desafío.';
-
-  @override
-  String get startNewQuiz => 'Comenzar nuevo Quiz';
-
-  @override
-  String get quizFinished => '¡Quiz terminado!';
-
-  @override
-  String get yourScore => 'Tu puntuación';
-
-  @override
   String get great => '¡Genial!';
-
-  @override
-  String get question => 'Pregunta';
-
-  @override
-  String get quizCouldNotStart => 'No se pudo iniciar el quiz';
-
-  @override
-  String get questionDataIsEmpty => 'Los datos del quiz están vacíos.';
 
   @override
   String get navMainMenu => 'Temas';
@@ -158,27 +119,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get selected => 'seleccionado';
 
   @override
-  String get yourRank => 'Tu Rango';
-
-  @override
-  String get rankMaster => 'Maestro';
-
-  @override
-  String get rankDiamond => 'Diamante';
-
-  @override
-  String get rankGold => 'Oro';
-
-  @override
-  String get rankSilver => 'Plata';
-
-  @override
-  String get rankBronze => 'Bronce';
-
-  @override
-  String get rankIron => 'Hierro';
-
-  @override
   String get subscriptions => 'Suscripciones';
 
   @override
@@ -241,21 +181,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get limitExceeded => 'Límite Excedido';
-
-  @override
-  String get streak => 'Racha';
-
-  @override
-  String get streakBonus => 'Bono de Racha';
-
-  @override
-  String get maxStreak => 'Racha Máx.';
-
-  @override
-  String get streakBroken => 'Racha Rota';
-
-  @override
-  String get points => 'Puntos';
 
   @override
   String get weeks => 'semanas';
@@ -326,16 +251,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get hintTapToReload => 'Toca para recargar';
-
-  @override
-  String get loadNewChallenge => 'Cargar nuevo desafío';
-
-  @override
-  String get challengeIntro =>
-      'Recibe desafíos cortos y atractivos para mejorar tus habilidades.';
-
-  @override
-  String get leaderboard => 'Clasificación';
 
   @override
   String get limited => 'Limitado';

@@ -9,47 +9,7 @@ class AppLocalizationsTr extends AppLocalizations {
   AppLocalizationsTr([String locale = 'tr']) : super(locale);
 
   @override
-  String get appName => 'Spark Up';
-
-  @override
-  String get appSlogan => 'Günlük bilgi, meydan okuma ve sınav dozunuz.';
-
-  @override
-  String get dailyFact => 'Günün Bilgisi';
-
-  @override
-  String get source => 'Kaynak';
-
-  @override
-  String get tapToLoadNewChallenge =>
-      'Yeni bir meydan okuma yüklemek için dokunun';
-
-  @override
-  String get noChallengeAvailable => 'Yeni meydan okuma mevcut değil.';
-
-  @override
-  String get challengeCouldNotBeLoaded => 'Meydan okuma yüklenemedi.';
-
-  @override
-  String get startNewQuiz => 'Yeni Sınav Başlat';
-
-  @override
-  String get quizFinished => 'Sınav Bitti!';
-
-  @override
-  String get yourScore => 'Puanınız';
-
-  @override
   String get great => 'Harika!';
-
-  @override
-  String get question => 'Soru';
-
-  @override
-  String get quizCouldNotStart => 'Sınav başlatılamadı';
-
-  @override
-  String get questionDataIsEmpty => 'Sınav verisi boş.';
 
   @override
   String get navMainMenu => 'Konular';
@@ -156,27 +116,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get selected => 'seçili';
 
   @override
-  String get yourRank => 'Sıralaman';
-
-  @override
-  String get rankMaster => 'Üstad';
-
-  @override
-  String get rankDiamond => 'Elmas';
-
-  @override
-  String get rankGold => 'Altın';
-
-  @override
-  String get rankSilver => 'Gümüş';
-
-  @override
-  String get rankBronze => 'Bronz';
-
-  @override
-  String get rankIron => 'Demir';
-
-  @override
   String get subscriptions => 'Abonelikler';
 
   @override
@@ -239,21 +178,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get limitExceeded => 'Limit Aşıldı';
-
-  @override
-  String get streak => 'Seri';
-
-  @override
-  String get streakBonus => 'Seri Bonusu';
-
-  @override
-  String get maxStreak => 'Maksimum Seri';
-
-  @override
-  String get streakBroken => 'Seri Bozuldu';
-
-  @override
-  String get points => 'Puan';
 
   @override
   String get weeks => 'hafta';
@@ -323,16 +247,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get hintTapToReload => 'Yenilemek için dokunun';
-
-  @override
-  String get loadNewChallenge => 'Yeni meydan okuma yükle';
-
-  @override
-  String get challengeIntro =>
-      'Becerilerinizi geliştirecek kısa ve ilgi çekici meydan okumalar alın.';
-
-  @override
-  String get leaderboard => 'Liderlik Tablosu';
 
   @override
   String get limited => 'Sınırlı';

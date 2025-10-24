@@ -9,46 +9,7 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
-  String get appName => 'Spark Up';
-
-  @override
-  String get appSlogan => 'جرعتك اليومية من المعرفة والتحدي والاختبار.';
-
-  @override
-  String get dailyFact => 'حقيقة اليوم';
-
-  @override
-  String get source => 'المصدر';
-
-  @override
-  String get tapToLoadNewChallenge => 'انقر لتحميل تحدي جديد';
-
-  @override
-  String get noChallengeAvailable => 'لا يوجد تحدي جديد متاح.';
-
-  @override
-  String get challengeCouldNotBeLoaded => 'تعذر تحميل التحدي.';
-
-  @override
-  String get startNewQuiz => 'ابدأ اختباراً جديداً';
-
-  @override
-  String get quizFinished => 'انتهى الاختبار!';
-
-  @override
-  String get yourScore => 'درجتك';
-
-  @override
   String get great => 'عظيم!';
-
-  @override
-  String get question => 'سؤال';
-
-  @override
-  String get quizCouldNotStart => 'تعذر بدء الاختبار';
-
-  @override
-  String get questionDataIsEmpty => 'بيانات الاختبار فارغة.';
 
   @override
   String get navMainMenu => 'المواضيع';
@@ -155,27 +116,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get selected => 'محدد';
 
   @override
-  String get yourRank => 'رتبتك';
-
-  @override
-  String get rankMaster => 'الماستر';
-
-  @override
-  String get rankDiamond => 'الماس';
-
-  @override
-  String get rankGold => 'الذهب';
-
-  @override
-  String get rankSilver => 'الفضة';
-
-  @override
-  String get rankBronze => 'البرونز';
-
-  @override
-  String get rankIron => 'الحديد';
-
-  @override
   String get subscriptions => 'الاشتراكات';
 
   @override
@@ -238,21 +178,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get limitExceeded => 'تم تجاوز الحد';
-
-  @override
-  String get streak => 'سلسلة';
-
-  @override
-  String get streakBonus => 'مكافأة السلسلة';
-
-  @override
-  String get maxStreak => 'أقصى سلسلة';
-
-  @override
-  String get streakBroken => 'تم كسر السلسلة';
-
-  @override
-  String get points => 'نقاط';
 
   @override
   String get weeks => 'أسابيع';
@@ -322,15 +247,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get hintTapToReload => 'انقر لإعادة التحميل';
-
-  @override
-  String get loadNewChallenge => 'تحميل تحدٍ جديد';
-
-  @override
-  String get challengeIntro => 'احصل على تحديات قصيرة وجذابة لتعزيز مهاراتك.';
-
-  @override
-  String get leaderboard => 'لوحة المتصدرين';
 
   @override
   String get limited => 'محدود';

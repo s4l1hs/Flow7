@@ -9,46 +9,7 @@ class AppLocalizationsJa extends AppLocalizations {
   AppLocalizationsJa([String locale = 'ja']) : super(locale);
 
   @override
-  String get appName => 'Spark Up';
-
-  @override
-  String get appSlogan => '知識、チャレンジ、クイズの毎日の摂取量。';
-
-  @override
-  String get dailyFact => '今日の事実';
-
-  @override
-  String get source => '情報源';
-
-  @override
-  String get tapToLoadNewChallenge => 'タップして新しいチャレンジをロード';
-
-  @override
-  String get noChallengeAvailable => '新しいチャレンジはありません。';
-
-  @override
-  String get challengeCouldNotBeLoaded => 'チャレンジをロードできませんでした。';
-
-  @override
-  String get startNewQuiz => '新しいクイズを開始';
-
-  @override
-  String get quizFinished => 'クイズ終了！';
-
-  @override
-  String get yourScore => 'あなたのスコア';
-
-  @override
   String get great => '素晴らしい！';
-
-  @override
-  String get question => '質問';
-
-  @override
-  String get quizCouldNotStart => 'クイズを開始できませんでした';
-
-  @override
-  String get questionDataIsEmpty => 'クイズデータが空です。';
 
   @override
   String get navMainMenu => 'トピック';
@@ -154,27 +115,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get selected => '選択済み';
 
   @override
-  String get yourRank => 'あなたのランク';
-
-  @override
-  String get rankMaster => 'マスター';
-
-  @override
-  String get rankDiamond => 'ダイヤモンド';
-
-  @override
-  String get rankGold => 'ゴールド';
-
-  @override
-  String get rankSilver => 'シルバー';
-
-  @override
-  String get rankBronze => 'ブロンズ';
-
-  @override
-  String get rankIron => 'アイアン';
-
-  @override
   String get subscriptions => 'サブスクリプション';
 
   @override
@@ -238,21 +178,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get limitExceeded => '制限を超過しました';
 
   @override
-  String get streak => '連勝';
-
-  @override
-  String get streakBonus => '連勝ボーナス';
-
-  @override
-  String get maxStreak => '最大連勝';
-
-  @override
-  String get streakBroken => '連勝中断';
-
-  @override
-  String get points => 'ポイント';
-
-  @override
   String get weeks => '週間';
 
   @override
@@ -301,7 +226,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get failedToSaveNotification => '通知設定の保存に失敗しました';
 
   @override
-  String get failedToSaveLanguage => '言語の保存に失敗しました';
+  String get failedToSaveLanguage => '言語の保存に失敗ました';
 
   @override
   String get failedToLoadProfile => 'プロフィールを読み込めませんでした';
@@ -320,15 +245,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get hintTapToReload => '再読み込みするにはタップ';
-
-  @override
-  String get loadNewChallenge => '新しいチャレンジを読み込む';
-
-  @override
-  String get challengeIntro => 'スキルを向上させる短く魅力的なチャレンジを取得しましょう。';
-
-  @override
-  String get leaderboard => 'ランキング';
 
   @override
   String get limited => '制限あり';

@@ -9,47 +9,7 @@ class AppLocalizationsFr extends AppLocalizations {
   AppLocalizationsFr([String locale = 'fr']) : super(locale);
 
   @override
-  String get appName => 'Spark Up';
-
-  @override
-  String get appSlogan =>
-      'Votre dose quotidienne de connaissances, de défis et de quiz.';
-
-  @override
-  String get dailyFact => 'Fait quotidien';
-
-  @override
-  String get source => 'Source';
-
-  @override
-  String get tapToLoadNewChallenge => 'Appuyez pour charger un nouveau défi';
-
-  @override
-  String get noChallengeAvailable => 'Aucun nouveau défi disponible.';
-
-  @override
-  String get challengeCouldNotBeLoaded => 'Le défi n\'a pas pu être chargé.';
-
-  @override
-  String get startNewQuiz => 'Commencer un nouveau quiz';
-
-  @override
-  String get quizFinished => 'Quiz terminé!';
-
-  @override
-  String get yourScore => 'Votre score';
-
-  @override
   String get great => 'Génial!';
-
-  @override
-  String get question => 'Question';
-
-  @override
-  String get quizCouldNotStart => 'Le quiz n\'a pas pu démarrer';
-
-  @override
-  String get questionDataIsEmpty => 'Les données du quiz sont vides.';
 
   @override
   String get navMainMenu => 'Sujets';
@@ -160,27 +120,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get selected => 'sélectionné';
 
   @override
-  String get yourRank => 'Votre Rang';
-
-  @override
-  String get rankMaster => 'Maître';
-
-  @override
-  String get rankDiamond => 'Diamant';
-
-  @override
-  String get rankGold => 'Or';
-
-  @override
-  String get rankSilver => 'Argent';
-
-  @override
-  String get rankBronze => 'Bronze';
-
-  @override
-  String get rankIron => 'Fer';
-
-  @override
   String get subscriptions => 'Abonnements';
 
   @override
@@ -243,21 +182,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get limitExceeded => 'Limite Dépassée';
-
-  @override
-  String get streak => 'Série';
-
-  @override
-  String get streakBonus => 'Bonus de Série';
-
-  @override
-  String get maxStreak => 'Série Max';
-
-  @override
-  String get streakBroken => 'Série Rompue';
-
-  @override
-  String get points => 'Points';
 
   @override
   String get weeks => 'semaines';
@@ -329,16 +253,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get hintTapToReload => 'Appuyez pour recharger';
-
-  @override
-  String get loadNewChallenge => 'Charger un nouveau défi';
-
-  @override
-  String get challengeIntro =>
-      'Recevez de courtes missions engageantes pour stimuler vos compétences.';
-
-  @override
-  String get leaderboard => 'Classement';
 
   @override
   String get limited => 'Limité';

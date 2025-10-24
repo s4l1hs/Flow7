@@ -116,89 +116,11 @@ abstract class AppLocalizations {
     Locale('zh')
   ];
 
-  /// No description provided for @appName.
-  ///
-  /// In en, this message translates to:
-  /// **'Spark Up'**
-  String get appName;
-
-  /// No description provided for @appSlogan.
-  ///
-  /// In en, this message translates to:
-  /// **'Your daily dose of knowledge, challenge, and quiz.'**
-  String get appSlogan;
-
-  /// No description provided for @dailyFact.
-  ///
-  /// In en, this message translates to:
-  /// **'Daily Fact'**
-  String get dailyFact;
-
-  /// No description provided for @source.
-  ///
-  /// In en, this message translates to:
-  /// **'Source'**
-  String get source;
-
-  /// No description provided for @tapToLoadNewChallenge.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap to load a new challenge'**
-  String get tapToLoadNewChallenge;
-
-  /// No description provided for @noChallengeAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'No new challenge available.'**
-  String get noChallengeAvailable;
-
-  /// No description provided for @challengeCouldNotBeLoaded.
-  ///
-  /// In en, this message translates to:
-  /// **'Challenge could not be loaded.'**
-  String get challengeCouldNotBeLoaded;
-
-  /// No description provided for @startNewQuiz.
-  ///
-  /// In en, this message translates to:
-  /// **'Start New Quiz'**
-  String get startNewQuiz;
-
-  /// No description provided for @quizFinished.
-  ///
-  /// In en, this message translates to:
-  /// **'Quiz Finished!'**
-  String get quizFinished;
-
-  /// No description provided for @yourScore.
-  ///
-  /// In en, this message translates to:
-  /// **'Your Score'**
-  String get yourScore;
-
   /// No description provided for @great.
   ///
   /// In en, this message translates to:
   /// **'Great!'**
   String get great;
-
-  /// No description provided for @question.
-  ///
-  /// In en, this message translates to:
-  /// **'Question'**
-  String get question;
-
-  /// No description provided for @quizCouldNotStart.
-  ///
-  /// In en, this message translates to:
-  /// **'Quiz could not start'**
-  String get quizCouldNotStart;
-
-  /// No description provided for @questionDataIsEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'Question data is empty.'**
-  String get questionDataIsEmpty;
 
   /// No description provided for @navMainMenu.
   ///
@@ -404,48 +326,6 @@ abstract class AppLocalizations {
   /// **'selected'**
   String get selected;
 
-  /// No description provided for @yourRank.
-  ///
-  /// In en, this message translates to:
-  /// **'Your Rank'**
-  String get yourRank;
-
-  /// No description provided for @rankMaster.
-  ///
-  /// In en, this message translates to:
-  /// **'Master'**
-  String get rankMaster;
-
-  /// No description provided for @rankDiamond.
-  ///
-  /// In en, this message translates to:
-  /// **'Diamond'**
-  String get rankDiamond;
-
-  /// No description provided for @rankGold.
-  ///
-  /// In en, this message translates to:
-  /// **'Gold'**
-  String get rankGold;
-
-  /// No description provided for @rankSilver.
-  ///
-  /// In en, this message translates to:
-  /// **'Silver'**
-  String get rankSilver;
-
-  /// No description provided for @rankBronze.
-  ///
-  /// In en, this message translates to:
-  /// **'Bronze'**
-  String get rankBronze;
-
-  /// No description provided for @rankIron.
-  ///
-  /// In en, this message translates to:
-  /// **'Iron'**
-  String get rankIron;
-
   /// No description provided for @subscriptions.
   ///
   /// In en, this message translates to:
@@ -571,36 +451,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Limit Exceeded'**
   String get limitExceeded;
-
-  /// No description provided for @streak.
-  ///
-  /// In en, this message translates to:
-  /// **'Streak'**
-  String get streak;
-
-  /// No description provided for @streakBonus.
-  ///
-  /// In en, this message translates to:
-  /// **'Streak Bonus'**
-  String get streakBonus;
-
-  /// No description provided for @maxStreak.
-  ///
-  /// In en, this message translates to:
-  /// **'Max Streak'**
-  String get maxStreak;
-
-  /// No description provided for @streakBroken.
-  ///
-  /// In en, this message translates to:
-  /// **'Streak Broken'**
-  String get streakBroken;
-
-  /// No description provided for @points.
-  ///
-  /// In en, this message translates to:
-  /// **'Points'**
-  String get points;
 
   /// No description provided for @weeks.
   ///
@@ -739,24 +589,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap to reload'**
   String get hintTapToReload;
-
-  /// No description provided for @loadNewChallenge.
-  ///
-  /// In en, this message translates to:
-  /// **'Load new challenge'**
-  String get loadNewChallenge;
-
-  /// No description provided for @challengeIntro.
-  ///
-  /// In en, this message translates to:
-  /// **'Get short, engaging creative challenges to boost your skills.'**
-  String get challengeIntro;
-
-  /// No description provided for @leaderboard.
-  ///
-  /// In en, this message translates to:
-  /// **'Leaderboard'**
-  String get leaderboard;
 
   /// No description provided for @limited.
   ///

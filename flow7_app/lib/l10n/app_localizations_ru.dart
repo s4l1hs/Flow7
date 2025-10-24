@@ -9,46 +9,7 @@ class AppLocalizationsRu extends AppLocalizations {
   AppLocalizationsRu([String locale = 'ru']) : super(locale);
 
   @override
-  String get appName => 'Spark Up';
-
-  @override
-  String get appSlogan => 'Ваша ежедневная доза знаний, вызовов и викторин.';
-
-  @override
-  String get dailyFact => 'Ежедневный факт';
-
-  @override
-  String get source => 'Источник';
-
-  @override
-  String get tapToLoadNewChallenge => 'Нажмите, чтобы загрузить новый вызов';
-
-  @override
-  String get noChallengeAvailable => 'Новый вызов недоступен.';
-
-  @override
-  String get challengeCouldNotBeLoaded => 'Не удалось загрузить вызов.';
-
-  @override
-  String get startNewQuiz => 'Начать новую викторину';
-
-  @override
-  String get quizFinished => 'Викторина завершена!';
-
-  @override
-  String get yourScore => 'Ваш счет';
-
-  @override
   String get great => 'Отлично!';
-
-  @override
-  String get question => 'Вопрос';
-
-  @override
-  String get quizCouldNotStart => 'Не удалось запустить викторину';
-
-  @override
-  String get questionDataIsEmpty => 'Данные викторины пусты.';
 
   @override
   String get navMainMenu => 'Темы';
@@ -155,27 +116,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get selected => 'выбранный';
 
   @override
-  String get yourRank => 'Ваш Ранг';
-
-  @override
-  String get rankMaster => 'Мастер';
-
-  @override
-  String get rankDiamond => 'Алмаз';
-
-  @override
-  String get rankGold => 'Золото';
-
-  @override
-  String get rankSilver => 'Серебро';
-
-  @override
-  String get rankBronze => 'Бронза';
-
-  @override
-  String get rankIron => 'Железо';
-
-  @override
   String get subscriptions => 'Подписки';
 
   @override
@@ -238,21 +178,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get limitExceeded => 'Лимит Превышен';
-
-  @override
-  String get streak => 'Серия';
-
-  @override
-  String get streakBonus => 'Бонус Серии';
-
-  @override
-  String get maxStreak => 'Макс. Серия';
-
-  @override
-  String get streakBroken => 'Серия Прервана';
-
-  @override
-  String get points => 'Очки';
 
   @override
   String get weeks => 'недели';
@@ -322,16 +247,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get hintTapToReload => 'Нажмите, чтобы перезагрузить';
-
-  @override
-  String get loadNewChallenge => 'Загрузить новый вызов';
-
-  @override
-  String get challengeIntro =>
-      'Получайте короткие, увлекательные вызовы для прокачки навыков.';
-
-  @override
-  String get leaderboard => 'Таблица лидеров';
 
   @override
   String get limited => 'Ограничено';

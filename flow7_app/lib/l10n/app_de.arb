@@ -1,22 +1,7 @@
 {
   "@@locale": "de",
 
-  "appName": "Spark Up",
-  "appSlogan": "Ihre tägliche Dosis Wissen, Herausforderung und Quiz.",
-  "dailyFact": "Tägliche Tatsache",
-  "source": "Quelle",
-
-  "tapToLoadNewChallenge": "Tippen Sie, um eine neue Herausforderung zu laden",
-  "noChallengeAvailable": "Keine neue Herausforderung verfügbar.",
-  "challengeCouldNotBeLoaded": "Herausforderung konnte nicht geladen werden.",
-
-  "startNewQuiz": "Neues Quiz starten",
-  "quizFinished": "Quiz beendet!",
-  "yourScore": "Ihre Punktzahl",
   "great": "Großartig!",
-  "question": "Frage",
-  "quizCouldNotStart": "Quiz konnte nicht gestartet werden",
-  "questionDataIsEmpty": "Quizdaten sind leer.",
 
   "navMainMenu": "Themen",
   "navInfo": "Fakt",
@@ -117,9 +102,6 @@
 
   "challenge": "Herausforderung",
   "hintTapToReload": "Tippen zum Nachladen",
-  "loadNewChallenge": "Neue Herausforderung laden",
-  "challengeIntro": "Erhalten Sie kurze, ansprechende Herausforderungen, um Ihre Fähigkeiten zu verbessern.",
-  "leaderboard": "Bestenliste",
   "limited": "Begrenzt",
 
   "newProgram": "Neues Programm",
@@ -140,10 +122,9 @@
   "requiredField": "Dieses Feld ist erforderlich",
   "endTimeError": "Die Endzeit muss nach der Startzeit liegen",
 
-  "edit": "Bearbeiten",
-  "noPlansHere": "Für diesen Tag sind keine Programme vorhanden.",
-
   "theme": "Darstellung",
   "darkMode": "Dunkelmodus",
-  "lightMode": "Heller Modus"
+  "lightMode": "Heller Modus",
+  "edit": "Bearbeiten",
+  "noPlansHere": "Für diesen Tag sind keine Programme vorhanden."
 }
