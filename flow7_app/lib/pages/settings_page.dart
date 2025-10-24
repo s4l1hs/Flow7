@@ -10,6 +10,7 @@ import '../l10n/app_localizations.dart';
 import '../locale_provider.dart';
 import '../main.dart';
 import '../providers/user_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -61,6 +62,14 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
     if (!mounted) return;
     setState(() => _isLoadingProfile = true);
     try {
+      // Önce local tercih varsa onu uygula (local override backend)
+      final prefs = await SharedPreferences.getInstance();
+      final savedTheme = prefs.getString('theme_mode');
+      if (savedTheme != null) {
+        _currentTheme = savedTheme.toUpperCase();
+        Provider.of<ThemeNotifier>(context, listen: false).setTheme(_currentTheme);
+      }
+
       final token = await _getIdToken();
       if (token == null) throw Exception("User not logged in");
 
@@ -79,7 +88,8 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
           _currentLanguageCode = languageCode;
           _username = (firebaseName != null && firebaseName.isNotEmpty) ? firebaseName : (backendUsername.isNotEmpty ? backendUsername : null);
           _notificationsEnabled = notifications;
-          _currentTheme = themePreference;
+          // Eğer local'de tercih yoksa backend tercihini uygula, aksi halde local tercih korunur
+          if (savedTheme == null) _currentTheme = themePreference;
         });
 
         Provider.of<LocaleProvider>(context, listen: false).setLocale(_currentLanguageCode);
@@ -102,6 +112,14 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
     // UI'da hemen yansıt, bekleme sırasında loading gösterilir
     if (mounted) setState(() => _currentTheme = newTheme);
 
+    // Local'e kaydet (optimistic)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('theme_mode', newTheme.toUpperCase());
+    } catch (_) {
+      // Eğer local kaydetme başarısız olursa devam et (backend'e yine de dene)
+    }
+    
     try {
       final token = await _getIdToken();
       if (token == null) throw Exception("User not logged in");
@@ -124,8 +142,12 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
     } catch (e) {
       if (mounted) {
         _showErrorSnackBar("Tema tercihi kaydedilemedi: $e");
-        // Hata durumunda UI'ı eski temaya geri çevir
+        // Hata durumunda UI'ı eski temaya geri çevir ve local'i düzelt
         setState(() => _currentTheme = oldTheme);
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('theme_mode', oldTheme.toUpperCase());
+        } catch (_) {}
       }
     } finally {
       if (mounted) setState(() => _isSavingTheme = false);
