@@ -277,7 +277,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get planDeleted => '计划已删除';
 
   @override
-  String get programCalendar => '计划 - 日历';
+  String get programCalendar => '您的计划';
 
   @override
   String get add => '添加';
@@ -331,7 +331,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tapToAddPlan => '点按 + 为所选日期添加计划';
 
   @override
-  String get bestValue => '最佳性价比';
+  String get bestValue => '最佳优惠';
 
   @override
   String get analytics => '分析';
@@ -361,13 +361,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get basicSupport => '基础支持';
 
   @override
-  String get view2Weeks => '2 周视图';
+  String get view2Weeks => '2 周计划';
 
   @override
-  String get view4Weeks => '4 周视图';
+  String get view4Weeks => '4 周计划';
 
   @override
-  String get view8Weeks => '8 周视图';
+  String get view8Weeks => '8 周计划';
 
   @override
   String get basicReminders => '基础提醒';

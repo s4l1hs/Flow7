@@ -285,7 +285,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get planDeleted => 'Programme supprimé';
 
   @override
-  String get programCalendar => 'Programme - Calendrier';
+  String get programCalendar => 'Votre programme';
 
   @override
   String get add => 'Ajouter';
@@ -373,13 +373,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get basicSupport => 'Support de base';
 
   @override
-  String get view2Weeks => 'Vue 2 semaines';
+  String get view2Weeks => 'Programme sur 2 semaines';
 
   @override
-  String get view4Weeks => 'Vue 4 semaines';
+  String get view4Weeks => 'Programme sur 4 semaines';
 
   @override
-  String get view8Weeks => 'Vue 8 semaines';
+  String get view8Weeks => 'Programme sur 8 semaines';
 
   @override
   String get basicReminders => 'Rappels de base';

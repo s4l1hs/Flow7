@@ -262,9 +262,6 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final theme = Theme.of(context);
     final viewPadding = MediaQuery.of(context).viewPadding;
     final bottomPadding = viewPadding.bottom > 0 ? viewPadding.bottom : 12.h;
-    final totalWidth = MediaQuery.of(context).size.width - 24.w;
-    final itemWidth = totalWidth / _navItems.length;
-    final currentColor = (_navItems[_selectedIndex]['color'] as Color?) ?? theme.colorScheme.primary;
 
     return SafeArea(
       bottom: true,
@@ -280,23 +277,10 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               decoration: BoxDecoration(color: theme.cardColor.withOpacity(0.04), borderRadius: BorderRadius.circular(28.r)),
               child: Stack(
                 children: [
-                  // highlight pill
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 420),
-                    left: 12.w + (_selectedIndex * itemWidth) + (itemWidth - (itemWidth * 0.6)) / 2,
-                    top: 6.h,
-                    width: itemWidth * 0.6,
-                    height: 54.h,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [currentColor.withOpacity(0.14), currentColor.withOpacity(0.06)],
-                        ),
-                        borderRadius: BorderRadius.circular(14.r),
-                      ),
-                    ),
-                  ),
-                  Row(
+                  // highlight pill removed per request (static icon-only nav)
+                  // (kept Row with nav items below)
+                  SizedBox.shrink(),
+                   Row(
                     children: _navItems.asMap().entries.map((entry) {
                       final idx = entry.key;
                       final itm = entry.value;

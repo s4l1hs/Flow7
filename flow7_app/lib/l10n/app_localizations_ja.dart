@@ -277,7 +277,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get planDeleted => 'プログラムが削除されました';
 
   @override
-  String get programCalendar => 'プログラム - カレンダー';
+  String get programCalendar => 'あなたのプログラム';
 
   @override
   String get add => '追加';
@@ -331,7 +331,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get tapToAddPlan => '選択した日に予定を追加するには「+」をタップ';
 
   @override
-  String get bestValue => 'お得';
+  String get bestValue => 'お得なオファー';
 
   @override
   String get analytics => '分析';
@@ -361,13 +361,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get basicSupport => '基本サポート';
 
   @override
-  String get view2Weeks => '2週間表示';
+  String get view2Weeks => '2週間のプログラム';
 
   @override
-  String get view4Weeks => '4週間表示';
+  String get view4Weeks => '4週間のプログラム';
 
   @override
-  String get view8Weeks => '8週間表示';
+  String get view8Weeks => '8週間のプログラム';
 
   @override
   String get basicReminders => '基本リマインダー';

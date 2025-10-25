@@ -341,7 +341,7 @@ class ProgramPageState extends State<ProgramPage> {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(loc.programCalendar),
+        title: _buildAnimatedTitle(loc),
         centerTitle: true,
         actions: [
           IconButton(
@@ -501,8 +501,23 @@ class ProgramPageState extends State<ProgramPage> {
      ]));
     });
   }
-}
 
+  Widget _buildAnimatedTitle(AppLocalizations loc) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.96, end: 1.0),
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutCubic,
+      builder: (context, val, child) => Transform.scale(
+        scale: val,
+        child: Opacity(opacity: val, child: child),
+      ),
+      child: Text(
+        loc.programCalendar,
+        style: TextStyle(fontSize: 25.sp, fontWeight: FontWeight.w800),
+      ),
+    );
+  }
+}
 
 // --- YENİDEN KULLANILABİLİR WIDGET ---
 

@@ -653,7 +653,7 @@ abstract class AppLocalizations {
   /// No description provided for @programCalendar.
   ///
   /// In en, this message translates to:
-  /// **'Program - Calendar'**
+  /// **'Your Program'**
   String get programCalendar;
 
   /// No description provided for @add.
@@ -761,7 +761,7 @@ abstract class AppLocalizations {
   /// No description provided for @bestValue.
   ///
   /// In en, this message translates to:
-  /// **'Best value'**
+  /// **'Best offer'**
   String get bestValue;
 
   /// No description provided for @analytics.
@@ -821,19 +821,19 @@ abstract class AppLocalizations {
   /// No description provided for @view2Weeks.
   ///
   /// In en, this message translates to:
-  /// **'2-week view'**
+  /// **'2-week program'**
   String get view2Weeks;
 
   /// No description provided for @view4Weeks.
   ///
   /// In en, this message translates to:
-  /// **'4-week view'**
+  /// **'4-week program'**
   String get view4Weeks;
 
   /// No description provided for @view8Weeks.
   ///
   /// In en, this message translates to:
-  /// **'8-week view'**
+  /// **'8-week program'**
   String get view8Weeks;
 
   /// No description provided for @basicReminders.

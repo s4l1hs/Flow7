@@ -279,7 +279,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get planDeleted => 'प्रोग्राम हटाया गया';
 
   @override
-  String get programCalendar => 'प्रोग्राम - कैलेंडर';
+  String get programCalendar => 'आपका प्रोग्राम';
 
   @override
   String get add => 'जोड़ें';
@@ -335,7 +335,7 @@ class AppLocalizationsHi extends AppLocalizations {
       'चयनित दिन के लिए योजना जोड़ने के लिए + पर टैप करें';
 
   @override
-  String get bestValue => 'सर्वोत्तम मूल्य';
+  String get bestValue => 'बेहतरीन ऑफ़र';
 
   @override
   String get analytics => 'विश्लेषण';
@@ -365,13 +365,13 @@ class AppLocalizationsHi extends AppLocalizations {
   String get basicSupport => 'बुनियादी सहायता';
 
   @override
-  String get view2Weeks => '2 सप्ताह दृश्य';
+  String get view2Weeks => '2‑सप्ताह कार्यक्रम';
 
   @override
-  String get view4Weeks => '4 सप्ताह दृश्य';
+  String get view4Weeks => '4‑सप्ताह कार्यक्रम';
 
   @override
-  String get view8Weeks => '8 सप्ताह दृश्य';
+  String get view8Weeks => '8‑सप्ताह कार्यक्रम';
 
   @override
   String get basicReminders => 'मूल अनुस्मारक';

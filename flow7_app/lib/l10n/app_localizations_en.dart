@@ -279,7 +279,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planDeleted => 'Program deleted';
 
   @override
-  String get programCalendar => 'Program - Calendar';
+  String get programCalendar => 'Your Program';
 
   @override
   String get add => 'Add';
@@ -334,7 +334,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tapToAddPlan => 'Tap + to add a plan for the selected day';
 
   @override
-  String get bestValue => 'Best value';
+  String get bestValue => 'Best offer';
 
   @override
   String get analytics => 'Analytics';
@@ -364,13 +364,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get basicSupport => 'Basic support';
 
   @override
-  String get view2Weeks => '2-week view';
+  String get view2Weeks => '2-week program';
 
   @override
-  String get view4Weeks => '4-week view';
+  String get view4Weeks => '4-week program';
 
   @override
-  String get view8Weeks => '8-week view';
+  String get view8Weeks => '8-week program';
 
   @override
   String get basicReminders => 'Basic reminders';

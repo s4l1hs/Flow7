@@ -279,7 +279,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get planDeleted => 'Plan silindi';
 
   @override
-  String get programCalendar => 'Program - Takvim';
+  String get programCalendar => 'Programın';
 
   @override
   String get add => 'Ekle';
@@ -365,13 +365,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get basicSupport => 'Temel destek';
 
   @override
-  String get view2Weeks => '2 haftalık görünüm';
+  String get view2Weeks => '2 haftalık program';
 
   @override
-  String get view4Weeks => '4 haftalık görünüm';
+  String get view4Weeks => '4 haftalık program';
 
   @override
-  String get view8Weeks => '8 haftalık görünüm';
+  String get view8Weeks => '8 haftalık program';
 
   @override
   String get basicReminders => 'Temel hatırlatmalar';

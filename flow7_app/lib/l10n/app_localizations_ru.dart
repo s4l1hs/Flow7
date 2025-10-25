@@ -279,7 +279,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get planDeleted => 'Программа удалена';
 
   @override
-  String get programCalendar => 'Программа - Календарь';
+  String get programCalendar => 'Ваша программа';
 
   @override
   String get add => 'Добавить';
@@ -334,7 +334,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get tapToAddPlan => 'Нажмите +, чтобы добавить план на выбранный день';
 
   @override
-  String get bestValue => 'Лучшее предложение';
+  String get bestValue => 'Лучшее';
 
   @override
   String get analytics => 'Аналитика';
@@ -364,13 +364,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get basicSupport => 'Базовая поддержка';
 
   @override
-  String get view2Weeks => 'Просмотр за 2 недели';
+  String get view2Weeks => 'Программа на 2 недели';
 
   @override
-  String get view4Weeks => 'Просмотр за 4 недели';
+  String get view4Weeks => 'Программа на 4 недели';
 
   @override
-  String get view8Weeks => 'Просмотр за 8 недель';
+  String get view8Weeks => 'Программа на 8 недель';
 
   @override
   String get basicReminders => 'Базовые уведомления';
