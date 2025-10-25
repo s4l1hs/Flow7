@@ -335,4 +335,8 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get subtitleSettings => 'Einstellungen';
+
+  @override
+  String get tapToAddPlan =>
+      'Tippe auf +, um einen Plan für den ausgewählten Tag hinzuzufügen';
 }

@@ -105,5 +105,6 @@
   "planAndSuccess": "Plan et réussite",
   "subtitleProgram": "Concentrez-vous",
   "subtitleSubscription": "Plans",
-  "subtitleSettings": "Paramètres"
+  "subtitleSettings": "Paramètres",
+  "tapToAddPlan": "Appuyez sur + pour ajouter un programme au jour sélectionné"
 }

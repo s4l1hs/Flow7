@@ -337,4 +337,8 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get subtitleSettings => 'Paramètres';
+
+  @override
+  String get tapToAddPlan =>
+      'Appuyez sur + pour ajouter un programme au jour sélectionné';
 }

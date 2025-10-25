@@ -330,4 +330,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get subtitleSettings => 'Ayarlar';
+
+  @override
+  String get tapToAddPlan => 'Seçili güne plan eklemek için + tuşuna dokunun';
 }

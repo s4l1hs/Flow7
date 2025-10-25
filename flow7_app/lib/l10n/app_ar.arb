@@ -108,5 +108,6 @@
   "planAndSuccess": "الخطة والنجاح",
   "subtitleProgram": "ركز",
   "subtitleSubscription": "الخطط",
-  "subtitleSettings": "الإعدادات"
+  "subtitleSettings": "الإعدادات",
+  "tapToAddPlan": "اضغط + لإضافة خطة لليوم المحدد"
 }

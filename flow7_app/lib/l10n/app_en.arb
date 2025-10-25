@@ -114,5 +114,6 @@
   "planAndSuccess": "Plan & Success",
   "subtitleProgram": "Focus",
   "subtitleSubscription": "Plans",
-  "subtitleSettings": "Settings"
+  "subtitleSettings": "Settings",
+  "tapToAddPlan": "Tap + to add a plan for the selected day"
 }

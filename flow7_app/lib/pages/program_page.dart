@@ -433,7 +433,7 @@ class ProgramPageState extends State<ProgramPage> {
         SizedBox(height: 14.h),
         Text(AppLocalizations.of(context)?.noPlansHere ?? "No plans for this day.", style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600)),
         SizedBox(height: 8.h),
-        Text('Tap + to add a plan for the selected day', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color), textAlign: TextAlign.center),
+        Text(AppLocalizations.of(context)?.tapToAddPlan ?? "Tap + to add a plan", style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color), textAlign: TextAlign.center),
       ]));
     }
 

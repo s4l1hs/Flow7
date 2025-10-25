@@ -331,4 +331,8 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get subtitleSettings => 'Impostazioni';
+
+  @override
+  String get tapToAddPlan =>
+      'Tocca + per aggiungere un programma al giorno selezionato';
 }

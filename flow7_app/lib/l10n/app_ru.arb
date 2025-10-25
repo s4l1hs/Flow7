@@ -105,5 +105,6 @@
   "planAndSuccess": "План и успех",
   "subtitleProgram": "Фокусируйся",
   "subtitleSubscription": "Планы",
-  "subtitleSettings": "Настройки"
+  "subtitleSettings": "Настройки",
+  "tapToAddPlan": "Нажмите +, чтобы добавить план на выбранный день"
 }

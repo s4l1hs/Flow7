@@ -326,4 +326,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get subtitleSettings => '设置';
+
+  @override
+  String get tapToAddPlan => '点按 + 为所选日期添加计划';
 }

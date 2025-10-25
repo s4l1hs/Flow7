@@ -329,4 +329,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get subtitleSettings => 'الإعدادات';
+
+  @override
+  String get tapToAddPlan => 'اضغط + لإضافة خطة لليوم المحدد';
 }

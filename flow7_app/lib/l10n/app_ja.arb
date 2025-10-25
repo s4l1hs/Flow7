@@ -105,5 +105,6 @@
   "planAndSuccess": "計画と成功",
   "subtitleProgram": "集中",
   "subtitleSubscription": "プラン",
-  "subtitleSettings": "設定"
+  "subtitleSettings": "設定",
+  "tapToAddPlan": "選択した日に予定を追加するには「+」をタップ"
 }

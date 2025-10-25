@@ -329,4 +329,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get subtitleSettings => 'Настройки';
+
+  @override
+  String get tapToAddPlan => 'Нажмите +, чтобы добавить план на выбранный день';
 }

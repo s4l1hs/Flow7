@@ -751,6 +751,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get subtitleSettings;
+
+  /// No description provided for @tapToAddPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + to add a plan for the selected day'**
+  String get tapToAddPlan;
 }
 
 class _AppLocalizationsDelegate

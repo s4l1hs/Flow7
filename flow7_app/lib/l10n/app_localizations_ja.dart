@@ -326,4 +326,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get subtitleSettings => '設定';
+
+  @override
+  String get tapToAddPlan => '選択した日に予定を追加するには「+」をタップ';
 }

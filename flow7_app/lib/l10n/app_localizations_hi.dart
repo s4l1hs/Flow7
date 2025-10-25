@@ -329,4 +329,8 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get subtitleSettings => 'सेटिंग्स';
+
+  @override
+  String get tapToAddPlan =>
+      'चयनित दिन के लिए योजना जोड़ने के लिए + पर टैप करें';
 }
