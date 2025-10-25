@@ -362,4 +362,26 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get basicSupport => 'Базовая поддержка';
+
+  @override
+  String get view2Weeks => 'Просмотр за 2 недели';
+
+  @override
+  String get view4Weeks => 'Просмотр за 4 недели';
+
+  @override
+  String get view8Weeks => 'Просмотр за 8 недель';
+
+  @override
+  String get basicReminders => 'Базовые уведомления';
+
+  @override
+  String get advancedReminders => 'Расширенные уведомления';
+
+  @override
+  String get advancedRemindersAndSnooze =>
+      'Расширенные уведомления и отложение';
+
+  @override
+  String get noSupport => 'Без поддержки';
 }

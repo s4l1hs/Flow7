@@ -362,4 +362,25 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get basicSupport => 'دعم أساسي';
+
+  @override
+  String get view2Weeks => 'عرض لمدة أسبوعين';
+
+  @override
+  String get view4Weeks => 'عرض لمدة 4 أسابيع';
+
+  @override
+  String get view8Weeks => 'عرض لمدة 8 أسابيع';
+
+  @override
+  String get basicReminders => 'تذكيرات أساسية';
+
+  @override
+  String get advancedReminders => 'تذكيرات متقدمة';
+
+  @override
+  String get advancedRemindersAndSnooze => 'تذكيرات متقدمة وتأجيل';
+
+  @override
+  String get noSupport => 'لا دعم';
 }

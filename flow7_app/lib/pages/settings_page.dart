@@ -437,6 +437,14 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
               padding: EdgeInsets.symmetric(vertical: 8.h),
               children: _supportedLanguages.entries.map((entry) {
                 final isSelected = entry.key == _currentLanguageCode;
+                final isLight = theme.brightness == Brightness.light;
+                final bgColor = isSelected
+                    ? theme.colorScheme.primary
+                    : (isLight ? theme.colorScheme.primary.withOpacity(0.12) : Colors.white10);
+                final txtColor = isSelected
+                    ? Colors.white
+                    : (isLight ? theme.colorScheme.primary : Colors.white70);
+
                 return GestureDetector(
                   onTap: () {
                     Navigator.pop(context);
@@ -445,11 +453,11 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
                     decoration: BoxDecoration(
-                      color: isSelected ? theme.colorScheme.primary : Colors.white10,
+                      color: bgColor,
                       borderRadius: BorderRadius.circular(12.r),
                       border: Border.all(color: isSelected ? theme.colorScheme.primary : Colors.transparent),
                     ),
-                    child: Center(child: Text(entry.value, textAlign: TextAlign.center, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontSize: 13.sp))),
+                    child: Center(child: Text(entry.value, textAlign: TextAlign.center, style: TextStyle(color: txtColor, fontSize: 13.sp))),
                   ),
                 );
               }).toList(),

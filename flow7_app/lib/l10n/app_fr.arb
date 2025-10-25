@@ -116,5 +116,12 @@
   "customReminders": "Rappels personnalisés",
   "prioritySupport": "Support prioritaire",
   "syncGoogleCalendar": "Synchroniser avec Google Agenda",
-  "basicSupport": "Support de base"
+  "basicSupport": "Support de base",
+  "view2Weeks": "Vue 2 semaines",
+  "view4Weeks": "Vue 4 semaines",
+  "view8Weeks": "Vue 8 semaines",
+  "basicReminders": "Rappels de base",
+  "advancedReminders": "Rappels avancés",
+  "advancedRemindersAndSnooze": "Rappels avancés et report",
+  "noSupport": "Pas de support"
 }

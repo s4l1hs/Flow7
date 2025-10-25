@@ -359,4 +359,25 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get basicSupport => '基础支持';
+
+  @override
+  String get view2Weeks => '2 周视图';
+
+  @override
+  String get view4Weeks => '4 周视图';
+
+  @override
+  String get view8Weeks => '8 周视图';
+
+  @override
+  String get basicReminders => '基础提醒';
+
+  @override
+  String get advancedReminders => '高级提醒';
+
+  @override
+  String get advancedRemindersAndSnooze => '高级提醒与延迟';
+
+  @override
+  String get noSupport => '无支持';
 }

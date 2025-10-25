@@ -116,5 +116,12 @@
   "customReminders": "自定义提醒",
   "prioritySupport": "优先支持",
   "syncGoogleCalendar": "与 Google 日历同步",
-  "basicSupport": "基础支持"
+  "basicSupport": "基础支持",
+  "view2Weeks": "2 周视图",
+  "view4Weeks": "4 周视图",
+  "view8Weeks": "8 周视图",
+  "basicReminders": "基础提醒",
+  "advancedReminders": "高级提醒",
+  "advancedRemindersAndSnooze": "高级提醒与延迟",
+  "noSupport": "无支持"
 }

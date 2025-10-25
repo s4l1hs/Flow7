@@ -116,5 +116,12 @@
   "customReminders": "कस्टम अनुस्मारक",
   "prioritySupport": "प्राथमिक समर्थन",
   "syncGoogleCalendar": "Google कैलेंडर के साथ सिंक करें",
-  "basicSupport": "बुनियादी सहायता"
+  "basicSupport": "बुनियादी सहायता",
+  "view2Weeks": "2 सप्ताह दृश्य",
+  "view4Weeks": "4 सप्ताह दृश्य",
+  "view8Weeks": "8 सप्ताह दृश्य",
+  "basicReminders": "मूल अनुस्मारक",
+  "advancedReminders": "उन्नत अनुस्मारक",
+  "advancedRemindersAndSnooze": "उन्नत अनुस्मारक और स्नूज़",
+  "noSupport": "कोई समर्थन नहीं"
 }

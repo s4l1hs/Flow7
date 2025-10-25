@@ -371,4 +371,25 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get basicSupport => 'Support de base';
+
+  @override
+  String get view2Weeks => 'Vue 2 semaines';
+
+  @override
+  String get view4Weeks => 'Vue 4 semaines';
+
+  @override
+  String get view8Weeks => 'Vue 8 semaines';
+
+  @override
+  String get basicReminders => 'Rappels de base';
+
+  @override
+  String get advancedReminders => 'Rappels avancés';
+
+  @override
+  String get advancedRemindersAndSnooze => 'Rappels avancés et report';
+
+  @override
+  String get noSupport => 'Pas de support';
 }

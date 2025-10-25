@@ -116,5 +116,12 @@
   "customReminders": "カスタムリマインダー",
   "prioritySupport": "優先サポート",
   "syncGoogleCalendar": "Google カレンダーと同期",
-  "basicSupport": "基本サポート"
+  "basicSupport": "基本サポート",
+  "view2Weeks": "2週間表示",
+  "view4Weeks": "4週間表示",
+  "view8Weeks": "8週間表示",
+  "basicReminders": "基本リマインダー",
+  "advancedReminders": "高度なリマインダー",
+  "advancedRemindersAndSnooze": "高度なリマインダーとスヌーズ",
+  "noSupport": "サポートなし"
 }

@@ -817,6 +817,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Basic support'**
   String get basicSupport;
+
+  /// No description provided for @view2Weeks.
+  ///
+  /// In en, this message translates to:
+  /// **'2-week view'**
+  String get view2Weeks;
+
+  /// No description provided for @view4Weeks.
+  ///
+  /// In en, this message translates to:
+  /// **'4-week view'**
+  String get view4Weeks;
+
+  /// No description provided for @view8Weeks.
+  ///
+  /// In en, this message translates to:
+  /// **'8-week view'**
+  String get view8Weeks;
+
+  /// No description provided for @basicReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic reminders'**
+  String get basicReminders;
+
+  /// No description provided for @advancedReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced reminders'**
+  String get advancedReminders;
+
+  /// No description provided for @advancedRemindersAndSnooze.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced reminders & snooze'**
+  String get advancedRemindersAndSnooze;
+
+  /// No description provided for @noSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'No support'**
+  String get noSupport;
 }
 
 class _AppLocalizationsDelegate

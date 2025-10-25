@@ -359,4 +359,25 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get basicSupport => '基本サポート';
+
+  @override
+  String get view2Weeks => '2週間表示';
+
+  @override
+  String get view4Weeks => '4週間表示';
+
+  @override
+  String get view8Weeks => '8週間表示';
+
+  @override
+  String get basicReminders => '基本リマインダー';
+
+  @override
+  String get advancedReminders => '高度なリマインダー';
+
+  @override
+  String get advancedRemindersAndSnooze => '高度なリマインダーとスヌーズ';
+
+  @override
+  String get noSupport => 'サポートなし';
 }

@@ -142,5 +142,12 @@
   "customReminders": "Individuelle Erinnerungen",
   "prioritySupport": "Priorisierter Support",
   "syncGoogleCalendar": "Mit Google Kalender synchronisieren",
-  "basicSupport": "Basis-Support"
+  "basicSupport": "Basis-Support",
+  "view2Weeks": "2‑Wochen‑Ansicht",
+  "view4Weeks": "4‑Wochen‑Ansicht",
+  "view8Weeks": "8‑Wochen‑Ansicht",
+  "basicReminders": "Einfache Erinnerungen",
+  "advancedReminders": "Erweiterte Erinnerungen",
+  "advancedRemindersAndSnooze": "Erweiterte Erinnerungen & Schlummerfunktion",
+  "noSupport": "Kein Support"
 }

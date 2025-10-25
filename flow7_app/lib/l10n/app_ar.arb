@@ -119,5 +119,12 @@
   "customReminders": "تذكيرات مخصصة",
   "prioritySupport": "دعم ذو أولوية",
   "syncGoogleCalendar": "مزامنة مع تقويم Google",
-  "basicSupport": "دعم أساسي"
+  "basicSupport": "دعم أساسي",
+  "view2Weeks": "عرض لمدة أسبوعين",
+  "view4Weeks": "عرض لمدة 4 أسابيع",
+  "view8Weeks": "عرض لمدة 8 أسابيع",
+  "basicReminders": "تذكيرات أساسية",
+  "advancedReminders": "تذكيرات متقدمة",
+  "advancedRemindersAndSnooze": "تذكيرات متقدمة وتأجيل",
+  "noSupport": "لا دعم"
 }

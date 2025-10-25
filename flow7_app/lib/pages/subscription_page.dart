@@ -139,12 +139,13 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
               height: MediaQuery.of(context).size.height * 0.40,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: 8.w),
                 itemCount: plans.length,
                 physics: BouncingScrollPhysics(),
                 itemBuilder: (context, index) {
                   final plan = plans[index];
                   return Padding(
-                    padding: EdgeInsets.only(right: 14.w),
+                    padding: EdgeInsets.symmetric(horizontal: 6.w), // küçük yatay boşluk her kart arasında
                     child: _buildSubscriptionCard(theme, localizations, plan, currentLevel),
                   );
                 },
@@ -188,23 +189,23 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
             final double cardHeight = math.min(screenH * 0.30, screenH * 0.65);
             final double cardWidth = math.min(screenW * 0.72, 340.w);
   
-            // Capabilities per plan (icons + short label)
+            // Capabilities per plan (icons + localized labels)
             final List<Map<String, dynamic>> capabilities = planLevel == 'free'
                 ? [
-                    {'icon': Icons.view_week, 'label': '2-week view'},
-                    {'icon': Icons.notifications_none, 'label': 'Basic reminders'},
-                    {'icon': Icons.sync_disabled, 'label': 'No support'},
+                    {'icon': Icons.view_week, 'label': localizations.view2Weeks},
+                    {'icon': Icons.notifications_none, 'label': localizations.basicReminders},
+                    {'icon': Icons.sync_disabled, 'label': localizations.noSupport},
                   ]
                 : planLevel == 'pro'
                     ? [
-                        {'icon': Icons.view_week, 'label': '4-week view'},
-                        {'icon': Icons.notifications_active, 'label': 'Advanced reminders'},
-                        {'icon': Icons.headset_mic, 'label': 'Basic support'},
+                        {'icon': Icons.view_week, 'label': localizations.view4Weeks},
+                        {'icon': Icons.notifications_active, 'label': localizations.advancedReminders},
+                        {'icon': Icons.headset_mic, 'label': localizations.basicSupport},
                       ]
                     : [
-                        {'icon': Icons.calendar_view_month, 'label': '8-week view'},
-                        {'icon': Icons.notifications_active, 'label': 'Advanced reminders & snooze'},
-                        {'icon': Icons.headset, 'label': 'Priority support'},
+                        {'icon': Icons.calendar_view_month, 'label': localizations.view8Weeks},
+                        {'icon': Icons.notifications_active, 'label': localizations.advancedRemindersAndSnooze},
+                        {'icon': Icons.headset, 'label': localizations.prioritySupport},
                       ];
 
             // stronger visual for pro / ultra

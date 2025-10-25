@@ -126,5 +126,12 @@
   "customReminders": "Custom reminders",
   "prioritySupport": "Priority support",
   "syncGoogleCalendar": "Sync with Google Calendar",
-  "basicSupport": "Basic support"
+  "basicSupport": "Basic support",
+  "view2Weeks": "2-week view",
+  "view4Weeks": "4-week view",
+  "view8Weeks": "8-week view",
+  "basicReminders": "Basic reminders",
+  "advancedReminders": "Advanced reminders",
+  "advancedRemindersAndSnooze": "Advanced reminders & snooze",
+  "noSupport": "No support"
 }

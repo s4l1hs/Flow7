@@ -363,4 +363,25 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get basicSupport => 'Temel destek';
+
+  @override
+  String get view2Weeks => '2 haftalık görünüm';
+
+  @override
+  String get view4Weeks => '4 haftalık görünüm';
+
+  @override
+  String get view8Weeks => '8 haftalık görünüm';
+
+  @override
+  String get basicReminders => 'Temel hatırlatmalar';
+
+  @override
+  String get advancedReminders => 'Gelişmiş hatırlatmalar';
+
+  @override
+  String get advancedRemindersAndSnooze => 'Gelişmiş hatırlatmalar ve erteleme';
+
+  @override
+  String get noSupport => 'Destek yok';
 }

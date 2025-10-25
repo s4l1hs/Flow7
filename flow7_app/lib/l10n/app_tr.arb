@@ -117,5 +117,12 @@
   "customReminders": "Özel hatırlatmalar",
   "prioritySupport": "Öncelikli destek",
   "syncGoogleCalendar": "Google Takvim ile senkronize et",
-  "basicSupport": "Temel destek"
+  "basicSupport": "Temel destek",
+  "view2Weeks": "2 haftalık görünüm",
+  "view4Weeks": "4 haftalık görünüm",
+  "view8Weeks": "8 haftalık görünüm",
+  "basicReminders": "Temel hatırlatmalar",
+  "advancedReminders": "Gelişmiş hatırlatmalar",
+  "advancedRemindersAndSnooze": "Gelişmiş hatırlatmalar ve erteleme",
+  "noSupport": "Destek yok"
 }

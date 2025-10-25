@@ -55,14 +55,18 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    // Visionary palette tuned for Flow7: deep vibrant accents + warm ambers
-    const Color brandDeep = Color(0xFF005B51);
-    const Color brandAccent = Color(0xFFFFC107); // amber accent (user requested)
-    const Color brandViolet = Color(0xFF6C5CE7);
-    const Color bgLight = Color(0xFFFBFDFF);
-    const Color cardLight = Color(0xFFF6FAFB);
-    const Color bgDark = Color(0xFF0F1115);
-    const Color cardDark = Color(0xFF18191C);
+    // New vibrant / cheerful (feminine-leaning) palette — bright, warm and uplifting (light)
+    const Color brandDeep = Color(0xFFE91E63);     // vivid pink (light primary)
+    const Color brandAccent = Color(0xFFFF7043);   // warm coral / peach accent
+    const Color brandViolet = Color(0xFFAB47BC);   // soft lavender for secondary accents
+    const Color bgLight = Color(0xFFFFFBFD);       // very light blush background
+    const Color cardLight = Color(0xFFFFF1F6);     // soft card surface with blush tint
+
+    // Dark palette: more "masculine / sharp" — deep, high-contrast tones
+    const Color brandDarkPrimary = Color(0xFF08203A); // deep midnight blue
+    const Color brandDarkAccent = Color(0xFF00BFA6);  // cold teal accent for sharp contrast
+    const Color bgDark = Color(0xFF05060A);
+    const Color cardDark = Color(0xFF0B0F14);
 
     final themeNotifier = Provider.of<ThemeNotifier>(context);
     return ScreenUtilInit(
@@ -92,8 +96,15 @@ class MyApp extends StatelessWidget {
               onPrimary: Colors.white,
             ),
             appBarTheme: AppBarTheme(backgroundColor: Colors.transparent, foregroundColor: const Color(0xFF042028), elevation: 0),
-            cardTheme: CardThemeData(color: cardLight, elevation: 12, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r))),
-            elevatedButtonTheme: ElevatedButtonThemeData(style: ElevatedButton.styleFrom(backgroundColor: brandDeep, foregroundColor: Colors.white, elevation: 8, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)))),
+            cardTheme: CardThemeData(color: cardLight, elevation: 8, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r))),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: brandDeep,
+                foregroundColor: Colors.white,
+                elevation: 6,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+              ),
+            ),
             textTheme: ThemeData.light().textTheme.apply(bodyColor: const Color(0xFF042028)),
             visualDensity: VisualDensity.adaptivePlatformDensity,
             pageTransitionsTheme: const PageTransitionsTheme(builders: { TargetPlatform.iOS: CupertinoPageTransitionsBuilder(), TargetPlatform.android: FadeUpwardsPageTransitionsBuilder() }),
@@ -101,18 +112,25 @@ class MyApp extends StatelessWidget {
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             scaffoldBackgroundColor: bgDark,
-            colorScheme: ColorScheme.fromSeed(seedColor: brandViolet, brightness: Brightness.dark).copyWith(
-              primary: brandViolet,
-              secondary: brandAccent,
+            colorScheme: ColorScheme.fromSeed(seedColor: brandDarkPrimary, brightness: Brightness.dark).copyWith(
+              primary: brandDarkPrimary,
+              secondary: brandDarkAccent,
               tertiary: brandDeep,
               background: bgDark,
               surface: cardDark,
-              onPrimary: Colors.black,
+              onPrimary: Colors.white,
             ),
             appBarTheme: AppBarTheme(backgroundColor: Colors.transparent, foregroundColor: Colors.white, elevation: 0),
-            cardTheme: CardThemeData(color: cardDark, elevation: 14, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r))),
-            elevatedButtonTheme: ElevatedButtonThemeData(style: ElevatedButton.styleFrom(backgroundColor: brandViolet, foregroundColor: Colors.black, elevation: 10)),
-            textTheme: ThemeData.dark().textTheme,
+            cardTheme: CardThemeData(color: cardDark, elevation: 14, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r))),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: brandDarkPrimary,
+                foregroundColor: Colors.white,
+                elevation: 10,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              ),
+            ),
+            textTheme: ThemeData.dark().textTheme.apply(bodyColor: Colors.white),
           ),
           home: child,
         );

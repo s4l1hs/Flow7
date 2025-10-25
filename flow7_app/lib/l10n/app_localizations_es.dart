@@ -369,4 +369,25 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get basicSupport => 'Soporte básico';
+
+  @override
+  String get view2Weeks => 'Vista 2 semanas';
+
+  @override
+  String get view4Weeks => 'Vista 4 semanas';
+
+  @override
+  String get view8Weeks => 'Vista 8 semanas';
+
+  @override
+  String get basicReminders => 'Recordatorios básicos';
+
+  @override
+  String get advancedReminders => 'Recordatorios avanzados';
+
+  @override
+  String get advancedRemindersAndSnooze => 'Recordatorios avanzados y posponer';
+
+  @override
+  String get noSupport => 'Sin soporte';
 }

@@ -363,4 +363,25 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get basicSupport => 'बुनियादी सहायता';
+
+  @override
+  String get view2Weeks => '2 सप्ताह दृश्य';
+
+  @override
+  String get view4Weeks => '4 सप्ताह दृश्य';
+
+  @override
+  String get view8Weeks => '8 सप्ताह दृश्य';
+
+  @override
+  String get basicReminders => 'मूल अनुस्मारक';
+
+  @override
+  String get advancedReminders => 'उन्नत अनुस्मारक';
+
+  @override
+  String get advancedRemindersAndSnooze => 'उन्नत अनुस्मारक और स्नूज़';
+
+  @override
+  String get noSupport => 'कोई समर्थन नहीं';
 }

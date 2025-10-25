@@ -116,5 +116,12 @@
   "customReminders": "Пользовательские напоминания",
   "prioritySupport": "Приоритетная поддержка",
   "syncGoogleCalendar": "Синхронизировать с Google Календарём",
-  "basicSupport": "Базовая поддержка"
+  "basicSupport": "Базовая поддержка",
+  "view2Weeks": "Просмотр за 2 недели",
+  "view4Weeks": "Просмотр за 4 недели",
+  "view8Weeks": "Просмотр за 8 недель",
+  "basicReminders": "Базовые уведомления",
+  "advancedReminders": "Расширенные уведомления",
+  "advancedRemindersAndSnooze": "Расширенные уведомления и отложение",
+  "noSupport": "Без поддержки"
 }

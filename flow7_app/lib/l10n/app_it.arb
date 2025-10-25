@@ -116,5 +116,12 @@
   "customReminders": "Promemoria personalizzati",
   "prioritySupport": "Supporto prioritario",
   "syncGoogleCalendar": "Sincronizza con Google Calendar",
-  "basicSupport": "Supporto base"
+  "basicSupport": "Supporto base",
+  "view2Weeks": "Vista 2 settimane",
+  "view4Weeks": "Vista 4 settimane",
+  "view8Weeks": "Vista 8 settimane",
+  "basicReminders": "Promemoria base",
+  "advancedReminders": "Promemoria avanzati",
+  "advancedRemindersAndSnooze": "Promemoria avanzati e rinvio",
+  "noSupport": "Nessun supporto"
 }

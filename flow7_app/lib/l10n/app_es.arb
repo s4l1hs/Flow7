@@ -122,5 +122,12 @@
   "customReminders": "Recordatorios personalizados",
   "prioritySupport": "Soporte prioritario",
   "syncGoogleCalendar": "Sincronizar con Google Calendar",
-  "basicSupport": "Soporte básico"
+  "basicSupport": "Soporte básico",
+  "view2Weeks": "Vista 2 semanas",
+  "view4Weeks": "Vista 4 semanas",
+  "view8Weeks": "Vista 8 semanas",
+  "basicReminders": "Recordatorios básicos",
+  "advancedReminders": "Recordatorios avanzados",
+  "advancedRemindersAndSnooze": "Recordatorios avanzados y posponer",
+  "noSupport": "Sin soporte"
 }
