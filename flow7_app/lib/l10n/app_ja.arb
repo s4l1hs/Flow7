@@ -102,5 +102,8 @@
   "lightMode": "ライトモード",
   "edit": "編集",
   "noPlansHere": "この日の予定はありません。",
-  "planAndSuccess": "計画と成功"
+  "planAndSuccess": "計画と成功",
+  "subtitleProgram": "集中",
+  "subtitleSubscription": "プラン",
+  "subtitleSettings": "設定"
 }

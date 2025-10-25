@@ -317,4 +317,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get planAndSuccess => '计划与成功';
+
+  @override
+  String get subtitleProgram => '专注';
+
+  @override
+  String get subtitleSubscription => '计划';
+
+  @override
+  String get subtitleSettings => '设置';
 }

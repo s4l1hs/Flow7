@@ -105,5 +105,8 @@
   "lightMode": "الوضع الفاتح",
   "edit": "تعديل",
   "noPlansHere": "لا يوجد برنامج لهذا اليوم.",
-  "planAndSuccess": "الخطة والنجاح"
+  "planAndSuccess": "الخطة والنجاح",
+  "subtitleProgram": "ركز",
+  "subtitleSubscription": "الخطط",
+  "subtitleSettings": "الإعدادات"
 }

@@ -102,5 +102,8 @@
   "lightMode": "लाइट मोड",
   "edit": "संपादित करें",
   "noPlansHere": "इस दिन के लिए कोई कार्यक्रम नहीं है।",
-  "planAndSuccess": "योजना और सफलता"
+  "planAndSuccess": "योजना और सफलता",
+  "subtitleProgram": "ध्यान केंद्रित करें",
+  "subtitleSubscription": "योजनाएँ",
+  "subtitleSettings": "सेटिंग्स"
 }

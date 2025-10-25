@@ -102,5 +102,8 @@
   "lightMode": "Açık Mod",
   "edit": "Düzenle",
   "noPlansHere": "Bugün için program bulunmuyor.",
-  "planAndSuccess": "Planla ve Başar"
+  "planAndSuccess": "Planla ve Başar",
+  "subtitleProgram": "Odaklan",
+  "subtitleSubscription": "Planlar",
+  "subtitleSettings": "Ayarlar"
 }

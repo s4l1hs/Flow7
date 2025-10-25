@@ -10,7 +10,6 @@ import 'l10n/app_localizations.dart';
 import 'pages/subscription_page.dart';
 import 'pages/program_page.dart';
 import 'pages/settings_page.dart';
-import 'services/api_service.dart';
 
 class MainScreen extends StatefulWidget {
   final String idToken;
@@ -26,12 +25,14 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   late List<Map<String, dynamic>> _navItems;
   late AnimationController _bounceController;
   late AnimationController _fabPulse;
+  late final GlobalKey programPageKey;
 
   @override
   void initState() {
     super.initState();
+    programPageKey = GlobalKey();
     _pages = <Widget>[
-      ProgramPage(idToken: widget.idToken),
+      ProgramPage(key: programPageKey, idToken: widget.idToken),
       SubscriptionPage(idToken: widget.idToken),
       const SettingsPage(),
     ];
@@ -86,7 +87,7 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
             child: Column(
               children: [
-                // Top bar: translucent search + date + avatar
+                // Top bar: slogan + date + avatar
                 _buildTopBar(context),
                 SizedBox(height: 18.h),
                 Expanded(
@@ -105,32 +106,42 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             ),
           ),
         ),
-        // FAB with luminous glow and micro animation
+        // FAB: only visible on Program page. Smooth fade+scale transition via AnimatedSwitcher.
         Positioned(
           right: 22.w,
-          bottom: 120.h, // moved the + button slightly higher
-          child: ScaleTransition(
-            scale: Tween(begin: 1.0, end: 1.06).animate(CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut)),
-            child: AnimatedBuilder(
-              animation: _fabPulse,
-              builder: (context, child) {
-                final pulse = 1.0 + (_fabPulse.value * 0.04);
-                return Transform.scale(scale: pulse, child: child);
-              },
-              child: GestureDetector(
-                onTap: () => _openCreatePlan(context),
-                child: Container(
-                  width: 78.r,
-                  height: 78.r,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(colors: [theme.colorScheme.primary, theme.colorScheme.tertiary]),
-                    boxShadow: [BoxShadow(color: theme.colorScheme.primary.withOpacity(0.18), blurRadius: 28.r, offset: Offset(0, 12.h)), BoxShadow(color: Colors.black12, blurRadius: 8.r, offset: Offset(0, 6.h))],
-                  ),
-                  child: Center(child: Icon(Icons.add, color: Colors.white, size: 34.r)),
-                ),
-              ),
-            ),
+          bottom: 120.h,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 360),
+            transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: ScaleTransition(scale: anim, child: child)),
+            child: _selectedIndex == 0
+                ? GestureDetector(
+                    key: const ValueKey('fab_visible'),
+                    onTap: () {
+                      _bounceController.forward(from: 0);
+                      _openCreatePlan(context);
+                    },
+                    child: ScaleTransition(
+                      scale: Tween(begin: 1.0, end: 1.06).animate(CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut)),
+                      child: AnimatedBuilder(
+                        animation: _fabPulse,
+                        builder: (context, child) {
+                          final pulse = 1.0 + (_fabPulse.value * 0.04);
+                          return Transform.scale(scale: pulse, child: child);
+                        },
+                        child: Container(
+                          width: 78.r,
+                          height: 78.r,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(colors: [theme.colorScheme.primary, theme.colorScheme.tertiary]),
+                            boxShadow: [BoxShadow(color: theme.colorScheme.primary.withOpacity(0.18), blurRadius: 28.r, offset: Offset(0, 12.h)), BoxShadow(color: Colors.black12, blurRadius: 8.r, offset: Offset(0, 6.h))],
+                          ),
+                          child: Center(child: Icon(Icons.add, color: Colors.white, size: 34.r)),
+                        ),
+                      ),
+                    ),
+                  )
+                : SizedBox(key: const ValueKey('fab_hidden'), width: 78.r, height: 78.r),
           ),
         ),
       ]),
@@ -175,64 +186,69 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     return Row(
       children: [
         Expanded(
-          child: Container(
-            height: 64.h,
-            padding: EdgeInsets.symmetric(horizontal: 14.w),
-            decoration: BoxDecoration(
-              color: theme.cardColor.withOpacity(0.04),
-              borderRadius: BorderRadius.circular(14.r),
-              border: Border.all(color: theme.dividerColor.withOpacity(0.04)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Small brand mark
-                Container(
-                  width: 40.w,
-                  height: 40.w,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(colors: [theme.colorScheme.primary.withOpacity(0.95), theme.colorScheme.tertiary.withOpacity(0.9)]),
-                    boxShadow: [BoxShadow(color: theme.colorScheme.primary.withOpacity(0.12), blurRadius: 10.r, offset: Offset(0, 6.h))],
+          child: Transform.translate(
+            offset: Offset(-8.w, 0),
+            child: Container(
+              height: 64.h,
+              padding: EdgeInsets.only(left: 10.w, right: 14.w),
+              decoration: BoxDecoration(
+                color: theme.cardColor.withOpacity(0.04),
+                borderRadius: BorderRadius.circular(14.r),
+                border: Border.all(color: theme.dividerColor.withOpacity(0.04)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Small brand mark
+                  Container(
+                    width: 40.w,
+                    height: 40.w,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(colors: [theme.colorScheme.primary.withOpacity(0.95), theme.colorScheme.tertiary.withOpacity(0.9)]),
+                      boxShadow: [BoxShadow(color: theme.colorScheme.primary.withOpacity(0.12), blurRadius: 10.r, offset: Offset(0, 6.h))],
+                    ),
+                    child: Center(child: Icon(Icons.local_play, color: Colors.white, size: 18.sp)),
                   ),
-                  child: Center(child: Icon(Icons.local_play, color: Colors.white, size: 18.sp)),
-                ),
-                SizedBox(width: 12.w),
-                // Slogan + animated subtitle (changes with selected tab)
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 360),
-                        style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900, color: theme.textTheme.bodyLarge?.color),
-                        child: Text(AppLocalizations.of(context)?.planAndSuccess ?? ''),
-                      ),
-                      SizedBox(height: 4.h),
-                      AnimatedSwitcher(
-                        
-                        duration: const Duration(milliseconds: 420),
-                        switchInCurve: Curves.easeOutCubic,
-                        switchOutCurve: Curves.easeInCubic,
-                        child: _selectedIndex == 0
-                            ? Text('Plan. Focus. Achieve.', key: const ValueKey(0), style: TextStyle(fontSize: 12.sp, color: theme.textTheme.bodySmall?.color?.withOpacity(0.8)))
-                            : _selectedIndex == 1
-                                ? Text('Upgrade your routine', key: const ValueKey(1), style: TextStyle(fontSize: 12.sp, color: theme.textTheme.bodySmall?.color?.withOpacity(0.8)))
-                                : Text('Preferences & profile', key: const ValueKey(2), style: TextStyle(fontSize: 12.sp, color: theme.textTheme.bodySmall?.color?.withOpacity(0.8))),
-                      ),
-                    ],
+                  SizedBox(width: 8.w),
+                  // Slogan + animated subtitle (changes with selected tab)
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 360),
+                          style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900, color: theme.textTheme.bodyLarge?.color),
+                          child: Text(AppLocalizations.of(context)?.planAndSuccess ?? ''),
+                        ),
+                        SizedBox(height: 4.h),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 420),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          child: Builder(builder: (ctx) {
+                            final loc = AppLocalizations.of(ctx)!;
+                            return _selectedIndex == 0
+                                ? Text(loc.subtitleProgram, key: const ValueKey(0), style: TextStyle(fontSize: 12.sp, color: theme.textTheme.bodySmall?.color?.withOpacity(0.8)))
+                                : _selectedIndex == 1
+                                    ? Text(loc.subtitleSubscription, key: const ValueKey(1), style: TextStyle(fontSize: 12.sp, color: theme.textTheme.bodySmall?.color?.withOpacity(0.8)))
+                                    : Text(loc.subtitleSettings, key: const ValueKey(2), style: TextStyle(fontSize: 12.sp, color: theme.textTheme.bodySmall?.color?.withOpacity(0.8)));
+                          }),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
 
-                // date pill
-                SizedBox(width: 8.w),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-                  decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.9), borderRadius: BorderRadius.circular(10.r)),
-                  child: Text(MaterialLocalizations.of(context).formatShortDate(DateTime.now()), style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ],
+                  // date pill
+                  SizedBox(width: 8.w),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                    decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.9), borderRadius: BorderRadius.circular(10.r)),
+                    child: Text(MaterialLocalizations.of(context).formatShortDate(DateTime.now()), style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -247,18 +263,8 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   void _openCreatePlan(BuildContext context) {
-    // delegate to ProgramPage's showPlanDialog via GlobalKey could be used; we simply open dialog to today
-    showDialog(context: context, builder: (ctx) => PlanDialog(initialDate: DateTime.now(), onSave: (data) async {
-      final api = ApiService();
-      try {
-        await api.createPlan(widget.idToken, data);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.saved), backgroundColor: Colors.green));
-        }
-      } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Save failed: $e'), backgroundColor: Theme.of(context).colorScheme.error));
-      }
-    }));
+    // Open ProgramPage's dialog so it uses the currently selected day on that page.
+    (programPageKey.currentState as dynamic)?.showPlanDialog();
   }
 
   Widget _buildCustomBottomNav() {
@@ -281,52 +287,65 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               height: 86.h + bottomPadding,
               padding: EdgeInsets.only(bottom: bottomPadding, top: 8.h),
               decoration: BoxDecoration(color: theme.cardColor.withOpacity(0.04), borderRadius: BorderRadius.circular(28.r)),
-              child: Stack(children: [
-                // highlight pill
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 420),
-                  left: 12.w + (_selectedIndex * itemWidth) + (itemWidth - (itemWidth * 0.6)) / 2,
-                  top: 6.h,
-                  width: itemWidth * 0.6,
-                  height: 54.h,
-                  child: Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [currentColor.withOpacity(0.14), currentColor.withOpacity(0.06)]), borderRadius: BorderRadius.circular(14.r))),
-                ),
-                Row(
-                  children: _navItems.asMap().entries.map((entry) {
-                    final idx = entry.key;
-                    final itm = entry.value;
-                    final isSelected = idx == _selectedIndex;
-                    final baseColor = (itm['color'] as Color?) ?? theme.colorScheme.primary;
-                    return Expanded(
-                      child: GestureDetector(
-                        onTap: () => onItemTapped(idx),
-                        child: SizedBox(
-                          height: double.infinity,
-                          child: Center(
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeOutCubic,
-                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-                              decoration: BoxDecoration(
-                                color: isSelected ? baseColor.withOpacity(0.06) : Colors.transparent,
-                                borderRadius: BorderRadius.circular(12.r),
-                              ),
-                              child: Transform.scale(
-                                scale: isSelected ? 1.08 : 1.0,
-                                child: Icon(itm['icon'] as IconData, size: isSelected ? 28.sp : 24.sp, color: isSelected ? baseColor : theme.iconTheme.color!.withOpacity(0.78)),
+              child: Stack(
+                children: [
+                  // highlight pill
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 420),
+                    left: 12.w + (_selectedIndex * itemWidth) + (itemWidth - (itemWidth * 0.6)) / 2,
+                    top: 6.h,
+                    width: itemWidth * 0.6,
+                    height: 54.h,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [currentColor.withOpacity(0.14), currentColor.withOpacity(0.06)],
+                        ),
+                        borderRadius: BorderRadius.circular(14.r),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: _navItems.asMap().entries.map((entry) {
+                      final idx = entry.key;
+                      final itm = entry.value;
+                      final isSelected = idx == _selectedIndex;
+                      final baseColor = (itm['color'] as Color?) ?? theme.colorScheme.primary;
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () => onItemTapped(idx),
+                          child: SizedBox(
+                            height: double.infinity,
+                            child: Center(
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOutCubic,
+                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? baseColor.withOpacity(0.06) : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                                child: Transform.scale(
+                                  scale: isSelected ? 1.08 : 1.0,
+                                  child: Icon(
+                                    itm['icon'] as IconData,
+                                    size: isSelected ? 28.sp : 24.sp,
+                                    color: isSelected ? baseColor : theme.iconTheme.color!.withOpacity(0.78),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-               ]),
-             ),
-           ),
-         ),
-       ),
-     );
-   }
- }
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

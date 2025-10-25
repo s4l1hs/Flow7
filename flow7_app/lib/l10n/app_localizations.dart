@@ -733,6 +733,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Plan & Success'**
   String get planAndSuccess;
+
+  /// No description provided for @subtitleProgram.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus'**
+  String get subtitleProgram;
+
+  /// No description provided for @subtitleSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Plans'**
+  String get subtitleSubscription;
+
+  /// No description provided for @subtitleSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get subtitleSettings;
 }
 
 class _AppLocalizationsDelegate

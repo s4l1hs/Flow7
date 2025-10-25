@@ -320,4 +320,13 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get planAndSuccess => 'План и успех';
+
+  @override
+  String get subtitleProgram => 'Фокусируйся';
+
+  @override
+  String get subtitleSubscription => 'Планы';
+
+  @override
+  String get subtitleSettings => 'Настройки';
 }

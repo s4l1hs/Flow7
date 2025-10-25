@@ -108,5 +108,8 @@
   "lightMode": "Modo claro",
   "edit": "Editar",
   "noPlansHere": "No hay programa para este día.",
-  "planAndSuccess": "Plan y Éxito"
+  "planAndSuccess": "Plan y Éxito",
+  "subtitleProgram": "Enfócate",
+  "subtitleSubscription": "Planes",
+  "subtitleSettings": "Configuración"
 }

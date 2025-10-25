@@ -321,4 +321,13 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get planAndSuccess => 'Planla ve Başar';
+
+  @override
+  String get subtitleProgram => 'Odaklan';
+
+  @override
+  String get subtitleSubscription => 'Planlar';
+
+  @override
+  String get subtitleSettings => 'Ayarlar';
 }

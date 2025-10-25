@@ -111,5 +111,8 @@
   "lightMode": "Light Mode",
   "edit": "Edit",
   "noPlansHere": "No plans for this day.",
-  "planAndSuccess": "Plan & Success"
+  "planAndSuccess": "Plan & Success",
+  "subtitleProgram": "Focus",
+  "subtitleSubscription": "Plans",
+  "subtitleSettings": "Settings"
 }

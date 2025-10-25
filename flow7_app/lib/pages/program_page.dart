@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:collection/collection.dart';
 import '../services/api_service.dart';
 import '../l10n/app_localizations.dart';
+import 'dart:ui';
 
 class ProgramPage extends StatefulWidget {
   final String idToken; // Firebase'den veya başka bir auth servisinden gelen token
@@ -528,7 +529,11 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
   late final TextEditingController _startTimeController;
   late final TextEditingController _endTimeController;
 
+  final FocusNode _titleFocus = FocusNode();
+  final FocusNode _descFocus = FocusNode();
+
   bool _appeared = false;
+  bool _descFocused = false;
 
   @override
   void initState() {
@@ -538,6 +543,10 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
     _descController = TextEditingController(text: plan?['description'] ?? '');
     _startTimeController = TextEditingController(text: plan?['start_time'] ?? '09:00');
     _endTimeController = TextEditingController(text: plan?['end_time'] ?? '10:00');
+
+    _descFocus.addListener(() {
+      if (mounted) setState(() => _descFocused = _descFocus.hasFocus);
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) setState(() => _appeared = true);
@@ -550,6 +559,8 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
     _descController.dispose();
     _startTimeController.dispose();
     _endTimeController.dispose();
+    _titleFocus.dispose();
+    _descFocus.dispose();
     super.dispose();
   }
 
@@ -596,178 +607,243 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
         opacity: _appeared ? 1.0 : 0.0,
         duration: const Duration(milliseconds: 220),
         child: Dialog(
-          insetPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
-          backgroundColor: theme.dialogBackgroundColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-          child: ConstrainedBox(
-            // limit height so content can scroll when keyboard is open and avoid tiny overflows
-            constraints: BoxConstraints(
-              maxWidth: 540.w,
-              maxHeight: MediaQuery.of(context).size.height * 0.86,
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-              // add viewInsets + small extra padding so keyboard doesn't cause 7px overflow
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 12.h),
-                physics: const BouncingScrollPhysics(),
-                child: ConstrainedBox(
-                  // ensure Column takes minimum vertical space but can grow up to constrained maxHeight
-                  constraints: BoxConstraints(minWidth: double.infinity),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                   // header
-                   Row(
-                     crossAxisAlignment: CrossAxisAlignment.center,
-                     children: [
-                       Container(
-                         width: 56.r,
-                         height: 56.r,
-                         decoration: BoxDecoration(
-                           shape: BoxShape.circle,
-                           gradient: LinearGradient(colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.9)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                           boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8.r, offset: Offset(0,4.h))],
-                         ),
-                         child: Center(
-                           child: Column(
-                             mainAxisSize: MainAxisSize.min,
-                             children: [
-                               Text(DateFormat.d().format(widget.initialDate), style: TextStyle(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 16.sp)),
-                               Text(DateFormat.E(Localizations.localeOf(context).toString()).format(widget.initialDate), style: TextStyle(color: theme.colorScheme.onPrimary.withOpacity(0.9), fontSize: 11.sp)),
-                             ],
-                           ),
-                         ),
-                       ),
-                       SizedBox(width: 14.w),
-                       // use Flexible to avoid forcing height in constrained contexts
-                       Flexible(
-                         child: Column(
-                           crossAxisAlignment: CrossAxisAlignment.start,
-                           children: [
-                             Text(isEditing ? loc.editProgram : loc.newProgram, style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700)),
-                             SizedBox(height: 4.h),
-                             Text(DateFormat.yMMMMd(Localizations.localeOf(context).toString()).format(widget.initialDate), style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 12.sp)),
-                           ],
-                         ),
-                       ),
-                     ],
-                   ),
-                   SizedBox(height: 16.h),
+          insetPadding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 20.h),
+          backgroundColor: Colors.transparent,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16.r),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: 640.w,
+                  maxHeight: MediaQuery.of(context).size.height * 0.58,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.dialogBackgroundColor.withOpacity(0.98),
+                  borderRadius: BorderRadius.circular(16.r),
+                  border: Border.all(color: theme.dividerColor.withOpacity(0.06)),
+                  boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 20.r, offset: Offset(0, 10.h))],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header with subtle entrance animation
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: const Duration(milliseconds: 420),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, val, child) => Transform.translate(
+                        offset: Offset(0, (1 - val) * 8),
+                        child: Opacity(opacity: val, child: child),
+                      ),
+                      child: Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: [theme.colorScheme.primary.withOpacity(0.98), theme.colorScheme.tertiary.withOpacity(0.9)]),
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 56.r,
+                              height: 56.r,
+                              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white24),
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(DateFormat.d().format(widget.initialDate), style: TextStyle(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 16.sp)),
+                                    Text(DateFormat.E(Localizations.localeOf(context).toString()).format(widget.initialDate), style: TextStyle(color: theme.colorScheme.onPrimary.withOpacity(0.95), fontSize: 11.sp)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(isEditing ? loc.editProgram : loc.newProgram, style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.w800, color: theme.colorScheme.onPrimary)),
+                                  SizedBox(height: 4.h),
+                                  Text(DateFormat.yMMMMd(Localizations.localeOf(context).toString()).format(widget.initialDate), style: TextStyle(color: theme.colorScheme.onPrimary.withOpacity(0.92), fontSize: 12.sp)),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: loc.cancel,
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: Icon(Icons.close, color: theme.colorScheme.onPrimary),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
 
-                    Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          TextFormField(
-                            controller: _titleController,
-                            decoration: InputDecoration(
-                              labelText: loc.titleLabel,
-                              prefixIcon: Icon(Icons.title_outlined),
-                              filled: true,
-                              fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+                    // Form area with comfortable padding and elevated card look
+                    Flexible(
+                      fit: FlexFit.loose,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 12.h),
+                          physics: const BouncingScrollPhysics(),
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Title row with icon and animated label
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      width: 44.r,
+                                      height: 44.r,
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.primary.withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(12.r),
+                                      ),
+                                      child: Icon(Icons.event_available, color: theme.colorScheme.primary, size: 20.sp),
+                                    ),
+                                    SizedBox(width: 12.w),
+                                    Expanded(
+                                      child: TextFormField(
+                                        focusNode: _titleFocus,
+                                        controller: _titleController,
+                                        decoration: InputDecoration(
+                                          labelText: loc.titleLabel,
+                                          floatingLabelBehavior: FloatingLabelBehavior.auto,
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+                                          filled: true,
+                                          fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+                                        ),
+                                        style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700),
+                                        validator: (value) => (value == null || value.trim().isEmpty) ? loc.requiredField : null,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 14.h),
+
+                                // Time pickers compact row
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _startTimeController,
+                                        decoration: InputDecoration(
+                                          labelText: loc.startLabel,
+                                          prefixIcon: Icon(Icons.schedule, size: 18.sp),
+                                          filled: true,
+                                          fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+                                          suffixIcon: Icon(Icons.access_time_outlined, size: 18.sp),
+                                        ),
+                                        readOnly: true,
+                                        onTap: () => _selectTime(context, _startTimeController),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) return loc.requiredField;
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                    SizedBox(width: 12.w),
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _endTimeController,
+                                        decoration: InputDecoration(
+                                          labelText: loc.endLabel,
+                                          prefixIcon: Icon(Icons.schedule, size: 18.sp),
+                                          filled: true,
+                                          fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+                                          suffixIcon: Icon(Icons.access_time_outlined, size: 18.sp),
+                                        ),
+                                        readOnly: true,
+                                        onTap: () => _selectTime(context, _endTimeController),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) return loc.requiredField;
+                                          final s = _parseHm(_startTimeController.text);
+                                          final e = _parseHm(value);
+                                          if (s == null || e == null) return null;
+                                          if (!e.isAfter(s)) return loc.endTimeError;
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 14.h),
+
+                                // Description with AnimatedSize to expand when focused
+                                AnimatedSize(
+                                  duration: const Duration(milliseconds: 260),
+                                  curve: Curves.easeInOutCubic,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: theme.cardColor.withOpacity(0.02),
+                                      borderRadius: BorderRadius.circular(12.r),
+                                    ),
+                                    padding: EdgeInsets.all(6.w),
+                                    child: TextFormField(
+                                      focusNode: _descFocus,
+                                      controller: _descController,
+                                      decoration: InputDecoration(
+                                        labelText: loc.descriptionLabel,
+                                        alignLabelWithHint: true,
+                                        prefixIcon: Padding(padding: EdgeInsets.only(bottom: 8.h), child: Icon(Icons.short_text)),
+                                        filled: true,
+                                        fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: _descFocused ? 16.h : 12.h),
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+                                      ),
+                                      minLines: _descFocused ? 4 : 2,
+                                      maxLines: 6,
+                                      style: TextStyle(fontSize: 14.sp),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: 18.h),
+
+                                // Action buttons with micro animation
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: OutlinedButton(
+                                        style: OutlinedButton.styleFrom(
+                                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                                          side: BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.10)),
+                                        ),
+                                        onPressed: () => Navigator.of(context).pop(),
+                                        child: Text(loc.cancel, style: TextStyle(fontSize: 14.sp)),
+                                      ),
+                                    ),
+                                    SizedBox(width: 12.w),
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        icon: Icon(Icons.check, size: 18.sp),
+                                        label: Text(loc.save, style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700)),
+                                        style: ElevatedButton.styleFrom(
+                                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                                          backgroundColor: theme.colorScheme.primary,
+                                        ),
+                                        onPressed: _submit,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 6.h),
+                              ],
                             ),
-                            validator: (value) => (value == null || value.trim().isEmpty) ? loc.requiredField : null,
                           ),
-                          SizedBox(height: 12.h),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _startTimeController,
-                                  decoration: InputDecoration(
-                                    labelText: loc.startLabel,
-                                    prefixIcon: Icon(Icons.schedule),
-                                    filled: true,
-                                    fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
-                                    suffixIcon: Icon(Icons.access_time_outlined),
-                                  ),
-                                  readOnly: true,
-                                  onTap: () => _selectTime(context, _startTimeController),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) return loc.requiredField;
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              SizedBox(width: 10.w),
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _endTimeController,
-                                  decoration: InputDecoration(
-                                    labelText: loc.endLabel,
-                                    prefixIcon: Icon(Icons.schedule),
-                                    filled: true,
-                                    fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
-                                    suffixIcon: Icon(Icons.access_time_outlined),
-                                  ),
-                                  readOnly: true,
-                                  onTap: () => _selectTime(context, _endTimeController),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) return loc.requiredField;
-                                    final s = _parseHm(_startTimeController.text);
-                                    final e = _parseHm(value);
-                                    if (s == null || e == null) return null;
-                                    if (!e.isAfter(s)) return loc.endTimeError;
-                                    return null;
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 12.h),
-                          TextFormField(
-                            controller: _descController,
-                            decoration: InputDecoration(
-                              labelText: loc.descriptionLabel,
-                              prefixIcon: Icon(Icons.short_text),
-                              filled: true,
-                              fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
-                            ),
-                            minLines: 1,
-                            maxLines: 3,
-                          ),
-                          SizedBox(height: 18.h),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  style: OutlinedButton.styleFrom(
-                                    padding: EdgeInsets.symmetric(vertical: 14.h),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                                    side: BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.12)),
-                                    foregroundColor: theme.colorScheme.onSurface,
-                                  ),
-                                  onPressed: () => Navigator.of(context).pop(),
-                                  child: Text(loc.cancel, style: TextStyle(fontSize: 14.sp)),
-                                ),
-                              ),
-                              SizedBox(width: 12.w),
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  icon: Icon(Icons.check, size: 18.sp),
-                                  label: Text(loc.save, style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600)),
-                                  style: ElevatedButton.styleFrom(
-                                    padding: EdgeInsets.symmetric(vertical: 14.h),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                                    backgroundColor: theme.colorScheme.primary,
-                                    foregroundColor: theme.colorScheme.onPrimary,
-                                  ),
-                                  onPressed: _submit,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ],
@@ -777,7 +853,6 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
           ),
         ),
       ),
-    ),
     );
   }
 }

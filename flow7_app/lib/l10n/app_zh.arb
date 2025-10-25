@@ -102,5 +102,8 @@
   "lightMode": "浅色模式",
   "edit": "编辑",
   "noPlansHere": "这一天没有计划。",
-  "planAndSuccess": "计划与成功"
+  "planAndSuccess": "计划与成功",
+  "subtitleProgram": "专注",
+  "subtitleSubscription": "计划",
+  "subtitleSettings": "设置"
 }

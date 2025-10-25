@@ -326,4 +326,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get planAndSuccess => 'Plan y Éxito';
+
+  @override
+  String get subtitleProgram => 'Enfócate';
+
+  @override
+  String get subtitleSubscription => 'Planes';
+
+  @override
+  String get subtitleSettings => 'Configuración';
 }

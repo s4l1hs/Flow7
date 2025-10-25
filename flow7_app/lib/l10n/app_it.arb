@@ -102,5 +102,8 @@
   "lightMode": "Modalità Chiara",
   "edit": "Modifica",
   "noPlansHere": "Nessun programma per questo giorno.",
-  "planAndSuccess": "Piano e Successo"
+  "planAndSuccess": "Piano e Successo",
+  "subtitleProgram": "Concentrati",
+  "subtitleSubscription": "Piani",
+  "subtitleSettings": "Impostazioni"
 }

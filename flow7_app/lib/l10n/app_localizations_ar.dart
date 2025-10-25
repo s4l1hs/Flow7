@@ -320,4 +320,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get planAndSuccess => 'الخطة والنجاح';
+
+  @override
+  String get subtitleProgram => 'ركز';
+
+  @override
+  String get subtitleSubscription => 'الخطط';
+
+  @override
+  String get subtitleSettings => 'الإعدادات';
 }

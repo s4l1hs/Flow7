@@ -328,4 +328,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get planAndSuccess => 'Plan et réussite';
+
+  @override
+  String get subtitleProgram => 'Concentrez-vous';
+
+  @override
+  String get subtitleSubscription => 'Plans';
+
+  @override
+  String get subtitleSettings => 'Paramètres';
 }

@@ -102,5 +102,8 @@
   "lightMode": "Светлая тема",
   "edit": "Редактировать",
   "noPlansHere": "В этот день нет планов.",
-  "planAndSuccess": "План и успех"
+  "planAndSuccess": "План и успех",
+  "subtitleProgram": "Фокусируйся",
+  "subtitleSubscription": "Планы",
+  "subtitleSettings": "Настройки"
 }

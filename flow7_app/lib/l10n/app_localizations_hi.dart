@@ -320,4 +320,13 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get planAndSuccess => 'योजना और सफलता';
+
+  @override
+  String get subtitleProgram => 'ध्यान केंद्रित करें';
+
+  @override
+  String get subtitleSubscription => 'योजनाएँ';
+
+  @override
+  String get subtitleSettings => 'सेटिंग्स';
 }

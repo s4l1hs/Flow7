@@ -317,4 +317,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get planAndSuccess => '計画と成功';
+
+  @override
+  String get subtitleProgram => '集中';
+
+  @override
+  String get subtitleSubscription => 'プラン';
+
+  @override
+  String get subtitleSettings => '設定';
 }
