@@ -255,13 +255,13 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
               // keep minimal padding but lift the profile header visually by translating it upward
               padding: EdgeInsets.fromLTRB(18.w, 0.h, 18.w, 12.h),
               children: [
-                // translate upward so header sits higher on screen (adjust -value to taste)
+                // translate header slightly upward but less than before (so it sits a bit lower)
                 Transform.translate(
-                  offset: Offset(0, -20.h),
+                  offset: Offset(0, -0.h),
                   child: FadeTransition(opacity: _animationController, child: _buildProfileHeader(theme, localizations)),
                 ),
-                // smaller spacer after lifted header
-                SizedBox(height: 2.h),
+                // balanced spacer after header
+                SizedBox(height: 4.h),
 
                 _buildCardSection(title: localizations.general, child: Column(children: [
                   _buildLanguageTile(localizations, theme),

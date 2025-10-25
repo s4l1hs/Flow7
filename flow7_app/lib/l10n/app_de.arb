@@ -129,7 +129,18 @@
   "noPlansHere": "Für diesen Tag sind keine Programme vorhanden.",
   "planAndSuccess": "Plan und Erfolg",
   "subtitleProgram": "Konzentriere dich",
-  "subtitleSubscription": "Pläne",
+  "subtitleSubscription": "Abonnements",
   "subtitleSettings": "Einstellungen",
-  "tapToAddPlan": "Tippe auf +, um einen Plan für den ausgewählten Tag hinzuzufügen"
+  "tapToAddPlan": "Tippe auf +, um einen Plan für den ausgewählten Tag hinzuzufügen",
+
+  "bestValue": "Bestes Preis-Leistungs-Verhältnis",
+  "analytics": "Analysen",
+  "earlyAccess": "Früher Zugriff",
+  "offlineAccess": "Offline-Zugriff",
+  "mostPopular": "Am beliebtesten",
+  "templates": "Vorlagen",
+  "customReminders": "Individuelle Erinnerungen",
+  "prioritySupport": "Priorisierter Support",
+  "syncGoogleCalendar": "Mit Google Kalender synchronisieren",
+  "basicSupport": "Basis-Support"
 }

@@ -325,7 +325,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get subtitleProgram => 'ध्यान केंद्रित करें';
 
   @override
-  String get subtitleSubscription => 'योजनाएँ';
+  String get subtitleSubscription => 'सदस्यताएँ';
 
   @override
   String get subtitleSettings => 'सेटिंग्स';
@@ -333,4 +333,34 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get tapToAddPlan =>
       'चयनित दिन के लिए योजना जोड़ने के लिए + पर टैप करें';
+
+  @override
+  String get bestValue => 'सर्वोत्तम मूल्य';
+
+  @override
+  String get analytics => 'विश्लेषण';
+
+  @override
+  String get earlyAccess => 'जल्दी पहुँच';
+
+  @override
+  String get offlineAccess => 'ऑफ़लाइन पहुँच';
+
+  @override
+  String get mostPopular => 'सबसे लोकप्रिय';
+
+  @override
+  String get templates => 'टेम्पलेट्स';
+
+  @override
+  String get customReminders => 'कस्टम अनुस्मारक';
+
+  @override
+  String get prioritySupport => 'प्राथमिक समर्थन';
+
+  @override
+  String get syncGoogleCalendar => 'Google कैलेंडर के साथ सिंक करें';
+
+  @override
+  String get basicSupport => 'बुनियादी सहायता';
 }

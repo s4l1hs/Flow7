@@ -322,11 +322,41 @@ class AppLocalizationsZh extends AppLocalizations {
   String get subtitleProgram => '专注';
 
   @override
-  String get subtitleSubscription => '计划';
+  String get subtitleSubscription => '订阅';
 
   @override
   String get subtitleSettings => '设置';
 
   @override
   String get tapToAddPlan => '点按 + 为所选日期添加计划';
+
+  @override
+  String get bestValue => '最佳性价比';
+
+  @override
+  String get analytics => '分析';
+
+  @override
+  String get earlyAccess => '抢先体验';
+
+  @override
+  String get offlineAccess => '离线访问';
+
+  @override
+  String get mostPopular => '最受欢迎';
+
+  @override
+  String get templates => '模板';
+
+  @override
+  String get customReminders => '自定义提醒';
+
+  @override
+  String get prioritySupport => '优先支持';
+
+  @override
+  String get syncGoogleCalendar => '与 Google 日历同步';
+
+  @override
+  String get basicSupport => '基础支持';
 }

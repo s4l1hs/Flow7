@@ -322,11 +322,41 @@ class AppLocalizationsJa extends AppLocalizations {
   String get subtitleProgram => '集中';
 
   @override
-  String get subtitleSubscription => 'プラン';
+  String get subtitleSubscription => 'サブスクリプション';
 
   @override
   String get subtitleSettings => '設定';
 
   @override
   String get tapToAddPlan => '選択した日に予定を追加するには「+」をタップ';
+
+  @override
+  String get bestValue => 'お得';
+
+  @override
+  String get analytics => '分析';
+
+  @override
+  String get earlyAccess => '早期アクセス';
+
+  @override
+  String get offlineAccess => 'オフラインアクセス';
+
+  @override
+  String get mostPopular => '最も人気';
+
+  @override
+  String get templates => 'テンプレート';
+
+  @override
+  String get customReminders => 'カスタムリマインダー';
+
+  @override
+  String get prioritySupport => '優先サポート';
+
+  @override
+  String get syncGoogleCalendar => 'Google カレンダーと同期';
+
+  @override
+  String get basicSupport => '基本サポート';
 }

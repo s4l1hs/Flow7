@@ -104,7 +104,17 @@
   "noPlansHere": "这一天没有计划。",
   "planAndSuccess": "计划与成功",
   "subtitleProgram": "专注",
-  "subtitleSubscription": "计划",
+  "subtitleSubscription": "订阅",
   "subtitleSettings": "设置",
-  "tapToAddPlan": "点按 + 为所选日期添加计划"
+  "tapToAddPlan": "点按 + 为所选日期添加计划",
+  "bestValue": "最佳性价比",
+  "analytics": "分析",
+  "earlyAccess": "抢先体验",
+  "offlineAccess": "离线访问",
+  "mostPopular": "最受欢迎",
+  "templates": "模板",
+  "customReminders": "自定义提醒",
+  "prioritySupport": "优先支持",
+  "syncGoogleCalendar": "与 Google 日历同步",
+  "basicSupport": "基础支持"
 }

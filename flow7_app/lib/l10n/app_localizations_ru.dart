@@ -325,11 +325,41 @@ class AppLocalizationsRu extends AppLocalizations {
   String get subtitleProgram => 'Фокусируйся';
 
   @override
-  String get subtitleSubscription => 'Планы';
+  String get subtitleSubscription => 'Подписки';
 
   @override
   String get subtitleSettings => 'Настройки';
 
   @override
   String get tapToAddPlan => 'Нажмите +, чтобы добавить план на выбранный день';
+
+  @override
+  String get bestValue => 'Лучшее предложение';
+
+  @override
+  String get analytics => 'Аналитика';
+
+  @override
+  String get earlyAccess => 'Ранний доступ';
+
+  @override
+  String get offlineAccess => 'Оффлайн-доступ';
+
+  @override
+  String get mostPopular => 'Самый популярный';
+
+  @override
+  String get templates => 'Шаблоны';
+
+  @override
+  String get customReminders => 'Пользовательские напоминания';
+
+  @override
+  String get prioritySupport => 'Приоритетная поддержка';
+
+  @override
+  String get syncGoogleCalendar => 'Синхронизировать с Google Календарём';
+
+  @override
+  String get basicSupport => 'Базовая поддержка';
 }

@@ -64,7 +64,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get notifications => 'Bildirimler';
 
   @override
-  String get forAllAlarms => 'Tüm bilgiler ve meydan okumalar için';
+  String get forAllAlarms => 'Tüm uyarılar için';
 
   @override
   String get account => 'Hesap';
@@ -98,7 +98,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmation =>
-      'Hesabınızı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve puanınız dahil tüm verileriniz kalıcı olarak kaybolacaktır.';
+      'Hesabınızı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve tüm verileriniz kalıcı olarak silinecektir.';
 
   @override
   String get delete => 'Sil';
@@ -189,7 +189,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get errorSubmittingAnswer => 'Cevap gönderilirken hata oluştu.';
 
   @override
-  String get wrongAnswerResetStreak => 'Yanlış cevap! Seri sıfırlandı.';
+  String get wrongAnswerResetStreak => 'Yanlış cevap! Seriniz sıfırlandı.';
 
   @override
   String get correct => 'Doğru';
@@ -286,10 +286,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get noPlansMessage =>
-      'Bu gün için program bulunmuyor.\nUzun basarak yeni program ekleyin.';
+      'Bu gün için plan yok.\nYeni plan eklemek için uzun basın.';
 
   @override
-  String get deleteConfirm => 'Bu programı silmek istediğinizden emin misiniz?';
+  String get deleteConfirm => 'Bu planı silmek istediğinizden emin misiniz?';
 
   @override
   String get today => 'Bugün';
@@ -302,7 +302,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get endTimeError =>
-      'Bitiş zamanı, başlangıç zamanından sonra olmalıdır';
+      'Bitiş zamanı başlangıç zamanından sonra olmalıdır';
 
   @override
   String get theme => 'Görünüm';
@@ -311,26 +311,56 @@ class AppLocalizationsTr extends AppLocalizations {
   String get darkMode => 'Karanlık Mod';
 
   @override
-  String get lightMode => 'Açık Mod';
+  String get lightMode => 'Aydınlık Mod';
 
   @override
   String get edit => 'Düzenle';
 
   @override
-  String get noPlansHere => 'Bugün için program bulunmuyor.';
+  String get noPlansHere => 'Bu gün için plan yok.';
 
   @override
   String get planAndSuccess => 'Planla ve Başar';
 
   @override
-  String get subtitleProgram => 'Odaklan';
+  String get subtitleProgram => 'Odak';
 
   @override
-  String get subtitleSubscription => 'Planlar';
+  String get subtitleSubscription => 'Abonelikler';
 
   @override
   String get subtitleSettings => 'Ayarlar';
 
   @override
   String get tapToAddPlan => 'Seçili güne plan eklemek için + tuşuna dokunun';
+
+  @override
+  String get bestValue => 'En iyi değer';
+
+  @override
+  String get analytics => 'Analizler';
+
+  @override
+  String get earlyAccess => 'Erken erişim';
+
+  @override
+  String get offlineAccess => 'Çevrimdışı erişim';
+
+  @override
+  String get mostPopular => 'En popüler';
+
+  @override
+  String get templates => 'Şablonlar';
+
+  @override
+  String get customReminders => 'Özel hatırlatmalar';
+
+  @override
+  String get prioritySupport => 'Öncelikli destek';
+
+  @override
+  String get syncGoogleCalendar => 'Google Takvim ile senkronize et';
+
+  @override
+  String get basicSupport => 'Temel destek';
 }

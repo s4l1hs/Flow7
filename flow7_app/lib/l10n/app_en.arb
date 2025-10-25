@@ -113,7 +113,18 @@
   "noPlansHere": "No plans for this day.",
   "planAndSuccess": "Plan & Success",
   "subtitleProgram": "Focus",
-  "subtitleSubscription": "Plans",
+  "subtitleSubscription": "Subscriptions",
   "subtitleSettings": "Settings",
-  "tapToAddPlan": "Tap + to add a plan for the selected day"
+  "tapToAddPlan": "Tap + to add a plan for the selected day",
+
+  "bestValue": "Best value",
+  "analytics": "Analytics",
+  "earlyAccess": "Early access",
+  "offlineAccess": "Offline access",
+  "mostPopular": "Most popular",
+  "templates": "Templates",
+  "customReminders": "Custom reminders",
+  "prioritySupport": "Priority support",
+  "syncGoogleCalendar": "Sync with Google Calendar",
+  "basicSupport": "Basic support"
 }

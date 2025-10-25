@@ -325,11 +325,41 @@ class AppLocalizationsAr extends AppLocalizations {
   String get subtitleProgram => 'ركز';
 
   @override
-  String get subtitleSubscription => 'الخطط';
+  String get subtitleSubscription => 'الاشتراكات';
 
   @override
   String get subtitleSettings => 'الإعدادات';
 
   @override
   String get tapToAddPlan => 'اضغط + لإضافة خطة لليوم المحدد';
+
+  @override
+  String get bestValue => 'أفضل قيمة';
+
+  @override
+  String get analytics => 'التحليلات';
+
+  @override
+  String get earlyAccess => 'الوصول المبكر';
+
+  @override
+  String get offlineAccess => 'الوصول دون اتصال';
+
+  @override
+  String get mostPopular => 'الأكثر شيوعًا';
+
+  @override
+  String get templates => 'قوالب';
+
+  @override
+  String get customReminders => 'تذكيرات مخصصة';
+
+  @override
+  String get prioritySupport => 'دعم ذو أولوية';
+
+  @override
+  String get syncGoogleCalendar => 'مزامنة مع تقويم Google';
+
+  @override
+  String get basicSupport => 'دعم أساسي';
 }

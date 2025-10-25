@@ -104,7 +104,17 @@
   "noPlansHere": "В этот день нет планов.",
   "planAndSuccess": "План и успех",
   "subtitleProgram": "Фокусируйся",
-  "subtitleSubscription": "Планы",
+  "subtitleSubscription": "Подписки",
   "subtitleSettings": "Настройки",
-  "tapToAddPlan": "Нажмите +, чтобы добавить план на выбранный день"
+  "tapToAddPlan": "Нажмите +, чтобы добавить план на выбранный день",
+  "bestValue": "Лучшее предложение",
+  "analytics": "Аналитика",
+  "earlyAccess": "Ранний доступ",
+  "offlineAccess": "Оффлайн-доступ",
+  "mostPopular": "Самый популярный",
+  "templates": "Шаблоны",
+  "customReminders": "Пользовательские напоминания",
+  "prioritySupport": "Приоритетная поддержка",
+  "syncGoogleCalendar": "Синхронизировать с Google Календарём",
+  "basicSupport": "Базовая поддержка"
 }

@@ -333,7 +333,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get subtitleProgram => 'Concentrez-vous';
 
   @override
-  String get subtitleSubscription => 'Plans';
+  String get subtitleSubscription => 'Abonnements';
 
   @override
   String get subtitleSettings => 'Paramètres';
@@ -341,4 +341,34 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get tapToAddPlan =>
       'Appuyez sur + pour ajouter un programme au jour sélectionné';
+
+  @override
+  String get bestValue => 'Meilleure valeur';
+
+  @override
+  String get analytics => 'Analyses';
+
+  @override
+  String get earlyAccess => 'Accès anticipé';
+
+  @override
+  String get offlineAccess => 'Accès hors ligne';
+
+  @override
+  String get mostPopular => 'Le plus populaire';
+
+  @override
+  String get templates => 'Modèles';
+
+  @override
+  String get customReminders => 'Rappels personnalisés';
+
+  @override
+  String get prioritySupport => 'Support prioritaire';
+
+  @override
+  String get syncGoogleCalendar => 'Synchroniser avec Google Agenda';
+
+  @override
+  String get basicSupport => 'Support de base';
 }

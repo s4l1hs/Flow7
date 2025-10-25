@@ -179,9 +179,8 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     }
     displayName = (displayName).toString().trim();
     if (displayName.contains('@')) displayName = displayName.split('@')[0];
-    final String initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'A';
 
-    // Top bar redesigned: slogan instead of search + animated subtitle switcher
+    // Top bar: slogan on the left; date moved to the top-right (profile avatar removed)
     return Row(
       children: [
         Expanded(
@@ -238,24 +237,17 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       ],
                     ),
                   ),
-
-                  // date pill
-                  SizedBox(width: 8.w),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-                    decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.9), borderRadius: BorderRadius.circular(10.r)),
-                    child: Text(MaterialLocalizations.of(context).formatShortDate(DateTime.now()), style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  ),
                 ],
               ),
             ),
           ),
         ),
         SizedBox(width: 12.w),
-        CircleAvatar(
-          radius: 22.r,
-          backgroundColor: Theme.of(context).colorScheme.secondary,
-          child: Text(initial, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16.sp)),
+        // Date pill placed at top-right instead of avatar
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+          decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.95), borderRadius: BorderRadius.circular(10.r)),
+          child: Text(MaterialLocalizations.of(context).formatShortDate(DateTime.now()), style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         ),
       ],
     );

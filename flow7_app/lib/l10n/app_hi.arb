@@ -104,7 +104,17 @@
   "noPlansHere": "इस दिन के लिए कोई कार्यक्रम नहीं है।",
   "planAndSuccess": "योजना और सफलता",
   "subtitleProgram": "ध्यान केंद्रित करें",
-  "subtitleSubscription": "योजनाएँ",
+  "subtitleSubscription": "सदस्यताएँ",
   "subtitleSettings": "सेटिंग्स",
-  "tapToAddPlan": "चयनित दिन के लिए योजना जोड़ने के लिए + पर टैप करें"
+  "tapToAddPlan": "चयनित दिन के लिए योजना जोड़ने के लिए + पर टैप करें",
+  "bestValue": "सर्वोत्तम मूल्य",
+  "analytics": "विश्लेषण",
+  "earlyAccess": "जल्दी पहुँच",
+  "offlineAccess": "ऑफ़लाइन पहुँच",
+  "mostPopular": "सबसे लोकप्रिय",
+  "templates": "टेम्पलेट्स",
+  "customReminders": "कस्टम अनुस्मारक",
+  "prioritySupport": "प्राथमिक समर्थन",
+  "syncGoogleCalendar": "Google कैलेंडर के साथ सिंक करें",
+  "basicSupport": "बुनियादी सहायता"
 }

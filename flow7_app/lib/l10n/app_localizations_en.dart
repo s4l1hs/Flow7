@@ -325,11 +325,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subtitleProgram => 'Focus';
 
   @override
-  String get subtitleSubscription => 'Plans';
+  String get subtitleSubscription => 'Subscriptions';
 
   @override
   String get subtitleSettings => 'Settings';
 
   @override
   String get tapToAddPlan => 'Tap + to add a plan for the selected day';
+
+  @override
+  String get bestValue => 'Best value';
+
+  @override
+  String get analytics => 'Analytics';
+
+  @override
+  String get earlyAccess => 'Early access';
+
+  @override
+  String get offlineAccess => 'Offline access';
+
+  @override
+  String get mostPopular => 'Most popular';
+
+  @override
+  String get templates => 'Templates';
+
+  @override
+  String get customReminders => 'Custom reminders';
+
+  @override
+  String get prioritySupport => 'Priority support';
+
+  @override
+  String get syncGoogleCalendar => 'Sync with Google Calendar';
+
+  @override
+  String get basicSupport => 'Basic support';
 }

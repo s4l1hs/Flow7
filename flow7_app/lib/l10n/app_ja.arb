@@ -104,7 +104,17 @@
   "noPlansHere": "この日の予定はありません。",
   "planAndSuccess": "計画と成功",
   "subtitleProgram": "集中",
-  "subtitleSubscription": "プラン",
+  "subtitleSubscription": "サブスクリプション",
   "subtitleSettings": "設定",
-  "tapToAddPlan": "選択した日に予定を追加するには「+」をタップ"
+  "tapToAddPlan": "選択した日に予定を追加するには「+」をタップ",
+  "bestValue": "お得",
+  "analytics": "分析",
+  "earlyAccess": "早期アクセス",
+  "offlineAccess": "オフラインアクセス",
+  "mostPopular": "最も人気",
+  "templates": "テンプレート",
+  "customReminders": "カスタムリマインダー",
+  "prioritySupport": "優先サポート",
+  "syncGoogleCalendar": "Google カレンダーと同期",
+  "basicSupport": "基本サポート"
 }

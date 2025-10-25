@@ -743,7 +743,7 @@ abstract class AppLocalizations {
   /// No description provided for @subtitleSubscription.
   ///
   /// In en, this message translates to:
-  /// **'Plans'**
+  /// **'Subscriptions'**
   String get subtitleSubscription;
 
   /// No description provided for @subtitleSettings.
@@ -757,6 +757,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap + to add a plan for the selected day'**
   String get tapToAddPlan;
+
+  /// No description provided for @bestValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Best value'**
+  String get bestValue;
+
+  /// No description provided for @analytics.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics'**
+  String get analytics;
+
+  /// No description provided for @earlyAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Early access'**
+  String get earlyAccess;
+
+  /// No description provided for @offlineAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline access'**
+  String get offlineAccess;
+
+  /// No description provided for @mostPopular.
+  ///
+  /// In en, this message translates to:
+  /// **'Most popular'**
+  String get mostPopular;
+
+  /// No description provided for @templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Templates'**
+  String get templates;
+
+  /// No description provided for @customReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom reminders'**
+  String get customReminders;
+
+  /// No description provided for @prioritySupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority support'**
+  String get prioritySupport;
+
+  /// No description provided for @syncGoogleCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync with Google Calendar'**
+  String get syncGoogleCalendar;
+
+  /// No description provided for @basicSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic support'**
+  String get basicSupport;
 }
 
 class _AppLocalizationsDelegate

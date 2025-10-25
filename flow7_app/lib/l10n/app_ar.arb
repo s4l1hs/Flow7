@@ -107,7 +107,17 @@
   "noPlansHere": "لا يوجد برنامج لهذا اليوم.",
   "planAndSuccess": "الخطة والنجاح",
   "subtitleProgram": "ركز",
-  "subtitleSubscription": "الخطط",
+  "subtitleSubscription": "الاشتراكات",
   "subtitleSettings": "الإعدادات",
-  "tapToAddPlan": "اضغط + لإضافة خطة لليوم المحدد"
+  "tapToAddPlan": "اضغط + لإضافة خطة لليوم المحدد",
+  "bestValue": "أفضل قيمة",
+  "analytics": "التحليلات",
+  "earlyAccess": "الوصول المبكر",
+  "offlineAccess": "الوصول دون اتصال",
+  "mostPopular": "الأكثر شيوعًا",
+  "templates": "قوالب",
+  "customReminders": "تذكيرات مخصصة",
+  "prioritySupport": "دعم ذو أولوية",
+  "syncGoogleCalendar": "مزامنة مع تقويم Google",
+  "basicSupport": "دعم أساسي"
 }
