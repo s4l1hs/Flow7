@@ -15,21 +15,13 @@ class ProgramPage extends StatefulWidget {
 
 class ProgramPageState extends State<ProgramPage> {
   final ApiService _apiService = ApiService();
-
-  // Takvim ve sayfa durumu (abonelik ile sınırlı)
   late PageController _pageController;
-  DateTime _baseWeekStart = _getStartOfWeek(DateTime.now()); // page 0 --> current week
+  DateTime _baseWeekStart = _getStartOfWeek(DateTime.now());
   DateTime _currentWeekStart;
   DateTime? _selectedDay;
-
-  // Abonelik limit (hafta sayısı). Varsayılan free.
-  int _weekLimit = 2; // free:2, pro:4, ultra:8
-
-  // Veri durumu
+  int _weekLimit = 2;
   bool _isLoading = true;
   String? _errorMessage;
-
-  // Gruplanmış planlar (performans için)
   Map<String, List<Map<String, dynamic>>> _groupedPlans = {};
 
   ProgramPageState() : _currentWeekStart = _getStartOfWeek(DateTime.now());
@@ -40,11 +32,7 @@ class ProgramPageState extends State<ProgramPage> {
     final today = DateTime.now();
     _pageController = PageController(initialPage: 0);
     _selectedDay = DateTime(today.year, today.month, today.day);
-    
-    // initState'te async işlem yapmak için addPostFrameCallback kullanılır.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchPlansForWeek(_currentWeekStart);
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchPlansForWeek(_currentWeekStart));
   }
 
   @override
@@ -72,8 +60,8 @@ class ProgramPageState extends State<ProgramPage> {
     if (newLimit == _weekLimit) return;
     setState(() {
       _weekLimit = newLimit;
-      // recreate controller to clamp page range safely
-      final currentPage = (_currentWeekStart.difference(_baseWeekStart).inDays ~/ 7).clamp(0, _weekLimit - 1);
+      // recreate controller to clamp page range safely (clamp returns num -> toInt)
+      final currentPage = ((_currentWeekStart.difference(_baseWeekStart).inDays ~/ 7).clamp(0, _weekLimit - 1)).toInt();
       _pageController.dispose();
       _pageController = PageController(initialPage: currentPage);
       // ensure currentWeekStart not outside new range
@@ -233,7 +221,7 @@ class ProgramPageState extends State<ProgramPage> {
 
   // Yardımcı: bir planı groupedPlans içine ekle veya güncelle
   void _insertOrUpdatePlan(Map<String, dynamic> plan) {
-    final dateKey = (plan['date'] as String).substring(0, 10);
+    final dateKey = plan['date'].toString().substring(0, 10);
     // önce mevcut her yerde aynı id varsa çıkar
     final keys = _groupedPlans.keys.toList();
     for (final k in keys) {
@@ -305,28 +293,22 @@ class ProgramPageState extends State<ProgramPage> {
   }
   
   // --- UI İşlemleri ---
-  
-  // Public method so MainScreen (via GlobalKey) can open the add/edit dialog.
-  void showPlanDialog({Map<String, dynamic>? plan}) {
+  void showPlanDialog({Map<String, dynamic>? plan, DateTime? forDate}) {
     final isEditing = plan != null;
-    final date = isEditing ? DateTime.parse(plan['date']) : _selectedDay!;
+    DateTime date;
+    if (isEditing) {
+      final parsed = DateTime.parse(plan['date'].toString());
+      date = DateTime(parsed.year, parsed.month, parsed.day);
+    } else {
+      final s = forDate ?? _selectedDay ?? DateTime.now();
+      date = DateTime(s.year, s.month, s.day);
+    }
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return PlanDialog(
-          initialDate: date,
-          plan: plan,
-          onSave: (data) {
-            if (isEditing) {
-              _onUpdatePlan(plan['id'], data);
-            } else {
-              _onCreatePlan(data);
-            }
-          },
-        );
-      },
-    );
+    showDialog(context: context, builder: (context) {
+      return PlanDialog(initialDate: date, plan: plan, onSave: (data) {
+        if (isEditing) _onUpdatePlan(plan['id'].toString(), data); else _onCreatePlan(data);
+      });
+    });
   }
 
   void _showDeleteConfirmation(String planId) {
@@ -375,40 +357,29 @@ class ProgramPageState extends State<ProgramPage> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildWeekCalendar(),
-            const Divider(height: 1),
-            Expanded(child: _buildPlanList()),
-          ],
-        ),
-      ),
-      // Note: FAB is provided by MainScreen so it's rendered above the bottom nav.
-    );
-  }
-
-  Widget _buildWeekCalendar() {
-    // Sabit yükseklik ver: PageView yatay bir viewport ve sabit yükseklik olmalı
-    return SizedBox(
-      height: 116.h,
-      child: PageView.builder(
-        controller: _pageController,
-        itemCount: _weekLimit,
-        onPageChanged: (pageIndex) {
-          final newWeekStart = _getDateForPage(pageIndex);
-          setState(() {
-            _currentWeekStart = newWeekStart;
-            // Yeni haftaya geçerken seçili günü haftanın ilk gününe ayarla
-            _selectedDay = newWeekStart;
-          });
-          _fetchPlansForWeek(newWeekStart);
-        },
-        itemBuilder: (context, pageIndex) {
-          final weekStart = _getDateForPage(pageIndex);
-          return _buildWeekView(weekStart);
-        },
-      ),
+      body: SafeArea(child: Column(children: [
+        // New bold horizontal day picker: large cards with depth
+        Container(height: 132.h, padding: EdgeInsets.symmetric(vertical: 8.h), child: PageView.builder(
+          controller: _pageController,
+          itemCount: _weekLimit,
+          onPageChanged: (pageIndex) {
+            final newWeekStart = _getDateForPage(pageIndex);
+            setState(() {
+              _currentWeekStart = newWeekStart;
+              if (_selectedDay == null || _selectedDay!.isBefore(newWeekStart) || _selectedDay!.isAfter(newWeekStart.add(const Duration(days: 6)))) {
+                _selectedDay = newWeekStart;
+              }
+            });
+            _fetchPlansForWeek(newWeekStart);
+          },
+          itemBuilder: (context, pageIndex) {
+            final weekStart = _getDateForPage(pageIndex);
+            return _buildWeekView(weekStart);
+          },
+        )),
+        const Divider(height: 1),
+        Expanded(child: _buildPlanList())
+      ])),
     );
   }
 
@@ -416,203 +387,118 @@ class ProgramPageState extends State<ProgramPage> {
     final locale = Localizations.localeOf(context).toString();
     final dfDay = DateFormat.E(locale);
     final dfNum = DateFormat.d(locale);
-
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(7, (index) {
-          final day = weekStart.add(Duration(days: index));
-          final isToday = _isSameDate(day, DateTime.now());
-          final isSelected = _selectedDay != null && _isSameDate(day, _selectedDay!);
-          final dateKey = DateFormat('yyyy-MM-dd').format(day);
-          final hasPlans = _groupedPlans[dateKey]?.isNotEmpty ?? false;
+      padding: EdgeInsets.symmetric(horizontal: 12.w),
+      child: Row(children: List.generate(7, (index) {
+        final day = weekStart.add(Duration(days: index));
+        final normalized = DateTime(day.year, day.month, day.day);
+        final isToday = _isSameDate(normalized, DateTime.now());
+        final isSelected = _selectedDay != null && _isSameDate(normalized, _selectedDay!);
+        final dateKey = DateFormat('yyyy-MM-dd').format(normalized);
+        final hasPlans = _groupedPlans[dateKey]?.isNotEmpty ?? false;
 
-          return Expanded(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4.w),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12.r),
-                onTap: () => setState(() => _selectedDay = day),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 280),
-                  curve: Curves.easeOutCubic,
-                  padding: EdgeInsets.symmetric(vertical: 8.h),
-                  decoration: BoxDecoration(
-                    color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.12) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(dfDay.format(day), style: TextStyle(fontSize: 12.sp, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500, color: isSelected ? Theme.of(context).colorScheme.primary : null)),
-                      SizedBox(height: 6.h),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 320),
-                        curve: Curves.easeOut,
-                        width: 36.r,
-                        height: 36.r,
-                        decoration: BoxDecoration(
-                          color: isSelected ? Theme.of(context).colorScheme.primary : (isToday ? Colors.grey.shade700 : Colors.transparent),
-                          shape: BoxShape.circle,
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(dfNum.format(day), style: TextStyle(color: isSelected ? Colors.white : (isToday ? Colors.white : null), fontWeight: FontWeight.w600)),
-                      ),
-                      SizedBox(height: 6.h),
-                      AnimatedOpacity(
-                        opacity: hasPlans ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 240),
-                        child: Container(width: 6.w, height: 6.w, decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondary, shape: BoxShape.circle)),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+        return Expanded(child: Padding(padding: EdgeInsets.symmetric(horizontal: 6.w), child: GestureDetector(
+          onTap: () => setState(() => _selectedDay = normalized),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 320),
+            padding: EdgeInsets.symmetric(vertical: 10.h),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16.r),
+              gradient: isSelected ? LinearGradient(colors: [Theme.of(context).colorScheme.primary.withOpacity(0.18), Theme.of(context).colorScheme.tertiary.withOpacity(0.06)]) : null,
+              border: isSelected ? Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.12)) : Border.all(color: Colors.transparent),
+              boxShadow: isSelected ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.06), blurRadius: 18.r, offset: Offset(0,8.h))] : null,
             ),
-          );
-        }),
-      ),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(dfDay.format(normalized), style: TextStyle(fontSize: 12.sp, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600, color: isSelected ? Theme.of(context).colorScheme.primary : null)),
+              SizedBox(height: 8.h),
+              Container(width: 46.r, height: 46.r, decoration: BoxDecoration(shape: BoxShape.circle, gradient: isSelected ? LinearGradient(colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.tertiary]) : (isToday ? LinearGradient(colors: [Colors.grey.shade700, Colors.grey.shade600]) : null)), alignment: Alignment.center, child: Text(dfNum.format(normalized), style: TextStyle(color: (isSelected || isToday) ? Colors.white : null, fontWeight: FontWeight.w700))),
+              SizedBox(height: 8.h),
+              if (hasPlans) Container(width: 8.w, height: 8.w, decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondary, shape: BoxShape.circle))
+            ]),
+          ),
+        )));
+      })),
     );
   }
   
   Widget _buildPlanList() {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_errorMessage != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(_errorMessage!, textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-        ),
-      );
-    }
-
+    if (_errorMessage != null) return Center(child: Padding(padding: const EdgeInsets.all(16.0), child: Text(_errorMessage!, textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.error))));
     final key = _selectedDay != null ? DateFormat('yyyy-MM-dd').format(_selectedDay!) : null;
     final plansForDay = (key != null ? _groupedPlans[key] : null) ?? [];
-
     if (plansForDay.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.event_note_outlined, size: 72.r, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.18)),
-            SizedBox(height: 10.h),
-            Text(AppLocalizations.of(context)?.noPlansHere ?? "No plans for this day.", style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7))),
-          ],
-        ),
-      );
+      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 110.r, height: 110.r, decoration: BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary.withOpacity(0.12), Theme.of(context).colorScheme.secondary.withOpacity(0.06)]), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 18.r, offset: Offset(0,8.h))]), child: Icon(Icons.event_note_outlined, size: 44.r, color: Theme.of(context).colorScheme.primary)),
+        SizedBox(height: 14.h),
+        Text(AppLocalizations.of(context)?.noPlansHere ?? "No plans for this day.", style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600)),
+        SizedBox(height: 8.h),
+        Text('Tap + to add a plan for the selected day', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color), textAlign: TextAlign.center),
+      ]));
     }
 
-    return ListView.separated(
-      padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
-      itemCount: plansForDay.length,
-      separatorBuilder: (_, __) => SizedBox(height: 12.h),
-      itemBuilder: (context, index) {
-        final plan = plansForDay[index];
-        final start = (plan['start_time'] as String?) ?? '';
-        final end = (plan['end_time'] as String?) ?? '';
-        final title = (plan['title'] as String?) ?? '';
-        final desc = (plan['description'] ?? '').toString();
-        final color = Theme.of(context).colorScheme.primary;
+    return ListView.separated(padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w), itemCount: plansForDay.length, separatorBuilder: (_, __) => SizedBox(height: 12.h), itemBuilder: (context, index) {
+      final plan = plansForDay[index];
+      final start = (plan['start_time'] as String?) ?? '';
+      final end = (plan['end_time'] as String?) ?? '';
+      final title = (plan['title'] as String?) ?? '';
+      final desc = (plan['description'] ?? '').toString();
+      final color = Theme.of(context).colorScheme.primary;
 
-        return GestureDetector(
-          onTap: () => showPlanDialog(plan: plan),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 72.w,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(start, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700, color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.85))),
-                    if (end.isNotEmpty) Text(end, style: TextStyle(fontSize: 11.sp, color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7))),
-                    SizedBox(height: 6.h),
-                  ],
-                ),
+      return GestureDetector(
+        onTap: () => showPlanDialog(plan: plan),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          SizedBox(width: 72.w, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [Text(start, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700)), if (end.isNotEmpty) Text(end, style: TextStyle(fontSize: 11.sp)), SizedBox(height: 6.h)])),
+          Container(width: 28.w, alignment: Alignment.topCenter, child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.center, children: [Container(width: 3.w, height: 12.h, color: Theme.of(context).dividerColor.withOpacity(0.6)), Container(margin: EdgeInsets.symmetric(vertical: 6.h), width: 12.w, height: 12.w, decoration: BoxDecoration(color: color, shape: BoxShape.circle, boxShadow: [BoxShadow(color: color.withOpacity(0.28), blurRadius: 8.r, offset: Offset(0, 4.h))])), Flexible(fit: FlexFit.loose, child: Container(width: 3.w, color: Theme.of(context).dividerColor.withOpacity(0.06)))])),
+          Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 360),
+              curve: Curves.easeOutCubic,
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary.withOpacity(0.04), Theme.of(context).cardColor]),
+                borderRadius: BorderRadius.circular(16.r),
+                boxShadow: [BoxShadow(color: Theme.of(context).brightness == Brightness.dark ? Colors.black45 : Colors.black12, blurRadius: 22.r, offset: Offset(0, 10.h))],
               ),
-              Container(
-                width: 28.w,
-                alignment: Alignment.topCenter,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min, // unbounded height içinde Expanded/Flexible hatasını önler
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(width: 3.w, height: 12.h, color: Theme.of(context).dividerColor.withOpacity(0.6)),
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 6.h),
-                      width: 12.w,
-                      height: 12.w,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: color.withOpacity(0.28), blurRadius: 8.r, offset: Offset(0, 4.h))],
-                      ),
-                    ),
-                    Flexible(fit: FlexFit.loose, child: Container(width: 3.w, color: Theme.of(context).dividerColor.withOpacity(0.06))),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 360),
-                  curve: Curves.easeOutCubic,
-                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(14.r),
-                    boxShadow: [BoxShadow(color: Theme.of(context).brightness == Brightness.dark ? Colors.black45 : Colors.black12, blurRadius: 18.r, offset: Offset(0, 8.h))],
-                    border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.06)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: Text(title, style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800))),
-                          PopupMenuButton<String>(
-                            padding: EdgeInsets.zero,
-                            itemBuilder: (_) => [
-                              PopupMenuItem(value: 'edit', child: Text(AppLocalizations.of(context)!.edit)),
-                              PopupMenuItem(value: 'delete', child: Text(AppLocalizations.of(context)!.delete)),
-                            ],
-                            onSelected: (v) {
-                              if (v == 'edit') showPlanDialog(plan: plan);
-                              if (v == 'delete') _showDeleteConfirmation(plan['id']);
-                            },
-                            icon: Icon(Icons.more_vert, size: 18.sp, color: Theme.of(context).iconTheme.color?.withOpacity(0.7)),
-                          ),
+                      Expanded(child: Text(title, style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800))),
+                      PopupMenuButton<String>(
+                        padding: EdgeInsets.zero,
+                        itemBuilder: (_) => [
+                          PopupMenuItem(value: 'edit', child: Text(AppLocalizations.of(context)!.edit)),
+                          PopupMenuItem(value: 'delete', child: Text(AppLocalizations.of(context)!.delete)),
                         ],
-                      ),
-                      if (desc.isNotEmpty) ...[
-                        SizedBox(height: 6.h),
-                        Text(desc, style: TextStyle(fontSize: 13.sp, color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8)), maxLines: 2, overflow: TextOverflow.ellipsis),
-                      ],
-                      SizedBox(height: 10.h),
-                      Row(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-                            decoration: BoxDecoration(color: Theme.of(context).brightness == Brightness.dark ? Colors.white10 : Colors.black12, borderRadius: BorderRadius.circular(8.r)),
-                            child: Row(children: [Icon(Icons.schedule, size: 14.sp, color: Theme.of(context).textTheme.bodySmall?.color), SizedBox(width: 6.w), Text('$start ${end.isNotEmpty ? '• $end' : ''}', style: TextStyle(fontSize: 12.sp))]),
-                          ),
-                          SizedBox(width: 8.w),
-                          if (plan['tag'] != null)
-                            Container(padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h), decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8.r)), child: Text(plan['tag'].toString(), style: TextStyle(fontSize: 12.sp, color: color))),
-                          const Spacer(),
-                          IconButton(icon: Icon(Icons.delete_outline, color: Colors.red.shade300), onPressed: () => _showDeleteConfirmation(plan['id'])),
-                        ],
+                        onSelected: (v) {
+                          if (v == 'edit') showPlanDialog(plan: plan);
+                          if (v == 'delete') _showDeleteConfirmation(plan['id'].toString());
+                        },
+                        icon: Icon(Icons.more_vert, size: 18.sp, color: Theme.of(context).iconTheme.color?.withOpacity(0.7)),
                       ),
                     ],
                   ),
-                ),
+                  if (desc.isNotEmpty) ...[
+                    SizedBox(height: 6.h),
+                    Text(desc, style: TextStyle(fontSize: 13.sp, color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8)), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  ],
+                  SizedBox(height: 10.h),
+                  Row(
+                    children: [
+                      Container(padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h), decoration: BoxDecoration(color: Theme.of(context).brightness == Brightness.dark ? Colors.white10 : Colors.black12, borderRadius: BorderRadius.circular(8.r)), child: Row(children: [Icon(Icons.schedule, size: 14.sp, color: Theme.of(context).textTheme.bodySmall?.color), SizedBox(width: 6.w), Text('$start ${end.isNotEmpty ? '• $end' : ''}', style: TextStyle(fontSize: 12.sp))])),
+                      SizedBox(width: 8.w),
+                      if (plan['tag'] != null) Container(padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h), decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8.r)), child: Text(plan['tag'].toString(), style: TextStyle(fontSize: 12.sp, color: color))),
+                      const Spacer(),
+                      IconButton(icon: Icon(Icons.delete_outline, color: Colors.red.shade300), onPressed: () => _showDeleteConfirmation(plan['id'].toString())),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
-        );
-      },
-    );
+            ),
+          )
+     ]));
+    });
   }
 }
 
