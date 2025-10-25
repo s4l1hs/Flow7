@@ -98,53 +98,58 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
         elevation: 0,
         backgroundColor: Colors.transparent,
       ),
+      // SafeArea removed and top padding minimized so content sits higher
       body: Padding(
-        padding: EdgeInsets.all(16.w),
+        padding: EdgeInsets.fromLTRB(12.w, 4.h, 12.w, 12.h),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: 8.h),
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [theme.colorScheme.primary.withOpacity(0.18), theme.colorScheme.secondary.withOpacity(0.06)],
+            // Lift header a bit with translate so it's visually higher
+            Transform.translate(
+              offset: Offset(0, -10.h),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [theme.colorScheme.primary.withOpacity(0.16), theme.colorScheme.secondary.withOpacity(0.05)],
+                        ),
+                        borderRadius: BorderRadius.circular(14.r),
+                        boxShadow: [
+                          BoxShadow(color: theme.brightness == Brightness.dark ? Colors.black38 : Colors.black12, blurRadius: 12.r, offset: Offset(0,6.h))
+                        ],
                       ),
-                      borderRadius: BorderRadius.circular(16.r),
-                      boxShadow: [
-                        BoxShadow(color: theme.brightness == Brightness.dark ? Colors.black45 : Colors.black12, blurRadius: 16.r, offset: Offset(0,6.h))
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(localizations.chooseYourPlan, style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w800, color: Colors.white)),
-                        SizedBox(height: 6.h),
-                        Text(localizations.subscriptionNote, style: TextStyle(fontSize: 13.sp, color: Colors.white70)),
-                      ],
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(localizations.chooseYourPlan, style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800, color: Colors.white)),
+                          SizedBox(height: 4.h),
+                          Text(localizations.subscriptionNote, style: TextStyle(fontSize: 12.sp, color: Colors.white70)),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(width: 12.w),
-                Container(
-                  width: 64.w,
-                  height: 64.w,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(colors: [theme.colorScheme.primary, theme.colorScheme.secondary]),
-                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10.r, offset: Offset(0,6.h))],
-                  ),
-                  child: Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 32.sp),
-                )
-              ],
+                  SizedBox(width: 10.w),
+                  Container(
+                    width: 52.w,
+                    height: 52.w,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(colors: [theme.colorScheme.primary, theme.colorScheme.secondary]),
+                      boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 8.r, offset: Offset(0,6.h))],
+                    ),
+                    child: Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 28.sp),
+                  )
+                ],
+              ),
             ),
-            SizedBox(height: 20.h),
+            SizedBox(height: 10.h),
 
+            // make horizontal cards area shorter so main content sits higher
             SizedBox(
-              height: 420.h,
+              height: MediaQuery.of(context).size.height * 0.30,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: plans.length,
@@ -152,18 +157,18 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                 itemBuilder: (context, index) {
                   final plan = plans[index];
                   return Padding(
-                    padding: EdgeInsets.only(right: 16.w),
+                    padding: EdgeInsets.only(right: 12.w),
                     child: _buildSubscriptionCard(theme, localizations, plan, currentLevel),
                   );
                 },
               ),
             ),
-            SizedBox(height: 18.h),
+            SizedBox(height: 12.h),
             Center(
               child: Text(localizations.subscriptionNote, style: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.7) ?? Colors.grey.shade400, fontSize: 12.sp), textAlign: TextAlign.center),
             ),
-            SizedBox(height: 8.h),
-            if (_isProcessing) Center(child: Padding(padding: EdgeInsets.only(top: 8.h), child: CircularProgressIndicator()))
+            SizedBox(height: 6.h),
+            if (_isProcessing) Center(child: Padding(padding: EdgeInsets.only(top: 6.h), child: CircularProgressIndicator()))
           ],
         ),
       ),

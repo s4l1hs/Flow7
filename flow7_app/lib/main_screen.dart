@@ -87,7 +87,6 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
             child: Column(
               children: [
-                // Top bar: slogan + date + avatar
                 _buildTopBar(context),
                 SizedBox(height: 18.h),
                 Expanded(
@@ -220,7 +219,7 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         AnimatedDefaultTextStyle(
                           duration: const Duration(milliseconds: 360),
                           style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900, color: theme.textTheme.bodyLarge?.color),
-                          child: Text(AppLocalizations.of(context)?.planAndSuccess ?? ''),
+                          child: Text('Flow7', overflow: TextOverflow.ellipsis),
                         ),
                         SizedBox(height: 4.h),
                         AnimatedSwitcher(
@@ -230,7 +229,7 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           child: Builder(builder: (ctx) {
                             final loc = AppLocalizations.of(ctx)!;
                             return _selectedIndex == 0
-                                ? Text(loc.subtitleProgram, key: const ValueKey(0), style: TextStyle(fontSize: 12.sp, color: theme.textTheme.bodySmall?.color?.withOpacity(0.8)))
+                                ? Text(loc.planAndSuccess, key: const ValueKey(0), style: TextStyle(fontSize: 12.sp, color: theme.textTheme.bodySmall?.color?.withOpacity(0.8)))
                                 : _selectedIndex == 1
                                     ? Text(loc.subtitleSubscription, key: const ValueKey(1), style: TextStyle(fontSize: 12.sp, color: theme.textTheme.bodySmall?.color?.withOpacity(0.8)))
                                     : Text(loc.subtitleSettings, key: const ValueKey(2), style: TextStyle(fontSize: 12.sp, color: theme.textTheme.bodySmall?.color?.withOpacity(0.8)));

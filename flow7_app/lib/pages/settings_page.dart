@@ -251,13 +251,17 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
           Positioned(bottom: -80.h, right: -60.w, child: _decorBlob(theme.colorScheme.secondary.withOpacity(0.07), 260.w)),
 
           // content
-          SafeArea(
-            child: ListView(
-              // reduce top vertical padding so content sits higher
-              padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 18.w),
+            ListView(
+              // keep minimal padding but lift the profile header visually by translating it upward
+              padding: EdgeInsets.fromLTRB(18.w, 0.h, 18.w, 12.h),
               children: [
-                FadeTransition(opacity: _animationController, child: _buildProfileHeader(theme, localizations)),
-                SizedBox(height: 8.h),
+                // translate upward so header sits higher on screen (adjust -value to taste)
+                Transform.translate(
+                  offset: Offset(0, -20.h),
+                  child: FadeTransition(opacity: _animationController, child: _buildProfileHeader(theme, localizations)),
+                ),
+                // smaller spacer after lifted header
+                SizedBox(height: 2.h),
 
                 _buildCardSection(title: localizations.general, child: Column(children: [
                   _buildLanguageTile(localizations, theme),
@@ -276,7 +280,6 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
                 SizedBox(height: 8.h),
               ],
             ),
-          ),
         ],
       ),
     );
