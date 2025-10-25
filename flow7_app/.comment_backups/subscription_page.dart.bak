@@ -50,6 +50,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
     final userProvider = Provider.of<UserProvider>(context);
     final currentLevel = userProvider.profile?.subscriptionLevel ?? 'free';
 
+    // Plan definitions simplified per request: only week limits and support perks
     final List<Map<String, dynamic>> plans = [
       {
         'level': 'free',
@@ -84,11 +85,13 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
         elevation: 0,
         backgroundColor: Colors.transparent,
       ),
+      // SafeArea removed and top padding minimized so content sits higher
       body: Padding(
         padding: EdgeInsets.fromLTRB(12.w, 4.h, 12.w, 12.h),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Lift header a bit with translate so it's visually higher
             Transform.translate(
               offset: Offset(0, -10.h),
               child: Row(
@@ -131,6 +134,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
             ),
             SizedBox(height: 10.h),
 
+            // reduced horizontal cards area height to avoid vertical overflow
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.40,
               child: ListView.builder(
@@ -179,11 +183,13 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           if (!isCurrent) _simulatePurchase(planLevel);
         },
         child: Builder(builder: (context) {
+            // Reduced card height/width to prevent bottom overflow on small viewports
             final double screenW = MediaQuery.of(context).size.width;
             final double screenH = MediaQuery.of(context).size.height;
             final double cardHeight = math.min(screenH * 0.30, screenH * 0.65);
             final double cardWidth = math.min(screenW * 0.72, 340.w);
   
+            // Capabilities per plan (icons + localized labels)
             final List<Map<String, dynamic>> capabilities = planLevel == 'free'
                 ? [
                     {'icon': Icons.view_week, 'label': localizations.view2Weeks},
@@ -202,6 +208,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                         {'icon': Icons.headset, 'label': localizations.prioritySupport},
                       ];
 
+            // stronger visual for pro / ultra
             final Gradient cardGradient = planLevel == 'pro'
                 ? LinearGradient(colors: [cardColor.withOpacity(0.96), cardColor.withOpacity(0.68)])
                 : planLevel == 'ultra'
@@ -227,6 +234,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Badge row: small ribbon for pro/ultra
                   Row(
                     children: [
                       if (planLevel == 'pro' || planLevel == 'ultra')
@@ -249,6 +257,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                           ),
                         ),
                       Spacer(),
+                      // Price pill (emphasize for pro/ultra)
                       if (!isFree)
                         Container(
                           padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
@@ -266,6 +275,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
 
                   SizedBox(height: 8.h),
 
+                  // Title row: left aligned title, small subtitle to make pro/ultra inviting
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -276,9 +286,11 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                   ),
                   SizedBox(height: 8.h),
 
+                  // thin separator
                   Container(height: 3.h, width: 56.w, decoration: BoxDecoration(gradient: LinearGradient(colors: [cardColor.withOpacity(0.95), cardColor.withOpacity(0.55)]), borderRadius: BorderRadius.circular(12.r))),
                   SizedBox(height: 8.h),
 
+                  // Avantajlar: alt alta liste (ikon + text) with centered alignment
                   Flexible(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
@@ -316,6 +328,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
 
                   SizedBox(height: 6.h),
 
+                  // CTA — more prominent for pro/ultra
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(

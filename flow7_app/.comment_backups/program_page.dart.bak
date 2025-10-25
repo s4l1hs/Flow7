@@ -8,7 +8,7 @@ import 'dart:ui';
 import 'dart:math' as math;
 
 class ProgramPage extends StatefulWidget {
-  final String idToken; 
+  final String idToken; // Firebase'den veya başka bir auth servisinden gelen token
   const ProgramPage({super.key, required this.idToken});
 
   @override
@@ -43,35 +43,45 @@ class ProgramPageState extends State<ProgramPage> {
     super.dispose();
   }
 
+  // --- Yardımcı Fonksiyonlar ---
 
   static DateTime _getStartOfWeek(DateTime date) {
+    // Pazartesi haftanın başlangıcıdır (weekday 1)
     return date.subtract(Duration(days: date.weekday - 1));
   }
 
   DateTime _getDateForPage(int pageIndex) {
+    // pageIndex 0 => base week (this week), 1 => next week, ...
     return _baseWeekStart.add(Duration(days: pageIndex * 7));
   }
 
+  // Call to update week limit based on subscription tier string (e.g. "free","pro","ultra")
   void setSubscriptionTier(String tier) {
     final t = tier.toLowerCase();
     final newLimit = (t == 'pro') ? 4 : (t == 'ultra' ? 8 : 2);
     if (newLimit == _weekLimit) return;
     setState(() {
       _weekLimit = newLimit;
+      // recreate controller to clamp page range safely (clamp returns num -> toInt)
       final currentPage = ((_currentWeekStart.difference(_baseWeekStart).inDays ~/ 7).clamp(0, _weekLimit - 1)).toInt();
       _pageController.dispose();
       _pageController = PageController(initialPage: currentPage);
+      // ensure currentWeekStart not outside new range
       _currentWeekStart = _getDateForPage(currentPage);
       _selectedDay = _getDateForPage(currentPage);
     });
   }
 
+  // Optional: external update helper
   void updateSubscription(String tier) => setSubscriptionTier(tier);
 
   void _groupAndSortPlans(List<Map<String, dynamic>> plans, {bool merge = false}) 
   {
+    // Eğer birleştirme yapılıyorsa, yeni bir geçici harita oluştur.
+    // Yoksa, sadece mevcut haftanın planlarını içeren geçici harita oluştur.
     final Map<String, List<Map<String, dynamic>>> newGrouped = {};
 
+      // 1. Yeni verileri grupla
       final newlyGrouped = groupBy(plans, (plan) {
         final rawDate = plan['date'];
         if (rawDate is String && rawDate.length >= 10) {
@@ -83,16 +93,21 @@ class ProgramPageState extends State<ProgramPage> {
         }
       });
 
+      // 2. Birleştirme (Merge) İşlemi
       if (merge) {
+          // Mevcut haritanın bir kopyasını al (tüm haftalar)
           newGrouped.addAll(_groupedPlans);
 
+          // Yeni gelen haftalık verileri, mevcut kopyanın üzerine yaz (replace)
           newlyGrouped.forEach((dateKey, plansList) {
               newGrouped[dateKey] = plansList;
           });
       } else {
+          // Sadece yeni gelen haftalık veriyi kullan (mevcut haftayı ilk yükleme gibi)
           newGrouped.addAll(newlyGrouped);
       }
 
+      // 3. Sıralama İşlemi
       newGrouped.forEach((date, planList) {
         planList.sort((a, b) {
           final startTimeA = a['start_time'] as String? ?? '00:00';
@@ -101,6 +116,7 @@ class ProgramPageState extends State<ProgramPage> {
         });
       });
 
+      // State'i güncelle
       _groupedPlans = newGrouped;
   }
 
@@ -108,6 +124,7 @@ class ProgramPageState extends State<ProgramPage> {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
+  // --- API İşlemleri ---
 
   Future<void> _fetchPlansForWeek(DateTime weekStart, {bool showLoading = true}) async {
     if (showLoading) {
@@ -129,14 +146,16 @@ class ProgramPageState extends State<ProgramPage> {
         });
       }
     } on ApiException catch (e) {
+      // ApiService'den gelen özel hataları yakala
       if (mounted) {
         setState(() {
-          _errorMessage = e.message; 
+          _errorMessage = e.message; // Gelişmiş hata mesajı
           _groupedPlans = {};
           _isLoading = false;
         });
       }
     } catch (e) {
+      // Diğer genel hatalar için
       if (mounted) {
         setState(() {
           _errorMessage = AppLocalizations.of(context)!.errorOccurred;
@@ -150,6 +169,7 @@ class ProgramPageState extends State<ProgramPage> {
   Future<void> _handleApiResponse(Future<dynamic> apiCall) async {
     try {
       final result = await apiCall;
+      // Eğer API bize etkilenen planın tarihini döndüyse, o haftayı da yenile.
       DateTime? affectedDate;
       if (result is Map && result['date'] != null) {
         try {
@@ -159,6 +179,7 @@ class ProgramPageState extends State<ProgramPage> {
         }
       }
 
+      // Hesapla: güncellenecek aralık = currentWeekStart ile affectedWeekStart arasındaki min..max hafta aralığı
       if (affectedDate != null) {
         final affectedWeekStart = _getStartOfWeek(affectedDate);
         final currentWeekStart = _currentWeekStart;
@@ -167,6 +188,7 @@ class ProgramPageState extends State<ProgramPage> {
         final rangeStart = minStart;
         final rangeEnd = maxStart.add(const Duration(days: 6));
 
+        // yükleme gösterme olmadan birden fazla haftayı çek
         try {
           final plans = await _apiService.getUserPlans(widget.idToken, rangeStart, rangeEnd);
           if (mounted) {
@@ -177,9 +199,11 @@ class ProgramPageState extends State<ProgramPage> {
             });
           }
         } catch (e) {
+          // Eğer fetch başarısız olursa, en azından mevcut haftayı yenile
           await _fetchPlansForWeek(_currentWeekStart, showLoading: false);
         }
       } else {
+        // Etkilenen tarih yoksa en azından mevcut haftayı yenile
         await _fetchPlansForWeek(_currentWeekStart, showLoading: false);
       }
     } on ApiException catch (e) {
@@ -197,8 +221,10 @@ class ProgramPageState extends State<ProgramPage> {
     }
   }
 
+  // Yardımcı: bir planı groupedPlans içine ekle veya güncelle
   void _insertOrUpdatePlan(Map<String, dynamic> plan) {
     final dateKey = plan['date'].toString().substring(0, 10);
+    // önce mevcut her yerde aynı id varsa çıkar
     final keys = _groupedPlans.keys.toList();
     for (final k in keys) {
       _groupedPlans[k]?.removeWhere((p) => p['id'] == plan['id']);
@@ -216,6 +242,7 @@ class ProgramPageState extends State<ProgramPage> {
     if (mounted) setState(() {});
   }
 
+  // Yardımcı: id'ye göre planı tüm gruplardan çıkar
   void _removePlanById(String id) {
     bool changed = false;
     final keys = _groupedPlans.keys.toList();
@@ -229,7 +256,9 @@ class ProgramPageState extends State<ProgramPage> {
     if (changed && mounted) setState(() {});
   }
 
+  // DELETE: optimistik olarak UI'dan kaldır, API başarısız olursa geri koy
   void _onDeletePlan(String planId) async {
+    // yedekle (ilk bulunan plan)
     Map<String, dynamic>? backup;
     for (final list in _groupedPlans.values) {
       for (final p in list) {
@@ -241,12 +270,15 @@ class ProgramPageState extends State<ProgramPage> {
       if (backup != null) break;
     }
 
+    // optimistik kaldır
     _removePlanById(planId);
 
     try {
       await _apiService.deletePlan(widget.idToken, planId);
+      // başarılıysa sunucudan mevcut haftayı tazeleyebiliriz (opsiyonel)
       await _fetchPlansForWeek(_currentWeekStart, showLoading: false);
     } catch (e) {
+      // hata -> geri koy
       if (backup != null) _insertOrUpdatePlan(backup);
       if (!mounted) return;
       final err = e is ApiException ? e.message : AppLocalizations.of(context)!.errorOccurred;
@@ -262,6 +294,7 @@ class ProgramPageState extends State<ProgramPage> {
     _handleApiResponse(_apiService.updatePlan(widget.idToken, planId, data));
   }
   
+  // --- UI İşlemleri ---
   void showPlanDialog({Map<String, dynamic>? plan, DateTime? forDate}) {
     final isEditing = plan != null;
     DateTime date;
@@ -302,10 +335,12 @@ class ProgramPageState extends State<ProgramPage> {
     );
   }
   
+  // --- Build Metotları ---
 
   @override
   Widget build(BuildContext context) {
      final loc = AppLocalizations.of(context)!;
+    // day picker height responsive to viewport to avoid overflow on some locales
     final double dayPickerHeight = math.min(132.h, MediaQuery.of(context).size.height * 0.16);
 
     return Scaffold(
@@ -317,6 +352,7 @@ class ProgramPageState extends State<ProgramPage> {
             icon: const Icon(Icons.today),
             tooltip: loc.today,
             onPressed: () {
+              // Jump to the base week (page 0)
               _pageController.animateToPage(
                 0,
                 duration: const Duration(milliseconds: 300),
@@ -327,6 +363,7 @@ class ProgramPageState extends State<ProgramPage> {
         ],
       ),
       body: SafeArea(child: Column(children: [
+        // New bold horizontal day picker: responsive height to avoid overflow (esp. for long localized day names)
         Container(height: dayPickerHeight, padding: EdgeInsets.symmetric(vertical: 6.h), child: PageView.builder(
           controller: _pageController,
           itemCount: _weekLimit,
@@ -378,6 +415,7 @@ class ProgramPageState extends State<ProgramPage> {
               boxShadow: isSelected ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.06), blurRadius: 18.r, offset: Offset(0,8.h))] : null,
             ),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
+              // Day name: use FittedBox to scale long localized names down so they don't overflow
               SizedBox(
                 height: 18.h,
                 child: Center(
@@ -514,10 +552,11 @@ class ProgramPageState extends State<ProgramPage> {
   }
 }
 
+// --- YENİDEN KULLANILABİLİR WIDGET ---
 
 class PlanDialog extends StatefulWidget {
   final DateTime initialDate;
-  final Map<String, dynamic>? plan; 
+  final Map<String, dynamic>? plan; // Düzenleme modu için
   final Function(Map<String, dynamic> data) onSave;
 
   const PlanDialog({
@@ -636,6 +675,7 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Header with subtle entrance animation
                     TweenAnimationBuilder<double>(
                       tween: Tween(begin: 0.0, end: 1.0),
                       duration: const Duration(milliseconds: 420),
@@ -688,6 +728,7 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                       ),
                     ),
 
+                    // Form area with comfortable padding and elevated card look
                     Flexible(
                       fit: FlexFit.loose,
                       child: Padding(
@@ -700,6 +741,7 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                // Title row with icon and animated label
                                 Row(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
@@ -734,6 +776,7 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                                 ),
                                 SizedBox(height: 14.h),
 
+                                // Time pickers compact row
                                 Row(
                                   children: [
                                     Expanded(
@@ -785,6 +828,7 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                                 ),
                                 SizedBox(height: 14.h),
 
+                                // Description with AnimatedSize to expand when focused
                                 AnimatedSize(
                                   duration: const Duration(milliseconds: 260),
                                   curve: Curves.easeInOutCubic,
@@ -814,6 +858,7 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                                 ),
                                 SizedBox(height: 18.h),
 
+                                // Action buttons with micro animation
                                 Row(
                                   children: [
                                     Expanded(

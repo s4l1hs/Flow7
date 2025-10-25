@@ -55,12 +55,14 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
+    // New vibrant / cheerful (feminine-leaning) palette — bright, warm and uplifting (light)
     const Color brandDeep = Color(0xFFE91E63);     // vivid pink (light primary)
     const Color brandAccent = Color(0xFFFF7043);   // warm coral / peach accent
     const Color brandViolet = Color(0xFFAB47BC);   // soft lavender for secondary accents
     const Color bgLight = Color(0xFFFFFBFD);       // very light blush background
     const Color cardLight = Color(0xFFFFF1F6);     // soft card surface with blush tint
 
+    // Dark palette: more "masculine / sharp" — deep, high-contrast tones
     const Color brandDarkPrimary = Color(0xFF08203A); // deep midnight blue
     const Color brandDarkAccent = Color(0xFF00BFA6);  // cold teal accent for sharp contrast
     const Color bgDark = Color(0xFF05060A);
@@ -80,6 +82,7 @@ class MyApp extends StatelessWidget {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           onGenerateTitle: (context) => "Flow7",
+          // useMaterial3 removed for SDK compatibility
           themeMode: themeNotifier.mode,
           theme: ThemeData(
             brightness: Brightness.light,

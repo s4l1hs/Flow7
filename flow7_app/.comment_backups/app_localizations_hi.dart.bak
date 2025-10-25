@@ -1,0 +1,387 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for Hindi (`hi`).
+class AppLocalizationsHi extends AppLocalizations {
+  AppLocalizationsHi([String locale = 'hi']) : super(locale);
+
+  @override
+  String get great => 'महान!';
+
+  @override
+  String get navMainMenu => 'विषय';
+
+  @override
+  String get navInfo => 'तथ्य';
+
+  @override
+  String get navQuiz => 'प्रश्नोत्तरी';
+
+  @override
+  String get navChallenge => 'चुनौती';
+
+  @override
+  String get navSettings => 'सेटिंग्स';
+
+  @override
+  String get loginFailedMessage =>
+      'साइन-इन विफल रहा। कृपया अपना नेटवर्क जांचें और पुनः प्रयास करें।';
+
+  @override
+  String get continueWithGoogle => 'Google के साथ जारी रखें';
+
+  @override
+  String get infoNotFound => 'आपके पसंदीदा विषयों के लिए ज्ञान नहीं मिला।';
+
+  @override
+  String get selectYourInterests => 'अपनी रुचि चुनें';
+
+  @override
+  String get preferencesSaved => 'प्राथमिकताएँ सफलतापूर्वक सहेजी गईं!';
+
+  @override
+  String get preferencesCouldNotBeSaved => 'प्राथमिकताएँ सहेजी नहीं जा सकीं।';
+
+  @override
+  String get error => 'त्रुटि';
+
+  @override
+  String get saving => 'सहेजा जा रहा है';
+
+  @override
+  String get settings => 'सेटिंग्स';
+
+  @override
+  String get general => 'सामान्य';
+
+  @override
+  String get applicationLanguage => 'एप्लिकेशन भाषा';
+
+  @override
+  String get notifications => 'सूचनाएं';
+
+  @override
+  String get forAllAlarms => 'सभी तथ्यों और चुनौतियों के लिए';
+
+  @override
+  String get account => 'खाता';
+
+  @override
+  String get signOut => 'साइन आउट करें';
+
+  @override
+  String get cancel => 'रद्द करें';
+
+  @override
+  String get save => 'सहेजें';
+
+  @override
+  String get language => 'हिन्दी';
+
+  @override
+  String get selectLanguage => 'भाषा चुनें';
+
+  @override
+  String get refresh => 'ताज़ा करें';
+
+  @override
+  String get noDataFound => 'कोई डेटा नहीं मिला';
+
+  @override
+  String get navLeaderboard => 'लीडरबोर्ड';
+
+  @override
+  String get deleteAccount => 'खाता हटाएं';
+
+  @override
+  String get deleteAccountConfirmation =>
+      'क्या आप वाकई अपना खाता हटाना चाहते हैं? यह कार्रवाई अपरिवर्तनीय है और आपका स्कोर सहित आपका सारा डेटा स्थायी रूप से नष्ट हो जाएगा।';
+
+  @override
+  String get delete => 'हटाएं';
+
+  @override
+  String get signOutConfirmation => 'क्या आप वाकई साइन आउट करना चाहते हैं?';
+
+  @override
+  String get noDataAvailable => 'कोई डेटा उपलब्ध नहीं है';
+
+  @override
+  String get errorCouldNotSaveChanges => 'बदलाव सेव नहीं किए जा सके';
+
+  @override
+  String get selected => 'चयनित';
+
+  @override
+  String get subscriptions => 'सदस्यताएँ';
+
+  @override
+  String get chooseYourPlan => 'अपनी योजना चुनें';
+
+  @override
+  String get planFree => 'मुफ्त योजना';
+
+  @override
+  String get planPro => 'प्रो योजना';
+
+  @override
+  String get planUltra => 'अल्ट्रा योजना';
+
+  @override
+  String get free => 'मुफ्त';
+
+  @override
+  String get month => 'माह';
+
+  @override
+  String get questionsPerDay => 'प्रश्न/दिन';
+
+  @override
+  String get challengesPerDay => 'चुनौतियाँ/दिन';
+
+  @override
+  String get notificationPerDay => 'सूचना/दिन';
+
+  @override
+  String get notificationsPerDay => 'सूचनाएँ/दिन';
+
+  @override
+  String get unlimitedQuizzes => 'असीमित प्रश्नोत्तरी';
+
+  @override
+  String get unlimitedChallenges => 'असीमित चुनौतियाँ';
+
+  @override
+  String get purchaseSuccess => 'सदस्यता सफलतापूर्वक अद्यतन की गई।';
+
+  @override
+  String get purchaseError => 'खरीद विफल';
+
+  @override
+  String get current => 'वर्तमान';
+
+  @override
+  String get active => 'सक्रिय';
+
+  @override
+  String get freeTrial => 'मुफ्त टियर';
+
+  @override
+  String get upgrade => 'अपग्रेड करें';
+
+  @override
+  String get subscriptionNote =>
+      'यह एक खरीद सिमुलेशन है। इसे वास्तविक भुगतान प्रणाली के साथ एकीकृत किया जाना चाहिए।';
+
+  @override
+  String get limitExceeded => 'सीमा पार हो गई';
+
+  @override
+  String get weeks => 'सप्ताह';
+
+  @override
+  String get pointsEarned => 'प्राप्त अंक';
+
+  @override
+  String get errorSubmittingAnswer => 'उत्तर सबमिट करने में त्रुटि।';
+
+  @override
+  String get wrongAnswerResetStreak => 'गलत उत्तर! स्ट्रीक रीसेट हुई।';
+
+  @override
+  String get correct => 'सही';
+
+  @override
+  String get errorCouldNotLoadData => 'डेटा लोड नहीं हो सका।';
+
+  @override
+  String get topPlayers => 'शीर्ष खिलाड़ी';
+
+  @override
+  String get yourName => 'आपका नाम';
+
+  @override
+  String get changeLanguage => 'भाषा बदलें';
+
+  @override
+  String get memberSince => 'सदस्यता से';
+
+  @override
+  String get anonymous => 'गुमनाम';
+
+  @override
+  String get help => 'मदद';
+
+  @override
+  String get failedToSaveName => 'नाम सहेजा नहीं जा सका';
+
+  @override
+  String get saved => 'सहेजा गया';
+
+  @override
+  String get enterValidName => 'मान्य नाम दर्ज करें';
+
+  @override
+  String get failedToSaveNotification => 'सूचना सेटिंग सहेजी नहीं जा सकी';
+
+  @override
+  String get failedToSaveLanguage => 'भाषा सहेजी नहीं जा सकी';
+
+  @override
+  String get failedToLoadProfile => 'प्रोफ़ाइल लोड नहीं हो सकी';
+
+  @override
+  String get copiedToClipboard => 'क्लिपबोर्ड पर कॉपी किया गया';
+
+  @override
+  String get loading => 'लोड हो रहा है';
+
+  @override
+  String get pleaseWait => 'कृपया प्रतीक्षा करें';
+
+  @override
+  String get challenge => 'चुनौती';
+
+  @override
+  String get hintTapToReload => 'रिलोड करने के लिए टैप करें';
+
+  @override
+  String get limited => 'सीमित';
+
+  @override
+  String get newProgram => 'नया प्रोग्राम';
+
+  @override
+  String get titleLabel => 'शीर्षक';
+
+  @override
+  String get startLabel => 'शुरू (HH:MM)';
+
+  @override
+  String get endLabel => 'समाप्त (HH:MM)';
+
+  @override
+  String get descriptionLabel => 'विवरण';
+
+  @override
+  String get defaultProgramTitle => 'प्रोग्राम';
+
+  @override
+  String get planCreated => 'प्रोग्राम बन गया';
+
+  @override
+  String get errorOccurred => 'एक त्रुटि हुई';
+
+  @override
+  String get planDeleted => 'प्रोग्राम हटाया गया';
+
+  @override
+  String get programCalendar => 'आपका प्रोग्राम';
+
+  @override
+  String get add => 'जोड़ें';
+
+  @override
+  String get noPlansMessage =>
+      'इस दिन के लिए कोई प्रोग्राम नहीं है।\nनया प्रोग्राम जोड़ने के लिए लंबा दबाएँ।';
+
+  @override
+  String get deleteConfirm => 'क्या आप वाकई इस प्रोग्राम को हटाना चाहते हैं?';
+
+  @override
+  String get today => 'आज';
+
+  @override
+  String get editProgram => 'प्रोग्राम संपादित करें';
+
+  @override
+  String get requiredField => 'यह फ़ील्ड आवश्यक है';
+
+  @override
+  String get endTimeError => 'समाप्ति समय को प्रारंभ समय के बाद होना चाहिए';
+
+  @override
+  String get theme => 'थीम';
+
+  @override
+  String get darkMode => 'डार्क मोड';
+
+  @override
+  String get lightMode => 'लाइट मोड';
+
+  @override
+  String get edit => 'संपादित करें';
+
+  @override
+  String get noPlansHere => 'इस दिन के लिए कोई कार्यक्रम नहीं है।';
+
+  @override
+  String get planAndSuccess => 'योजना और सफलता';
+
+  @override
+  String get subtitleProgram => 'ध्यान केंद्रित करें';
+
+  @override
+  String get subtitleSubscription => 'सदस्यताएँ';
+
+  @override
+  String get subtitleSettings => 'सेटिंग्स';
+
+  @override
+  String get tapToAddPlan =>
+      'चयनित दिन के लिए योजना जोड़ने के लिए + पर टैप करें';
+
+  @override
+  String get bestValue => 'बेहतरीन ऑफ़र';
+
+  @override
+  String get analytics => 'विश्लेषण';
+
+  @override
+  String get earlyAccess => 'जल्दी पहुँच';
+
+  @override
+  String get offlineAccess => 'ऑफ़लाइन पहुँच';
+
+  @override
+  String get mostPopular => 'सबसे लोकप्रिय';
+
+  @override
+  String get templates => 'टेम्पलेट्स';
+
+  @override
+  String get customReminders => 'कस्टम अनुस्मारक';
+
+  @override
+  String get prioritySupport => 'प्राथमिक समर्थन';
+
+  @override
+  String get syncGoogleCalendar => 'Google कैलेंडर के साथ सिंक करें';
+
+  @override
+  String get basicSupport => 'बुनियादी सहायता';
+
+  @override
+  String get view2Weeks => '2‑सप्ताह कार्यक्रम';
+
+  @override
+  String get view4Weeks => '4‑सप्ताह कार्यक्रम';
+
+  @override
+  String get view8Weeks => '8‑सप्ताह कार्यक्रम';
+
+  @override
+  String get basicReminders => 'मूल अनुस्मारक';
+
+  @override
+  String get advancedReminders => 'उन्नत अनुस्मारक';
+
+  @override
+  String get advancedRemindersAndSnooze => 'उन्नत अनुस्मारक और स्नूज़';
+
+  @override
+  String get noSupport => 'कोई समर्थन नहीं';
+}

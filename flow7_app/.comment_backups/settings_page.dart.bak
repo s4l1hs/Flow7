@@ -23,7 +23,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
   bool _isSavingLanguage = false;
   bool _isSavingNotifications = false;
   String _currentTheme = 'DARK';
-  bool _isSavingTheme = false; 
+  bool _isSavingTheme = false; // <- yeni alan
   // ignore: unused_field
   bool _isLoadingProfile = false;
 
@@ -62,6 +62,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
     if (!mounted) return;
     setState(() => _isLoadingProfile = true);
     try {
+      // Önce local tercih varsa onu uygula (local override backend)
       final prefs = await SharedPreferences.getInstance();
       final savedTheme = prefs.getString('theme_mode');
       if (savedTheme != null) {
@@ -87,6 +88,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
           _currentLanguageCode = languageCode;
           _username = (firebaseName != null && firebaseName.isNotEmpty) ? firebaseName : (backendUsername.isNotEmpty ? backendUsername : null);
           _notificationsEnabled = notifications;
+          // Eğer local'de tercih yoksa backend tercihini uygula, aksi halde local tercih korunur
           if (savedTheme == null) _currentTheme = themePreference;
         });
 
@@ -107,18 +109,22 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
     setState(() => _isSavingTheme = true);
     final oldTheme = _currentTheme; // Hata olursa geri dönmek için
     
+    // UI'da hemen yansıt, bekleme sırasında loading gösterilir
     if (mounted) setState(() => _currentTheme = newTheme);
 
+    // Local'e kaydet (optimistic)
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('theme_mode', newTheme.toUpperCase());
     } catch (_) {
+      // Eğer local kaydetme başarısız olursa devam et (backend'e yine de dene)
     }
     
     try {
       final token = await _getIdToken();
       if (token == null) throw Exception("User not logged in");
 
+      // Do a direct HTTP request to update theme preference on the backend
       final uri = Uri.parse("$backendBaseUrl/user/theme/");
       final body = jsonEncode({'theme': newTheme}); // <-- changed to match backend Pydantic model
       final response = await http.put(uri, headers: {
@@ -131,10 +137,12 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
         throw Exception('Failed to save theme preference');
       }
 
+      // Başarılı olursa, uygulama genelinde tema değişikliğini tetikleyin.
       if (mounted) Provider.of<ThemeNotifier>(context, listen: false).setTheme(newTheme);
     } catch (e) {
       if (mounted) {
         _showErrorSnackBar("Tema tercihi kaydedilemedi: $e");
+        // Hata durumunda UI'ı eski temaya geri çevir ve local'i düzelt
         setState(() => _currentTheme = oldTheme);
         try {
           final prefs = await SharedPreferences.getInstance();
@@ -219,6 +227,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
+        // remove visible title as requested
         title: const SizedBox.shrink(),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -226,6 +235,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
       ),
       body: Stack(
         children: [
+          // soft gradient background
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -236,16 +246,21 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
             ),
           ),
 
+          // subtle floating shapes
           Positioned(top: -40.h, left: -24.w, child: _decorBlob(theme.colorScheme.primary.withOpacity(0.08), 180.w)),
           Positioned(bottom: -80.h, right: -60.w, child: _decorBlob(theme.colorScheme.secondary.withOpacity(0.07), 260.w)),
 
+          // content
             ListView(
+              // keep minimal padding but lift the profile header visually by translating it upward
               padding: EdgeInsets.fromLTRB(18.w, 0.h, 18.w, 12.h),
               children: [
+                // translate header slightly upward but less than before (so it sits a bit lower)
                 Transform.translate(
                   offset: Offset(0, -0.h),
                   child: FadeTransition(opacity: _animationController, child: _buildProfileHeader(theme, localizations)),
                 ),
+                // balanced spacer after header
                 SizedBox(height: 4.h),
 
                 _buildCardSection(title: localizations.general, child: Column(children: [
@@ -286,6 +301,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
     final profile = provider?.profile;
     final displayName = (profile as dynamic)?.username ?? _username ?? localizations.anonymous ?? 'Anonymous';
 
+    // determine "member since" year: prefer Firebase creation time, fallback to backend field(s) or just show label
     String memberSinceText = localizations.memberSince;
     try {
       final firebaseCreation = FirebaseAuth.instance.currentUser?.metadata.creationTime;
@@ -299,6 +315,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
         }
       }
     } catch (_) {
+      // ignore and keep default label
     }
 
     return Card(
@@ -325,15 +342,18 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
+                      // show only username (no score)
                       Expanded(child: Text(displayName, style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
                     ]),
                     SizedBox(height: 4.h),
+                    // show "Member since YYYY" when possible
                     Text(memberSinceText, style: TextStyle(color: Colors.white70, fontSize: 12.sp), overflow: TextOverflow.ellipsis),
                   ]),
                 )
               ],
             ),
             SizedBox(height: 8.h),
+            // top action buttons removed per request
             const SizedBox.shrink(),
           ],
         ),
@@ -372,6 +392,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
       activeColor: theme.colorScheme.secondary,
       onChanged: (enabled) {
         final newTheme = enabled ? 'DARK' : 'LIGHT';
+        // update UI immediately, backend/save will run in _saveThemePreference
         setState(() => _currentTheme = newTheme);
         _saveThemePreference(newTheme);
       },

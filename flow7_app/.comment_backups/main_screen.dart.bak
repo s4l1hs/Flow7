@@ -1,3 +1,4 @@
+// lib/main_screen.dart
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -75,9 +76,12 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     return Scaffold(
       extendBody: true,
       body: Stack(children: [
+        // Luxury multi-layer background
         Positioned.fill(child: Container(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [theme.colorScheme.primary.withOpacity(0.06), theme.colorScheme.secondary.withOpacity(0.04), theme.scaffoldBackgroundColor])))),
+        // animated ambient blobs
         Positioned(top: -80.h, left: -80.w, child: _ambientBlob(theme.colorScheme.primary.withOpacity(0.08), 260.w)),
         Positioned(bottom: -120.h, right: -80.w, child: _ambientBlob(theme.colorScheme.secondary.withOpacity(0.06), 300.w)),
+        // Content with glass card frame
         SafeArea(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
@@ -101,6 +105,7 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             ),
           ),
         ),
+        // FAB: only visible on Program page. Smooth fade+scale transition via AnimatedSwitcher.
         Positioned(
           right: 22.w,
           bottom: 120.h,
@@ -149,9 +154,11 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   Widget _buildTopBar(BuildContext context) {
     final theme = Theme.of(context);
+    // listen so avatar updates when profile / firebase name change
     final userProvider = Provider.of<UserProvider>(context);
     final profile = userProvider.profile;
     String displayName = '';
+    // prefer Firebase displayName, fallback to backend username/name, fallback to saved local _username if present in SettingsPage style
     try {
       final firebaseName = FirebaseAuth.instance.currentUser?.displayName;
       if (firebaseName != null && firebaseName.trim().isNotEmpty) {
@@ -173,6 +180,7 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     displayName = (displayName).toString().trim();
     if (displayName.contains('@')) displayName = displayName.split('@')[0];
 
+    // Top bar: slogan on the left; date moved to the top-right (profile avatar removed)
     return Row(
       children: [
         Expanded(
@@ -189,6 +197,7 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // Small brand mark
                   Container(
                     width: 40.w,
                     height: 40.w,
@@ -200,6 +209,7 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     child: Center(child: Icon(Icons.local_play, color: Colors.white, size: 18.sp)),
                   ),
                   SizedBox(width: 8.w),
+                  // Slogan + animated subtitle (changes with selected tab)
                   Expanded(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -233,6 +243,7 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           ),
         ),
         SizedBox(width: 12.w),
+        // Date pill placed at top-right instead of avatar
         Container(
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
           decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.95), borderRadius: BorderRadius.circular(10.r)),
@@ -243,6 +254,7 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   void _openCreatePlan(BuildContext context) {
+    // Open ProgramPage's dialog so it uses the currently selected day on that page.
     (programPageKey.currentState as dynamic)?.showPlanDialog();
   }
 
@@ -265,6 +277,8 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               decoration: BoxDecoration(color: theme.cardColor.withOpacity(0.04), borderRadius: BorderRadius.circular(28.r)),
               child: Stack(
                 children: [
+                  // highlight pill removed per request (static icon-only nav)
+                  // (kept Row with nav items below)
                   SizedBox.shrink(),
                    Row(
                     children: _navItems.asMap().entries.map((entry) {

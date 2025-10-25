@@ -1,3 +1,5 @@
+// Generated from flow7-64fce-firebase-adminsdk-fbsvc-5db0f9aae0.json - verify values
+// ignore_for_file: type=lint
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
