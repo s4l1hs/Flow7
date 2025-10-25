@@ -317,4 +317,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get noPlansHere => 'لا يوجد برنامج لهذا اليوم.';
+
+  @override
+  String get planAndSuccess => 'الخطة والنجاح';
 }

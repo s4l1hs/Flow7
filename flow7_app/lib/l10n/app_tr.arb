@@ -101,5 +101,6 @@
   "darkMode": "Karanlık Mod",
   "lightMode": "Açık Mod",
   "edit": "Düzenle",
-  "noPlansHere": "Bugün için program bulunmuyor."
+  "noPlansHere": "Bugün için program bulunmuyor.",
+  "planAndSuccess": "Planla ve Başar"
 }

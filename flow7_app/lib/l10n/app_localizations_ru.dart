@@ -317,4 +317,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get noPlansHere => 'В этот день нет планов.';
+
+  @override
+  String get planAndSuccess => 'План и успех';
 }

@@ -107,5 +107,6 @@
   "darkMode": "Modo oscuro",
   "lightMode": "Modo claro",
   "edit": "Editar",
-  "noPlansHere": "No hay programa para este día."
+  "noPlansHere": "No hay programa para este día.",
+  "planAndSuccess": "Plan y Éxito"
 }

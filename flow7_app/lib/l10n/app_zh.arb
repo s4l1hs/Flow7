@@ -101,5 +101,6 @@
   "darkMode": "深色模式",
   "lightMode": "浅色模式",
   "edit": "编辑",
-  "noPlansHere": "这一天没有计划。"
+  "noPlansHere": "这一天没有计划。",
+  "planAndSuccess": "计划与成功"
 }

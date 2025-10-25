@@ -314,4 +314,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get noPlansHere => 'この日の予定はありません。';
+
+  @override
+  String get planAndSuccess => '計画と成功';
 }

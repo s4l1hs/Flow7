@@ -314,4 +314,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noPlansHere => '这一天没有计划。';
+
+  @override
+  String get planAndSuccess => '计划与成功';
 }

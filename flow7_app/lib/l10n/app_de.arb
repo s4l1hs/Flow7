@@ -126,5 +126,6 @@
   "darkMode": "Dunkelmodus",
   "lightMode": "Heller Modus",
   "edit": "Bearbeiten",
-  "noPlansHere": "Für diesen Tag sind keine Programme vorhanden."
+  "noPlansHere": "Für diesen Tag sind keine Programme vorhanden.",
+  "planAndSuccess": "Plan und Erfolg"
 }

@@ -2,6 +2,9 @@
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'providers/user_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'l10n/app_localizations.dart';
 import 'pages/subscription_page.dart';
@@ -105,7 +108,7 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         // FAB with luminous glow and micro animation
         Positioned(
           right: 22.w,
-          bottom: 86.h,
+          bottom: 120.h, // moved the + button slightly higher
           child: ScaleTransition(
             scale: Tween(begin: 1.0, end: 1.06).animate(CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut)),
             child: AnimatedBuilder(
@@ -141,29 +144,104 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   Widget _buildTopBar(BuildContext context) {
     final theme = Theme.of(context);
-    // date string created on-the-fly where needed (no unused local)
+    // listen so avatar updates when profile / firebase name change
+    final userProvider = Provider.of<UserProvider>(context);
+    final profile = userProvider.profile;
+    String displayName = '';
+    // prefer Firebase displayName, fallback to backend username/name, fallback to saved local _username if present in SettingsPage style
+    try {
+      final firebaseName = FirebaseAuth.instance.currentUser?.displayName;
+      if (firebaseName != null && firebaseName.trim().isNotEmpty) {
+        displayName = firebaseName.trim();
+      } else if (profile is Map) {
+        final m = profile as Map;
+        displayName = (m['username'] ?? m['name'] ?? m['displayName'] ?? m['full_name'] ?? '')?.toString() ?? '';
+        if (displayName.isEmpty && m['user'] is Map) {
+          final um = m['user'] as Map;
+          displayName = (um['username'] ?? um['name'] ?? um['displayName'] ?? '')?.toString() ?? '';
+        }
+      } else if (profile != null) {
+        final p = profile as dynamic;
+        displayName = (p.username ?? p.name ?? p.displayName ?? '')?.toString() ?? '';
+      }
+    } catch (_) {
+      displayName = '';
+    }
+    displayName = (displayName).toString().trim();
+    if (displayName.contains('@')) displayName = displayName.split('@')[0];
+    final String initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'A';
+
+    // Top bar redesigned: slogan instead of search + animated subtitle switcher
     return Row(
       children: [
         Expanded(
           child: Container(
-            height: 52.h,
-            padding: EdgeInsets.symmetric(horizontal: 12.w),
-            decoration: BoxDecoration(color: theme.cardColor.withOpacity(0.06), borderRadius: BorderRadius.circular(12.r)),
-            child: Row(children: [
-              Icon(Icons.search, color: theme.iconTheme.color?.withOpacity(0.7)),
-              SizedBox(width: 10.w),
-              Expanded(child: Text('Search plans, tags, people...', style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6)))),
-              SizedBox(width: 8.w),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-                decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.9), borderRadius: BorderRadius.circular(10.r)),
-                child: Text(MaterialLocalizations.of(context).formatShortDate(DateTime.now()), style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              ),
-            ]),
+            height: 64.h,
+            padding: EdgeInsets.symmetric(horizontal: 14.w),
+            decoration: BoxDecoration(
+              color: theme.cardColor.withOpacity(0.04),
+              borderRadius: BorderRadius.circular(14.r),
+              border: Border.all(color: theme.dividerColor.withOpacity(0.04)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Small brand mark
+                Container(
+                  width: 40.w,
+                  height: 40.w,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(colors: [theme.colorScheme.primary.withOpacity(0.95), theme.colorScheme.tertiary.withOpacity(0.9)]),
+                    boxShadow: [BoxShadow(color: theme.colorScheme.primary.withOpacity(0.12), blurRadius: 10.r, offset: Offset(0, 6.h))],
+                  ),
+                  child: Center(child: Icon(Icons.local_play, color: Colors.white, size: 18.sp)),
+                ),
+                SizedBox(width: 12.w),
+                // Slogan + animated subtitle (changes with selected tab)
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 360),
+                        style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900, color: theme.textTheme.bodyLarge?.color),
+                        child: Text(AppLocalizations.of(context)?.planAndSuccess ?? ''),
+                      ),
+                      SizedBox(height: 4.h),
+                      AnimatedSwitcher(
+                        
+                        duration: const Duration(milliseconds: 420),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        child: _selectedIndex == 0
+                            ? Text('Plan. Focus. Achieve.', key: const ValueKey(0), style: TextStyle(fontSize: 12.sp, color: theme.textTheme.bodySmall?.color?.withOpacity(0.8)))
+                            : _selectedIndex == 1
+                                ? Text('Upgrade your routine', key: const ValueKey(1), style: TextStyle(fontSize: 12.sp, color: theme.textTheme.bodySmall?.color?.withOpacity(0.8)))
+                                : Text('Preferences & profile', key: const ValueKey(2), style: TextStyle(fontSize: 12.sp, color: theme.textTheme.bodySmall?.color?.withOpacity(0.8))),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // date pill
+                SizedBox(width: 8.w),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                  decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.9), borderRadius: BorderRadius.circular(10.r)),
+                  child: Text(MaterialLocalizations.of(context).formatShortDate(DateTime.now()), style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
           ),
         ),
         SizedBox(width: 12.w),
-        CircleAvatar(radius: 22.r, backgroundColor: Theme.of(context).colorScheme.secondary, child: Icon(Icons.person, color: Colors.white)),
+        CircleAvatar(
+          radius: 22.r,
+          backgroundColor: Theme.of(context).colorScheme.secondary,
+          child: Text(initial, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16.sp)),
+        ),
       ],
     );
   }
@@ -218,29 +296,37 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     final idx = entry.key;
                     final itm = entry.value;
                     final isSelected = idx == _selectedIndex;
-                    final itemColor = isSelected ? (itm['color'] as Color) : theme.iconTheme.color!.withOpacity(0.72);
+                    final baseColor = (itm['color'] as Color?) ?? theme.colorScheme.primary;
                     return Expanded(
-                      child: InkWell(
+                      child: GestureDetector(
                         onTap: () => onItemTapped(idx),
                         child: SizedBox(
                           height: double.infinity,
                           child: Center(
-                            child: Column(mainAxisSize: MainAxisSize.min, children: [
-                              Icon(itm['icon'] as IconData, size: isSelected ? 28.sp : 24.sp, color: itemColor),
-                              SizedBox(height: 4.h),
-                              if (isSelected) Container(width: 6.w, height: 6.w, decoration: BoxDecoration(color: itemColor, shape: BoxShape.circle))
-                            ]),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOutCubic,
+                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                              decoration: BoxDecoration(
+                                color: isSelected ? baseColor.withOpacity(0.06) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(12.r),
+                              ),
+                              child: Transform.scale(
+                                scale: isSelected ? 1.08 : 1.0,
+                                child: Icon(itm['icon'] as IconData, size: isSelected ? 28.sp : 24.sp, color: isSelected ? baseColor : theme.iconTheme.color!.withOpacity(0.78)),
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     );
                   }).toList(),
                 ),
-              ]),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+               ]),
+             ),
+           ),
+         ),
+       ),
+     );
+   }
+ }

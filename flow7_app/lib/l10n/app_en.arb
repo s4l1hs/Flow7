@@ -110,5 +110,6 @@
   "darkMode": "Dark Mode",
   "lightMode": "Light Mode",
   "edit": "Edit",
-  "noPlansHere": "No plans for this day."
+  "noPlansHere": "No plans for this day.",
+  "planAndSuccess": "Plan & Success"
 }

@@ -727,6 +727,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No plans for this day.'**
   String get noPlansHere;
+
+  /// No description provided for @planAndSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan & Success'**
+  String get planAndSuccess;
 }
 
 class _AppLocalizationsDelegate

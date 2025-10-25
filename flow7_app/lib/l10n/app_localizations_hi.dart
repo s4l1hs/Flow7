@@ -317,4 +317,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get noPlansHere => 'इस दिन के लिए कोई कार्यक्रम नहीं है।';
+
+  @override
+  String get planAndSuccess => 'योजना और सफलता';
 }

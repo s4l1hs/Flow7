@@ -323,4 +323,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get noPlansHere => 'No hay programa para este día.';
+
+  @override
+  String get planAndSuccess => 'Plan y Éxito';
 }

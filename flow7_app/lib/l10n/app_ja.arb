@@ -101,5 +101,6 @@
   "darkMode": "ダークモード",
   "lightMode": "ライトモード",
   "edit": "編集",
-  "noPlansHere": "この日の予定はありません。"
+  "noPlansHere": "この日の予定はありません。",
+  "planAndSuccess": "計画と成功"
 }

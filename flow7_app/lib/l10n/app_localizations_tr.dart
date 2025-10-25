@@ -318,4 +318,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get noPlansHere => 'Bugün için program bulunmuyor.';
+
+  @override
+  String get planAndSuccess => 'Planla ve Başar';
 }
