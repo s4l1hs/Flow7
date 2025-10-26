@@ -7,7 +7,7 @@ import json
 
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Depends, Header, Security
+from fastapi import FastAPI, HTTPException, Depends, Security, logger, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator
@@ -17,12 +17,16 @@ from sqlalchemy import (
     String,
     Text,
     select,
-    and_,
     DateTime as SA_DateTime,
     Date as SA_Date,
     Time as SA_Time,
+    Boolean,
 )
+import asyncio
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
+from zoneinfo import ZoneInfo
+import time
+import threading
 
 # --- 1. CONFIGURATION & DATABASE SETUP ---
 # .env dosyasından ortam değişkenlerini yükle
@@ -41,12 +45,13 @@ class PlanORM(Base):
     """Veritabanındaki 'plans' tablosunu temsil eden SQLAlchemy ORM modeli."""
     __tablename__ = "plans"
     id = Column(String, primary_key=True, index=True)
-    user_id = Column(String, index=True, nullable=False)  # Firebase UID veya benzeri bir kimlik
+    user_id = Column(String, index=True, nullable=False)
     date = Column(SA_Date, index=True, nullable=False)
     start_time = Column(SA_Time, nullable=False)
     end_time = Column(SA_Time, nullable=False)
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
+    notified = Column(Boolean, default=False, nullable=False)
     created_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -153,6 +158,20 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Security(token_
         sub_info = USER_SUBSCRIPTIONS.get(uid)
         subscription = sub_info["level"] if sub_info and "level" in sub_info else "FREE"
         theme_preference = sub_info["theme"] if sub_info and "theme" in sub_info else "LIGHT"
+
+        # Ensure a default in-memory entry so user's timezone/city/country exist until user changes them.
+        # Default: Turkey / Istanbul -> IANA "Europe/Istanbul"
+        if uid not in USER_SUBSCRIPTIONS:
+            USER_SUBSCRIPTIONS[uid] = {
+                "level": subscription,
+                "theme": theme_preference,
+                "timezone": "Europe/Istanbul",
+                
+                "country": "Turkey",
+                "city": "Istanbul",
+                "notifications_enabled": True,
+            }
+
         return User(uid=uid, subscription=subscription, theme_preference=theme_preference)
     except Exception as e:
         raise HTTPException(
@@ -199,12 +218,27 @@ def plan_to_out(plan: PlanORM) -> dict:
     return {
         "id": plan.id,
         "user_id": plan.user_id,
-        "date": plan.date.isoformat(),  # <-- string olarak döndür
+        "date": plan.date.isoformat(),
         "start_time": time_to_str(plan.start_time),
         "end_time": time_to_str(plan.end_time),
         "title": plan.title,
         "description": plan.description or "",
+        "notified": bool(getattr(plan, "notified", False)),
     }
+
+
+def _get_user_zoneinfo(uid: str) -> ZoneInfo:
+    """
+    Kullanıcının USER_SUBSCRIPTIONS içindeki timezone bilgisini alır ve ZoneInfo döner;
+    geçersiz veya eksikse güvenli bir varsayılan (Europe/Istanbul) döner.
+    """
+    info = USER_SUBSCRIPTIONS.get(uid, {})
+    tz_str = info.get("timezone", "Europe/Istanbul")
+    try:
+        return ZoneInfo(tz_str)
+    except Exception:
+        # Eğer saklı timezone geçersizse fallback olarak Europe/Istanbul kullan.
+        return ZoneInfo("Europe/Istanbul")
 
 
 # --- 6. API ENDPOINTS (ROUTING) ---
@@ -257,14 +291,32 @@ def create_plan(
         id=str(uuid4()),
         user_id=current_user.uid,
         date=plan_data.date,
-        start_time=start_time_obj,   # <-- time object
-        end_time=end_time_obj,       # <-- time object
+        start_time=start_time_obj,
+        end_time=end_time_obj,
         title=plan_data.title,
         description=plan_data.description,
+        notified=False,
     )
     db.add(new_plan)
     db.commit()
     db.refresh(new_plan)
+
+    # Schedule if the plan is for today and its start_time is still in the future
+    try:
+        now = datetime.now(timezone.utc)
+        if new_plan.date == now.date():
+            # compute notify datetime using user's timezone
+            user_zone = _get_user_zoneinfo(new_plan.user_id)
+            try:
+                local_dt = datetime.combine(new_plan.date, new_plan.start_time).replace(tzinfo=user_zone)
+                notify_dt = local_dt.astimezone(timezone.utc)
+            except Exception:
+                notify_dt = datetime.combine(new_plan.date, new_plan.start_time).replace(tzinfo=timezone.utc)
+            if notify_dt > now and _user_notifications_enabled(new_plan.user_id):
+                schedule_notification_for_plan(new_plan)
+    except Exception:
+        logger.exception("Error scheduling newly created plan %s", new_plan.id)
+
     return plan_to_out(new_plan)
 
 
@@ -326,9 +378,27 @@ def update_plan(
     db_plan.end_time = end_time_obj
     db_plan.title = plan_data.title
     db_plan.description = plan_data.description
-
+    # Reset notified flag if times changed (allow future notification)
+    db_plan.notified = False
     db.commit()
     db.refresh(db_plan)
+
+    # Re-schedule: cancel any existing task, then if updated plan is today and in future, schedule
+    try:
+        cancel_scheduled_plan(db_plan.id)
+        now = datetime.now(timezone.utc)
+        if db_plan.date == now.date():
+            user_zone = _get_user_zoneinfo(db_plan.user_id)
+            try:
+                local_dt = datetime.combine(db_plan.date, db_plan.start_time).replace(tzinfo=user_zone)
+                notify_dt = local_dt.astimezone(timezone.utc)
+            except Exception:
+                notify_dt = datetime.combine(db_plan.date, db_plan.start_time).replace(tzinfo=timezone.utc)
+            if notify_dt > now and _user_notifications_enabled(db_plan.user_id):
+                schedule_notification_for_plan(db_plan)
+    except Exception:
+        logger.exception("Error re-scheduling updated plan %s", db_plan.id)
+
     return plan_to_out(db_plan)
 
 
@@ -344,6 +414,12 @@ def delete_plan(
         raise HTTPException(status_code=404, detail="Silinecek plan bulunamadı.")
     if db_plan.user_id != current_user.uid:
         raise HTTPException(status_code=403, detail="Bu planı silme yetkiniz yok.")
+
+    # cancel scheduled task if any
+    try:
+        cancel_scheduled_plan(plan_id)
+    except Exception:
+        logger.exception("Error cancelling scheduled task for deleted plan %s", plan_id)
 
     db.delete(db_plan)
     db.commit()
@@ -440,6 +516,257 @@ def update_user_notifications(payload: NotificationsUpdate, current_user: User =
     user_info["notifications_enabled"] = bool(payload.enabled)
     USER_SUBSCRIPTIONS[uid] = user_info
     return {"uid": uid, "notifications_enabled": user_info["notifications_enabled"]}
+
+# --- ADD: Notification worker ---
+def send_notification_to_user(uid: str, payload: dict):
+    """
+    Bildirim gönderme yeri. Şu anda basitçe log/print yapıyor.
+    Burayı FCM / e-posta / WebSocket vs ile entegre edin.
+    payload örn: {"title":..., "description":..., "start_time":..., "end_time":...}
+    """
+    # TODO: replace with actual push (e.g. firebase-admin messaging)
+    print(f"[NOTIFY] to uid={uid}: {payload}")
+
+
+def _user_notifications_enabled(uid: str) -> bool:
+    """
+    Kullanıcının bildirim tercihlerini kontrol eder (in-memory store).
+    Varsayılan olarak True döner.
+    """
+    info = USER_SUBSCRIPTIONS.get(uid)
+    if not info:
+        return True
+    return bool(info.get("notifications_enabled", True))
+
+
+def schedule_notification_for_plan(plan: PlanORM):
+    """
+    Placeholder: plan için zamanlanmış bildirim oluşturur.
+    Mevcut uygulamada arka plan worker DB'yi periyodik tarayıp notified==False olanları işlediği
+    için burada no-op yapmak yeterlidir; daha gelişmiş bir sistemde burası gerçek scheduler entegrasyonu olur.
+    """
+    try:
+        # compute notify datetime using user's timezone (correct for DST / region)
+        user_zone = _get_user_zoneinfo(plan.user_id)
+        try:
+            local_dt = datetime.combine(plan.date, plan.start_time).replace(tzinfo=user_zone)
+            notify_dt_utc = local_dt.astimezone(timezone.utc)
+            print(f"[SCHEDULE] plan {plan.id} scheduled at utc={notify_dt_utc.isoformat()} (user_zone={user_zone})")
+        except Exception:
+            # fallback: log naive schedule in UTC
+            notify_dt = datetime.combine(plan.date, plan.start_time).replace(tzinfo=timezone.utc)
+            print(f"[SCHEDULE] plan {plan.id} scheduled (fallback) utc={notify_dt.isoformat()}")
+    except Exception:
+        pass
+
+
+def cancel_scheduled_plan(plan_id: str):
+    """
+    Placeholder: daha gelişmiş scheduler'ı iptal etmek için kullanılır; şimdilik no-op.
+    """
+    try:
+        print(f"[CANCEL] cancel schedule for plan {plan_id} (no-op)")
+    except Exception:
+        pass
+
+
+async def _notification_worker_loop(poll_interval_seconds: int = 30):
+    """Arka plan döngüsü: belirli aralıklarla DB'den bildirim bekleyen planları kontrol eder."""
+    while True:
+        try:
+            now_utc = datetime.now(timezone.utc)
+            # limit query window to yesterday..tomorrow to cover TZ shifts and late inserts
+            start_date = (now_utc - timedelta(days=1)).date()
+            end_date = (now_utc + timedelta(days=1)).date()
+            db = SessionLocal()
+            try:
+                q = select(PlanORM).where(
+                    PlanORM.date.between(start_date, end_date),
+                    PlanORM.notified == False
+                )
+                candidates = db.execute(q).scalars().all()
+                for plan in candidates:
+                    user_zone = _get_user_zoneinfo(plan.user_id)
+                    try:
+                        plan_local_dt = datetime.combine(plan.date, plan.start_time).replace(tzinfo=user_zone)
+                    except Exception:
+                        continue
+                    plan_start_utc = plan_local_dt.astimezone(timezone.utc)
+                    plan_end_utc = None
+                    if plan.end_time:
+                        plan_end_local = datetime.combine(plan.date, plan.end_time).replace(tzinfo=user_zone)
+                        plan_end_utc = plan_end_local.astimezone(timezone.utc)
+
+                    # notify only if start <= now (allow small tolerance) and not already notified
+                    if plan_start_utc <= now_utc and (plan_end_utc is None or now_utc <= plan_end_utc):
+                        if not _user_notifications_enabled(plan.user_id):
+                            plan.notified = True
+                            db.add(plan)
+                            continue
+                        payload = {
+                            "title": plan.title,
+                            "description": plan.description or "",
+                            "start_time": time_to_str(plan.start_time),
+                            "end_time": time_to_str(plan.end_time),
+                            "date": plan.date.isoformat(),
+                        }
+                        try:
+                            send_notification_to_user(plan.user_id, payload)
+                        except Exception as e:
+                            print(f"Failed to send notification for plan {plan.id}: {e}")
+                        plan.notified = True
+                        db.add(plan)
+                db.commit()
+            finally:
+                db.close()
+        except Exception as e:
+            print("Notification worker error:", e)
+        await asyncio.sleep(poll_interval_seconds)
+# --- ADD: Timezone update endpoint ---
+class TimezoneUpdate(BaseModel):
+    timezone: str = Field(..., description="IANA timezone string, e.g. 'Europe/Istanbul'")
+
+def _parse_uid_from_token(id_token: str) -> Optional[str]:
+    """
+    Minimal token -> uid extractor (aynı logic get_current_user içinde kullandığımızla uyumlu).
+    Development: token doğrudan uid olabilir veya JWT payload'ından sub/email çekilir.
+    """
+    if not id_token:
+        return None
+    uid = id_token
+    if isinstance(id_token, str) and '.' in id_token:
+        try:
+            parts = id_token.split('.')
+            if len(parts) >= 2:
+                payload_b64 = parts[1]
+                rem = len(payload_b64) % 4
+                if rem:
+                    payload_b64 += '=' * (4 - rem)
+                payload_json = base64.urlsafe_b64decode(payload_b64.encode('utf-8')).decode('utf-8')
+                payload = json.loads(payload_json)
+                uid = payload.get('sub') or payload.get('user_id') or payload.get('uid') or payload.get('email') or uid
+        except Exception:
+            uid = id_token
+    return uid
+
+@app.middleware("http")
+async def timezone_header_middleware(request: Request, call_next):
+    """
+    Eğer Authorization Bearer token ve X-User-Timezone header varsa:
+    - header'daki IANA timezone'ı doğrular
+    - doğrulursa USER_SUBSCRIPTIONS[uid]['timezone'] güncellenir
+    Bu sayede istemci her istekinde cihaz timezone bilgisini header'a koyarsa backend otomatik kaydeder.
+    """
+    try:
+        # header isimleri küçük/büyük farkı nedeniyle iki türlü dene
+        auth = request.headers.get("authorization") or request.headers.get("Authorization")
+        tz_header = request.headers.get("x-user-timezone") or request.headers.get("X-User-Timezone") or request.headers.get("X-Timezone")
+        if auth and tz_header and auth.lower().startswith("bearer "):
+            token = auth.split(" ", 1)[1].strip()
+            uid = _parse_uid_from_token(token)
+            if uid:
+                # validate timezone string
+                try:
+                    _ = ZoneInfo(tz_header)
+                    info = USER_SUBSCRIPTIONS.get(uid, {"level": "FREE", "theme": "LIGHT"})
+                    info["timezone"] = tz_header
+                    USER_SUBSCRIPTIONS[uid] = info
+                    # kick off background reschedule of pending plans for this user
+                    try:
+                        threading.Thread(target=_reschedule_user_pending_plans_sync, args=(uid,), daemon=True).start()
+                    except Exception:
+                        pass
+                except Exception:
+                    # invalid timezone string -> ignore
+                    pass
+    except Exception:
+        # middleware must not block request on error
+        pass
+    response = await call_next(request)
+    return response
+
+@app.put("/user/timezone/", tags=["User"])
+def update_user_timezone(payload: TimezoneUpdate, current_user: User = Depends(get_current_user)):
+    """
+    Kullanıcının cihazdan elde edilen IANA timezone'ını backend'e kaydet.
+    Body: { "timezone": "Europe/Istanbul" }
+    """
+    try:
+        # validate by constructing ZoneInfo
+        _ = ZoneInfo(payload.timezone)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid IANA timezone identifier.")
+
+    uid = current_user.uid
+    info = USER_SUBSCRIPTIONS.get(uid, {"level": current_user.subscription, "theme": current_user.theme_preference})
+    info["timezone"] = payload.timezone
+    USER_SUBSCRIPTIONS[uid] = info
+    # asynchronously reschedule pending plans for this user (best-effort)
+    try:
+        threading.Thread(target=_reschedule_user_pending_plans_sync, args=(uid,), daemon=True).start()
+    except Exception:
+        pass
+    return {"uid": uid, "timezone": payload.timezone}
+
+
+def _reschedule_user_pending_plans_sync(uid: str, window_days: int = 7):
+    """
+    Best-effort synchronous reschedule helper:
+    - finds un-notified plans for the user in a small future window
+    - cancels existing scheduled entries (placeholder) and re-schedules them using current timezone
+    This runs in a background thread (daemon) to avoid blocking request handling.
+    """
+    try:
+        now_utc = datetime.now(timezone.utc)
+        start_date = (now_utc - timedelta(days=1)).date()
+        end_date = (now_utc + timedelta(days=window_days)).date()
+        db = SessionLocal()
+        try:
+            plans = db.execute(select(PlanORM).where(
+                PlanORM.user_id == uid,
+                PlanORM.notified == False,
+                PlanORM.date.between(start_date, end_date)
+            )).scalars().all()
+            for p in plans:
+                try:
+                    cancel_scheduled_plan(p.id)
+                except Exception:
+                    pass
+                try:
+                    schedule_notification_for_plan(p)
+                except Exception:
+                    pass
+        finally:
+            db.close()
+    except Exception:
+        try:
+            logger.exception("Error while rescheduling pending plans for user %s", uid)
+        except Exception:
+            pass
+
+@app.get("/user/current_time/", tags=["User"])
+def user_current_time(current_user: User = Depends(get_current_user)):
+    """
+    Test endpoint: kullanıcının ayarlı timezone'una göre mevcut saati log'a yaz ve döndür.
+    İstemci test için Authorization header ile çağırmalı (token -> uid).
+    """
+    uid = current_user.uid
+    info = USER_SUBSCRIPTIONS.get(uid, {})
+    tz_str = info.get("timezone", "Europe/Istanbul")
+    try:
+        tz = ZoneInfo(tz_str)
+    except Exception:
+        tz = ZoneInfo("Europe/Istanbul")
+        tz_str = "Europe/Istanbul"
+
+    now_utc = datetime.now(timezone.utc)
+    try:
+        now_local = now_utc.astimezone(tz)
+        print(f"[USER_TIME] uid={uid} timezone={tz_str} local_time={now_local.isoformat()}")
+        return {"uid": uid, "timezone": tz_str, "local_time": now_local.isoformat()}
+    except Exception:
+        print(f"[USER_TIME] uid={uid} timezone={tz_str} could not convert, returning UTC {now_utc.isoformat()}")
+        return {"uid": uid, "timezone": tz_str, "local_time": now_utc.isoformat()}
 
 # --- 7. RUN THE APP ---
 # Bu blok, dosyanın doğrudan `python main.py` ile çalıştırılmasını sağlar.
