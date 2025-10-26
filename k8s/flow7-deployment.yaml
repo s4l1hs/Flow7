@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flow7
+  labels:
+    app: flow7
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: flow7
+  template:
+    metadata:
+      labels:
+        app: flow7
+    spec:
+      containers:
+        - name: flow7-web
+          image: ${IMAGE}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: flow7-secrets
+                  key: DATABASE_URL
+            - name: APSCHEDULER_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: flow7-secrets
+                  key: APSCHEDULER_DB_URL
+            - name: ALLOWED_ORIGINS
+              valueFrom:
+                secretKeyRef:
+                  name: flow7-secrets
+                  key: ALLOWED_ORIGINS
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /run/secrets/firebase_credentials.json
+          volumeMounts:
+            - name: firebase-creds
+              mountPath: /run/secrets
+              readOnly: true
+      volumes:
+        - name: firebase-creds
+          secret:
+            secretName: firebase-credentials
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flow7-web
+  labels:
+    app: flow7
+spec:
+  selector:
+    app: flow7
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: ClusterIP

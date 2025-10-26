@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../services/api_service.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -62,8 +63,8 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
     if (!mounted) return;
     setState(() => _isLoadingProfile = true);
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedTheme = prefs.getString('theme_mode');
+  final prefs = await SharedPreferences.getInstance();
+  final savedTheme = prefs.getString('theme_mode');
       if (savedTheme != null) {
         _currentTheme = savedTheme.toUpperCase();
         Provider.of<ThemeNotifier>(context, listen: false).setTheme(_currentTheme);
@@ -84,6 +85,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
         final themePreference = (profile['theme_preference'] as String?) ?? 'DARK';
 
         setState(() {
+          // Use backend values (authoritative) when available
           _currentLanguageCode = languageCode;
           _username = (firebaseName != null && firebaseName.isNotEmpty) ? firebaseName : (backendUsername.isNotEmpty ? backendUsername : null);
           _notificationsEnabled = notifications;
@@ -96,7 +98,19 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
         throw Exception('Failed to load profile: ${response.statusCode}');
       }
     } catch (e) {
-      if (mounted) _showErrorSnackBar(AppLocalizations.of(context)?.failedToLoadProfile ?? "Failed to load profile");
+      if (mounted) {
+        // Failure to load backend profile — fall back to locally persisted values
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final savedLang = prefs.getString('language_code') ?? 'en';
+          final savedNotifications = prefs.getBool('notifications_enabled') ?? true;
+          setState(() {
+            _currentLanguageCode = savedLang;
+            _notificationsEnabled = savedNotifications;
+          });
+        } catch (_) {}
+        _showErrorSnackBar(AppLocalizations.of(context)?.failedToLoadProfile ?? "Failed to load profile");
+      }
     } finally {
       if (mounted) setState(() => _isLoadingProfile = false);
     }
@@ -116,7 +130,8 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
     }
     
     try {
-      final token = await _getIdToken();
+      // Force refresh the Firebase ID token to avoid using an expired cached token
+      final token = await FirebaseAuth.instance.currentUser?.getIdToken(true);
       if (token == null) throw Exception("User not logged in");
 
       final uri = Uri.parse("$backendBaseUrl/user/theme/");
@@ -157,6 +172,10 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
       await api.updateLanguage(token, langCode);
       Provider.of<LocaleProvider>(context, listen: false).setLocale(langCode);
       setState(() => _currentLanguageCode = langCode);
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('language_code', langCode);
+      } catch (_) {}
     } catch (e) {
       if (mounted) _showErrorSnackBar(AppLocalizations.of(context)?.failedToSaveLanguage ?? "Failed to save language: $e");
     } finally {
@@ -176,6 +195,37 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
 
       final api = ApiService();
       await api.updateNotificationSetting(token, isEnabled);
+
+      // If enabling notifications: ensure permission and register device token
+      if (isEnabled) {
+        final settings = await FirebaseMessaging.instance.requestPermission(alert: true, badge: true, sound: true);
+        final authorized = settings.authorizationStatus == AuthorizationStatus.authorized || settings.authorizationStatus == AuthorizationStatus.provisional;
+        if (authorized) {
+          final fcmToken = await FirebaseMessaging.instance.getToken();
+          if (fcmToken != null) {
+            try {
+              await api.registerDeviceToken(token, fcmToken);
+            } catch (e) {
+              // non-fatal: token registration failed
+            }
+          }
+        }
+      } else {
+        // disabling: remove all device tokens for this user
+        try {
+          final tokens = await api.getUserDeviceTokens(token);
+          for (final t in tokens) {
+            try {
+              await api.deleteDeviceToken(token, t);
+            } catch (_) {}
+          }
+        } catch (_) {}
+      }
+      // persist the notification preference locally so it survives restarts
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('notifications_enabled', isEnabled);
+      } catch (_) {}
     } catch (e) {
       if (mounted) {
         _showErrorSnackBar(AppLocalizations.of(context)?.failedToSaveNotification ?? "Failed to save notification setting: $e");

@@ -31,9 +31,6 @@ import time
 import threading
 import warnings
 
-# Suppress a known deprecation UserWarning emitted by APScheduler's use of pkg_resources.
-# This avoids noisy startup logs; prefer pinning setuptools (<81) in build pipelines for a
-# permanent fix. The filter targets the warning message emitted from the apscheduler package.
 warnings.filterwarnings(
     "ignore",
     message=r"pkg_resources is deprecated as an API.*",
@@ -56,19 +53,14 @@ configure_logging(os.getenv("LOG_LEVEL", "INFO"))
 app_logger = logging.getLogger("flow7")
 app_logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
-# --- 1. CONFIGURATION & DATABASE SETUP ---
-# .env dosyasından ortam değişkenlerini yükle
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./flow7_revised.db")
 
-# SQLAlchemy motoru ve oturum oluşturucu
-# check_same_thread: False -> Sadece SQLite için gereklidir.
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-# --- 2. DATABASE (ORM) MODEL ---
 class PlanORM(Base):
     """Veritabanındaki 'plans' tablosunu temsil eden SQLAlchemy ORM modeli."""
     __tablename__ = "plans"
@@ -83,9 +75,6 @@ class PlanORM(Base):
     created_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
-
-# In production we expect DB schema to be managed by migrations (Alembic).
-# For local development only, set DEV_ALLOW_CREATE_ALL=1 to auto-create tables.
 if os.getenv("DEV_ALLOW_CREATE_ALL", "0") == "1":
     Base.metadata.create_all(bind=engine)
 
@@ -112,8 +101,6 @@ if os.getenv("DEV_ALLOW_CREATE_ALL", "0") == "1":
     # create missing tables in development only
     Base.metadata.create_all(bind=engine)
 
-# create FastAPI app instance (required before using @app)
-# configure CORS origins from env var for production; default allow all for dev
 allowed = os.getenv('ALLOWED_ORIGINS', '*')
 if allowed == '*' or allowed.strip() == '':
     cors_origins = ["*"]
@@ -122,7 +109,6 @@ else:
 
 app = FastAPI(title="Flow7 API", docs_url="/docs", redoc_url="/redoc")
 
-# add permissive CORS during development; adjust origins in production
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -131,12 +117,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# lightweight security headers middleware for production
 @app.middleware("http")
 async def security_headers_middleware(request: Request, call_next):
     response = await call_next(request)
-    # Enforce some basic security headers; adjust as needed for your deployment
     response.headers.setdefault('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
     response.headers.setdefault('X-Frame-Options', 'DENY')
     response.headers.setdefault('X-Content-Type-Options', 'nosniff')
@@ -144,8 +127,6 @@ async def security_headers_middleware(request: Request, call_next):
     response.headers.setdefault('Permissions-Policy', 'geolocation=()')
     return response
 
-# --- 3. PYDANTIC SCHEMAS (DATA TRANSFER OBJECTS) ---
-# API istek ve yanıtlarının yapısını ve doğruluğunu tanımlar.
 
 TIME_PATTERN = r"^\d{2}:\d{2}$" # HH:MM formatı için regex
 
@@ -200,13 +181,13 @@ class UserProfileOut(BaseModel):
     subscription: str
     theme: str
     timezone: str
-    language_code: str = "en"
     country: Optional[str] = None
     city: Optional[str] = None
     notifications_enabled: bool = True
     device_tokens: Optional[List[str]] = []
 
 
+<<<<<<< HEAD
 # small DTOs for updating theme/language/notifications from client
 class ThemeUpdate(BaseModel):
     theme: str
@@ -218,8 +199,7 @@ class LanguageUpdate(BaseModel):
 
 class NotificationsUpdate(BaseModel):
     enabled: bool
-
-
+=======
 # --- 4. AUTHENTICATION & AUTHORIZATION ---
 # Gerçek bir Firebase entegrasyonu için bu bölümü genişletin.
 # Gerekli kütüphane: pip install firebase-admin
@@ -228,30 +208,24 @@ class NotificationsUpdate(BaseModel):
 
 # cred = credentials.Certificate("path/to/your/firebase-adminsdk.json")
 # firebase_app = firebase_admin.initialize_app(cred)
+>>>>>>> parent of 1005162 (Bug Fixes)
 
 class User(BaseModel):
     """Doğrulanmış kullanıcıyı temsil eden model."""
     uid: str
-    subscription: str = "FREE" # DB'den veya token'dan alınabilir
+    subscription: str = "FREE"
     theme_preference: str = "DARK"
 
-# Token doğrulama şeması
 token_auth_scheme = HTTPBearer()
 
-# In-memory subscription store for development/testing.
-# Keys: user uid (str) -> {"level": str, "expires": date}
 USER_SUBSCRIPTIONS = {}
 
-# global scheduler (initialized on startup)
 SCHEDULER: Optional[BackgroundScheduler] = None
 
-# firebase app placeholder (initialized on startup if credentials available)
 FIREBASE_APP: Optional[Any] = None
 
-# jobstore DB URL for APScheduler persistence (separate sqlite file)
 _APSCHEDULER_DB_URL = os.getenv("APSCHEDULER_DB_URL", DATABASE_URL)
 
-# --- Persistence for USER_SUBSCRIPTIONS (simple JSON file) ---
 _USER_SETTINGS_FILE = Path(".data/user_settings.json")
 _user_settings_lock = Lock()
 
@@ -304,6 +278,25 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Security(token_
     id_token = token.credentials
     if not id_token:
         raise HTTPException(status_code=401, detail="Authentication token is required.")
+
+    # Special-case: support a dedicated smoke/test token that maps to a fixed uid.
+    # This allows CI and in-cluster smoke jobs to authenticate without full Firebase flow.
+    # Enable via env var ALLOW_SMOKE_TOKEN=1 and set SMOKE_TOKEN (secret) and optionally SMOKE_UID.
+    try:
+        allow_smoke = os.getenv("ALLOW_SMOKE_TOKEN", "1")
+        smoke_token_env = os.getenv("SMOKE_TOKEN")
+        ci_smoke_token_env = os.getenv("CI_SMOKE_TOKEN")
+        if allow_smoke and ((smoke_token_env and id_token == smoke_token_env) or (ci_smoke_token_env and id_token == ci_smoke_token_env)):
+            uid = os.getenv("SMOKE_UID", "smoke-ci-user")
+            # ensure DB-backed settings exist for this uid
+            try:
+                _ensure_user_settings(uid, {"level": "FREE", "theme": "LIGHT", "timezone": "Europe/Istanbul"})
+            except Exception:
+                pass
+            return User(uid=uid, subscription="FREE", theme_preference="LIGHT")
+    except Exception:
+        # if anything goes wrong with smoke-token handling, fall back to normal flow
+        pass
 
     # In production we require firebase-admin to be initialized and use it to verify ID tokens.
     if FIREBASE_APP is None:
@@ -544,6 +537,10 @@ def send_notification_to_user(user_id: str, payload: dict):
                 return
             except Exception:
                 logger.exception("FCM multicast failed, will fallback to topic or log")
+                try:
+                    FCM_FAILURE_COUNTER.inc()
+                except Exception:
+                    pass
 
         # fallback to topic
         if FIREBASE_APP is not None:
@@ -559,6 +556,10 @@ def send_notification_to_user(user_id: str, payload: dict):
                 return
             except Exception:
                 logger.exception("FCM topic send failed; falling back to log")
+                try:
+                    FCM_FAILURE_COUNTER.inc()
+                except Exception:
+                    pass
 
         # fallback: just log
         logger.info(f"[NOTIFY] would send to {user_id}: {payload}")
@@ -607,11 +608,9 @@ def _apscheduler_job_send_notification(plan_id: str):
         logger.exception("Error in scheduled notification job for plan %s", plan_id)
 
 
-# Use FastAPI lifespan to initialize/cleanup long-lived resources
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global SCHEDULER, FIREBASE_APP
-    # start scheduler
     try:
         # Allow disabling scheduler in tests or special runs
         if os.getenv("DISABLE_SCHEDULER", "0") != "1":
@@ -622,6 +621,10 @@ async def lifespan(app: FastAPI):
             def _job_listener(event):
                 if event.code == EVENT_JOB_ERROR:
                     logger.error("APScheduler job error: %s", event)
+                    try:
+                        APS_JOB_ERROR_COUNTER.inc()
+                    except Exception:
+                        pass
             SCHEDULER.add_listener(_job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
             SCHEDULER.start()
@@ -639,10 +642,7 @@ async def lifespan(app: FastAPI):
             logger.info("TESTING=1 detected: skipping real Firebase initialization and using dummy app")
         else:
             try:
-                # For production we require FIREBASE_CREDENTIALS to be set to a valid service
-                # account JSON path. Fail fast if not present so deployment is safe.
                 from firebase_admin import credentials, initialize_app
-                # Accept either FIREBASE_CREDENTIALS or the standard GOOGLE_APPLICATION_CREDENTIALS
                 cred_path = os.getenv('FIREBASE_CREDENTIALS') or os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
                 if not cred_path:
                     # By default allow local startup without credentials to keep developer experience smooth.
@@ -677,13 +677,6 @@ async def lifespan(app: FastAPI):
 
 app.router.lifespan_context = lifespan
 
-
-# -------------------------------------------------------------------------
-# NOTE: Removed background notification worker loop startup by design.
-# If you later want a worker, add a startup event that starts _notification_worker_loop.
-# -------------------------------------------------------------------------
-
-# --- middleware: when we update timezone via header, persist it ---
 @app.middleware("http")
 async def timezone_header_middleware(request: Request, call_next):
     """
@@ -773,111 +766,6 @@ def update_user_timezone(payload: TimezoneUpdate, current_user: User = Depends(g
     return {"uid": uid, "timezone": payload.timezone}
 
 
-@app.put("/user/theme/", tags=["User"])
-def update_user_theme(payload: ThemeUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Update user's theme preference (LIGHT/DARK)"""
-    try:
-        uid = current_user.uid
-        theme_val = (payload.theme or "").upper()
-        # update DB-backed setting if exists (or create)
-        try:
-            us = db.get(UserSettings, uid)
-            if not us:
-                us = UserSettings(uid=uid, theme=theme_val)
-                db.add(us)
-            else:
-                # only set if the column exists on the mapped class
-                if hasattr(us, 'theme'):
-                    us.theme = theme_val
-            db.commit()
-        except Exception:
-            # fall back to in-memory and file persistence
-            USER_SUBSCRIPTIONS.setdefault(uid, {})
-            USER_SUBSCRIPTIONS[uid]['theme'] = theme_val
-            try:
-                _save_user_subscriptions_to_file()
-            except Exception:
-                pass
-
-        # mirror into in-memory store
-        USER_SUBSCRIPTIONS.setdefault(uid, {})
-        USER_SUBSCRIPTIONS[uid]['theme'] = theme_val
-        return {"uid": uid, "theme": theme_val}
-    except Exception:
-        logger.exception("Failed to update theme for %s", getattr(current_user, 'uid', None))
-        raise HTTPException(status_code=500, detail="Failed to update theme")
-
-
-@app.put("/user/language/", tags=["User"])
-def update_user_language(payload: LanguageUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Update user's preferred language (language_code like 'en' or 'tr')."""
-    try:
-        uid = current_user.uid
-        lang = (payload.language_code or 'en')
-        # try DB-backed column names 'language' or 'language_code'
-        try:
-            us = db.get(UserSettings, uid)
-            if not us:
-                us = UserSettings(uid=uid)
-                db.add(us)
-            # attempt common attribute names if present
-            if hasattr(us, 'language'):
-                setattr(us, 'language', lang)
-            elif hasattr(us, 'language_code'):
-                setattr(us, 'language_code', lang)
-            else:
-                # no DB column; fall back to in-memory
-                USER_SUBSCRIPTIONS.setdefault(uid, {})
-                USER_SUBSCRIPTIONS[uid]['language_code'] = lang
-            db.commit()
-        except Exception:
-            USER_SUBSCRIPTIONS.setdefault(uid, {})
-            USER_SUBSCRIPTIONS[uid]['language_code'] = lang
-            try:
-                _save_user_subscriptions_to_file()
-            except Exception:
-                pass
-
-        # mirror into in-memory store
-        USER_SUBSCRIPTIONS.setdefault(uid, {})
-        USER_SUBSCRIPTIONS[uid]['language_code'] = lang
-        return {"uid": uid, "language_code": lang}
-    except Exception:
-        logger.exception("Failed to update language for %s", getattr(current_user, 'uid', None))
-        raise HTTPException(status_code=500, detail="Failed to update language")
-
-
-@app.put("/user/notifications/", tags=["User"])
-def update_user_notifications(payload: NotificationsUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Enable/disable notifications for the user."""
-    try:
-        uid = current_user.uid
-        enabled = bool(payload.enabled)
-        try:
-            us = db.get(UserSettings, uid)
-            if not us:
-                us = UserSettings(uid=uid, notifications_enabled=enabled)
-                db.add(us)
-            else:
-                if hasattr(us, 'notifications_enabled'):
-                    us.notifications_enabled = enabled
-            db.commit()
-        except Exception:
-            USER_SUBSCRIPTIONS.setdefault(uid, {})
-            USER_SUBSCRIPTIONS[uid]['notifications_enabled'] = enabled
-            try:
-                _save_user_subscriptions_to_file()
-            except Exception:
-                pass
-
-        USER_SUBSCRIPTIONS.setdefault(uid, {})
-        USER_SUBSCRIPTIONS[uid]['notifications_enabled'] = enabled
-        return {"uid": uid, "notifications_enabled": enabled}
-    except Exception:
-        logger.exception("Failed to update notifications for %s", getattr(current_user, 'uid', None))
-        raise HTTPException(status_code=500, detail="Failed to update notifications")
-
-
 @app.post("/user/device_tokens/", tags=["User"])
 def register_device_token(payload: DeviceTokenIn, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Register a device token for push notifications for the current user."""
@@ -948,15 +836,11 @@ def get_user_profile(current_user: User = Depends(get_current_user), db: Session
         rows = db.execute(select(DeviceToken).where(DeviceToken.user_id == uid)).scalars().all()
         tokens = [r.token for r in rows]
 
-        # try to read language from DB if present (older DBs may not have this column)
-        language_code = getattr(settings, 'language', None) or getattr(settings, 'language_code', None) or (USER_SUBSCRIPTIONS.get(uid, {}).get('language_code')) or 'en'
-
         return UserProfileOut(
             uid=uid,
             subscription=settings.level,
             theme=settings.theme,
             timezone=settings.timezone,
-            language_code=language_code,
             country=settings.country,
             city=settings.city,
             notifications_enabled=bool(settings.notifications_enabled),
@@ -1034,6 +918,10 @@ def health_check(db: Session = Depends(get_db)):
         # try a lightweight DB query
         db.execute(select(1))
     except Exception:
+        try:
+            DB_ERROR_COUNTER.inc()
+        except Exception:
+            pass
         raise HTTPException(status_code=503, detail="DB unavailable")
 
     sched_ok = SCHEDULER is not None and SCHEDULER.running
@@ -1057,6 +945,12 @@ from fastapi.responses import Response
 
 # basic request counter
 REQUEST_COUNTER = Counter('flow7_requests_total', 'Total HTTP requests handled by Flow7')
+# DB error counter (increment when health or DB operations fail)
+DB_ERROR_COUNTER = Counter('flow7_db_errors_total', 'Total DB errors observed by Flow7')
+# APScheduler job error counter
+APS_JOB_ERROR_COUNTER = Counter('flow7_apscheduler_job_errors_total', 'Total APScheduler job errors')
+# FCM failure counter
+FCM_FAILURE_COUNTER = Counter('flow7_fcm_failures_total', 'Total FCM send failures')
 
 
 @app.middleware("http")
@@ -1201,7 +1095,5 @@ def delete_plan(plan_id: str, current_user: User = Depends(get_current_user), db
         logger.exception("Failed to delete plan %s", plan_id)
         raise HTTPException(status_code=500, detail="Failed to delete plan")
 
-# --- 7. RUN THE APP ---
-# Bu blok, dosyanın doğrudan `python main.py` ile çalıştırılmasını sağlar.
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

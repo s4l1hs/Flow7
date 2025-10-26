@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flow7-scheduler
+  labels:
+    app: flow7-scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flow7-scheduler
+  template:
+    metadata:
+      labels:
+        app: flow7-scheduler
+    spec:
+      containers:
+        - name: scheduler
+          image: ${IMAGE}
+          imagePullPolicy: IfNotPresent
+          # Run the scheduler worker entrypoint. Ensure the image has scheduler_worker.py or adjust command accordingly.
+          command: ["/bin/sh", "-c", "python scheduler_worker.py"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: flow7-secrets
+                  key: DATABASE_URL
+            - name: APSCHEDULER_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: flow7-secrets
+                  key: APSCHEDULER_DB_URL
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /run/secrets/firebase_credentials.json
+          volumeMounts:
+            - name: firebase-creds
+              mountPath: /run/secrets
+              readOnly: true
+      volumes:
+        - name: firebase-creds
+          secret:
+            secretName: firebase-credentials

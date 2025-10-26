@@ -189,4 +189,24 @@ class ApiService {
     );
     _handleResponse(response);
   }
+
+  // Device token management
+  Future<void> registerDeviceToken(String idToken, String token, {String provider = 'fcm'}) async {
+    final uri = Uri.parse("$backendBaseUrl/user/device_tokens/");
+    final response = await http.post(uri, headers: _getAuthHeaders(idToken), body: jsonEncode({'token': token, 'provider': provider}));
+    _handleResponse(response);
+  }
+
+  Future<List<String>> getUserDeviceTokens(String idToken) async {
+    final uri = Uri.parse("$backendBaseUrl/user/device_tokens/");
+    final response = await http.get(uri, headers: _getAuthHeaders(idToken));
+    final data = _handleResponse(response);
+    return List<String>.from(data.map((e) => e['token']));
+  }
+
+  Future<void> deleteDeviceToken(String idToken, String token) async {
+    final uri = Uri.parse("$backendBaseUrl/user/device_tokens/${Uri.encodeComponent(token)}");
+    final response = await http.delete(uri, headers: _getAuthHeaders(idToken));
+    _handleResponse(response);
+  }
 }
