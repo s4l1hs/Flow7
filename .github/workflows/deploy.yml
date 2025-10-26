@@ -58,14 +58,51 @@ jobs:
           docker run --rm \
             -e DATABASE_URL="${DATABASE_URL}" \
             ${{ secrets.REGISTRY }}/flow7:${{ github.ref_name }} \
-            /bin/sh -c "./scripts/migrate.sh"
+            /bin/sh -c "alembic -c alembic.ini upgrade head"
 
-      - name: Deploy (placeholder)
+      - name: Deploy to Kubernetes
         if: startsWith(github.ref, 'refs/tags/')
         env:
           KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG }}
+          IMAGE: ${{ secrets.REGISTRY }}/flow7:${{ github.ref_name }}
         run: |
-          echo "Deploy step is environment specific. Provide a KUBE_CONFIG secret and replace this step with your deployment commands (kubectl apply / helm upgrade)."
-          # Example (uncomment and configure):
-          # echo "$KUBE_CONFIG_DATA" | base64 --decode > kubeconfig
-          # kubectl --kubeconfig=kubeconfig set image deployment/flow7 flow7=${{ secrets.REGISTRY }}/flow7:${{ github.ref_name }}
+          set -euo pipefail
+          echo "Setting up kubectl"
+          echo "$KUBE_CONFIG_DATA" | base64 --decode > kubeconfig
+          export KUBECONFIG=$(pwd)/kubeconfig
+          # install envsubst (gettext)
+          sudo apt-get update -y
+          sudo apt-get install -y gettext-base
+
+          echo "Applying migration Job (image substituted)"
+          envsubst < k8s/flow7-migration-job.yaml | kubectl apply -f -
+          echo "Waiting for migration job to complete..."
+          kubectl wait --for=condition=complete job/flow7-migrate --timeout=600s || (kubectl logs job/flow7-migrate --all-containers; exit 1)
+
+          echo "Applying deployments/services"
+          envsubst < k8s/flow7-deployment.yaml | kubectl apply -f -
+          envsubst < k8s/flow7-scheduler-deployment.yaml | kubectl apply -f -
+
+          echo "Waiting for rollout to complete"
+          kubectl rollout status deployment/flow7 --timeout=300s
+
+          echo "Port-forwarding service to run a quick health check"
+          # port-forward in background
+          kubectl port-forward service/flow7-web 8000:80 >/tmp/flow7-pf.log 2>&1 &
+          PF_PID=$!
+          sleep 2
+          # try health and metrics
+          if ! curl -fsS http://127.0.0.1:8000/health; then
+            echo "Health check failed, dumping logs"
+            kubectl logs deployment/flow7 --tail=200 || true
+            kill $PF_PID || true
+            exit 1
+          fi
+          if ! curl -fsS http://127.0.0.1:8000/metrics; then
+            echo "Metrics endpoint failed"
+            kill $PF_PID || true
+            exit 1
+          fi
+          kill $PF_PID || true
+
+          echo "Deployment applied and basic smoke checks passed."
