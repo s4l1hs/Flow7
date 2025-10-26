@@ -200,24 +200,10 @@ class UserProfileOut(BaseModel):
     subscription: str
     theme: str
     timezone: str
-    language_code: str = "en"
     country: Optional[str] = None
     city: Optional[str] = None
     notifications_enabled: bool = True
     device_tokens: Optional[List[str]] = []
-
-
-# small DTOs for updating theme/language/notifications from client
-class ThemeUpdate(BaseModel):
-    theme: str
-
-
-class LanguageUpdate(BaseModel):
-    language_code: str
-
-
-class NotificationsUpdate(BaseModel):
-    enabled: bool
 
 
 # --- 4. AUTHENTICATION & AUTHORIZATION ---
@@ -773,111 +759,6 @@ def update_user_timezone(payload: TimezoneUpdate, current_user: User = Depends(g
     return {"uid": uid, "timezone": payload.timezone}
 
 
-@app.put("/user/theme/", tags=["User"])
-def update_user_theme(payload: ThemeUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Update user's theme preference (LIGHT/DARK)"""
-    try:
-        uid = current_user.uid
-        theme_val = (payload.theme or "").upper()
-        # update DB-backed setting if exists (or create)
-        try:
-            us = db.get(UserSettings, uid)
-            if not us:
-                us = UserSettings(uid=uid, theme=theme_val)
-                db.add(us)
-            else:
-                # only set if the column exists on the mapped class
-                if hasattr(us, 'theme'):
-                    us.theme = theme_val
-            db.commit()
-        except Exception:
-            # fall back to in-memory and file persistence
-            USER_SUBSCRIPTIONS.setdefault(uid, {})
-            USER_SUBSCRIPTIONS[uid]['theme'] = theme_val
-            try:
-                _save_user_subscriptions_to_file()
-            except Exception:
-                pass
-
-        # mirror into in-memory store
-        USER_SUBSCRIPTIONS.setdefault(uid, {})
-        USER_SUBSCRIPTIONS[uid]['theme'] = theme_val
-        return {"uid": uid, "theme": theme_val}
-    except Exception:
-        logger.exception("Failed to update theme for %s", getattr(current_user, 'uid', None))
-        raise HTTPException(status_code=500, detail="Failed to update theme")
-
-
-@app.put("/user/language/", tags=["User"])
-def update_user_language(payload: LanguageUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Update user's preferred language (language_code like 'en' or 'tr')."""
-    try:
-        uid = current_user.uid
-        lang = (payload.language_code or 'en')
-        # try DB-backed column names 'language' or 'language_code'
-        try:
-            us = db.get(UserSettings, uid)
-            if not us:
-                us = UserSettings(uid=uid)
-                db.add(us)
-            # attempt common attribute names if present
-            if hasattr(us, 'language'):
-                setattr(us, 'language', lang)
-            elif hasattr(us, 'language_code'):
-                setattr(us, 'language_code', lang)
-            else:
-                # no DB column; fall back to in-memory
-                USER_SUBSCRIPTIONS.setdefault(uid, {})
-                USER_SUBSCRIPTIONS[uid]['language_code'] = lang
-            db.commit()
-        except Exception:
-            USER_SUBSCRIPTIONS.setdefault(uid, {})
-            USER_SUBSCRIPTIONS[uid]['language_code'] = lang
-            try:
-                _save_user_subscriptions_to_file()
-            except Exception:
-                pass
-
-        # mirror into in-memory store
-        USER_SUBSCRIPTIONS.setdefault(uid, {})
-        USER_SUBSCRIPTIONS[uid]['language_code'] = lang
-        return {"uid": uid, "language_code": lang}
-    except Exception:
-        logger.exception("Failed to update language for %s", getattr(current_user, 'uid', None))
-        raise HTTPException(status_code=500, detail="Failed to update language")
-
-
-@app.put("/user/notifications/", tags=["User"])
-def update_user_notifications(payload: NotificationsUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Enable/disable notifications for the user."""
-    try:
-        uid = current_user.uid
-        enabled = bool(payload.enabled)
-        try:
-            us = db.get(UserSettings, uid)
-            if not us:
-                us = UserSettings(uid=uid, notifications_enabled=enabled)
-                db.add(us)
-            else:
-                if hasattr(us, 'notifications_enabled'):
-                    us.notifications_enabled = enabled
-            db.commit()
-        except Exception:
-            USER_SUBSCRIPTIONS.setdefault(uid, {})
-            USER_SUBSCRIPTIONS[uid]['notifications_enabled'] = enabled
-            try:
-                _save_user_subscriptions_to_file()
-            except Exception:
-                pass
-
-        USER_SUBSCRIPTIONS.setdefault(uid, {})
-        USER_SUBSCRIPTIONS[uid]['notifications_enabled'] = enabled
-        return {"uid": uid, "notifications_enabled": enabled}
-    except Exception:
-        logger.exception("Failed to update notifications for %s", getattr(current_user, 'uid', None))
-        raise HTTPException(status_code=500, detail="Failed to update notifications")
-
-
 @app.post("/user/device_tokens/", tags=["User"])
 def register_device_token(payload: DeviceTokenIn, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Register a device token for push notifications for the current user."""
@@ -948,15 +829,11 @@ def get_user_profile(current_user: User = Depends(get_current_user), db: Session
         rows = db.execute(select(DeviceToken).where(DeviceToken.user_id == uid)).scalars().all()
         tokens = [r.token for r in rows]
 
-        # try to read language from DB if present (older DBs may not have this column)
-        language_code = getattr(settings, 'language', None) or getattr(settings, 'language_code', None) or (USER_SUBSCRIPTIONS.get(uid, {}).get('language_code')) or 'en'
-
         return UserProfileOut(
             uid=uid,
             subscription=settings.level,
             theme=settings.theme,
             timezone=settings.timezone,
-            language_code=language_code,
             country=settings.country,
             city=settings.city,
             notifications_enabled=bool(settings.notifications_enabled),
