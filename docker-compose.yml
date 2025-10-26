@@ -1,0 +1,58 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: flow7
+      POSTGRES_PASSWORD: flow7
+      POSTGRES_DB: flow7
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://flow7:flow7@db/flow7
+      APSCHEDULER_DB_URL: postgresql+psycopg2://flow7:flow7@db/flow7
+      FIREBASE_CREDENTIALS: /run/secrets/firebase_credentials.json
+      ALLOWED_ORIGINS: "https://your-frontend.example.com"
+      LOG_JSON: '1'
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app:ro
+    secrets:
+      - firebase_credentials
+
+  scheduler:
+    build: .
+    command: ["python", "scheduler_worker.py"]
+    restart: on-failure
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql+psycopg2://flow7:flow7@db/flow7
+      APSCHEDULER_DB_URL: postgresql+psycopg2://flow7:flow7@db/flow7
+      FIREBASE_CREDENTIALS: /run/secrets/firebase_credentials.json
+      LOG_LEVEL: INFO
+    secrets:
+      - firebase_credentials
+
+secrets:
+  firebase_credentials:
+    external: true
+
+volumes:
+  db_data:

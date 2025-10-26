@@ -6,3 +6,9 @@ python-dotenv
 firebase-admin
 google-generativeai
 httpx
+APScheduler==3.10.1
+alembic
+prometheus-client
+pytest
+python-json-logger
+sentry-sdk

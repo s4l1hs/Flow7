@@ -1,0 +1,71 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    env:
+      IMAGE_NAME: ${{ secrets.REGISTRY }}/flow7:${{ github.ref_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE_NAME }}
+
+  migrate-and-deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Pull image
+        run: docker pull ${{ secrets.REGISTRY }}/flow7:${{ github.ref_name }}
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # If your DB requires extra envs (user, password), pass them here.
+        run: |
+          # Run alembic from the image so migrations run with the same codebase
+          docker run --rm \
+            -e DATABASE_URL="${DATABASE_URL}" \
+            ${{ secrets.REGISTRY }}/flow7:${{ github.ref_name }} \
+            /bin/sh -c "./scripts/migrate.sh"
+
+      - name: Deploy (placeholder)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          echo "Deploy step is environment specific. Provide a KUBE_CONFIG secret and replace this step with your deployment commands (kubectl apply / helm upgrade)."
+          # Example (uncomment and configure):
+          # echo "$KUBE_CONFIG_DATA" | base64 --decode > kubeconfig
+          # kubectl --kubeconfig=kubeconfig set image deployment/flow7 flow7=${{ secrets.REGISTRY }}/flow7:${{ github.ref_name }}
