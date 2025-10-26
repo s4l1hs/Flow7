@@ -27,30 +27,3 @@ groups:
         annotations:
           summary: "Recent migration failures detected"
           description: "Migrations have failures in the last 10 minutes. Check migration job logs."
-
-      - alert: Flow7DBDown
-        expr: increase(flow7_db_errors_total[5m]) > 0
-        for: 1m
-        labels:
-          severity: page
-        annotations:
-          summary: "Database errors observed by Flow7"
-          description: "Flow7 has observed DB errors in the last 5 minutes. Investigate DB connectivity and credentials."
-
-      - alert: Flow7ApschedulerJobErrors
-        expr: increase(flow7_apscheduler_job_errors_total[5m]) > 0
-        for: 1m
-        labels:
-          severity: page
-        annotations:
-          summary: "APScheduler job errors"
-          description: "One or more scheduled jobs have failed in the last 5 minutes. Check scheduler logs and jobstore."
-
-      - alert: Flow7HighFcmFailureRate
-        expr: increase(flow7_fcm_failures_total[10m]) > 5
-        for: 5m
-        labels:
-          severity: ticket
-        annotations:
-          summary: "High FCM failure rate"
-          description: "Multiple FCM sends have failed in the last 10 minutes. Check Firebase credentials and token validity."

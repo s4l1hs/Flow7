@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter/services.dart';
@@ -18,51 +17,18 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('Background message received: ${message.messageId}');
 }
 
-// Request notification permission once per device/app install. This does not
-// change UI — it simply triggers the OS permission dialog (where supported)
-// the first time the app runs.
-Future<void> _requestNotificationPermissionIfFirstRun() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final asked = prefs.getBool('notifications_permission_asked') ?? false;
-    if (asked) return;
-
-    final settings = await FirebaseMessaging.instance.requestPermission(alert: true, badge: true, sound: true);
-    final authorized = settings.authorizationStatus == AuthorizationStatus.authorized || settings.authorizationStatus == AuthorizationStatus.provisional;
-    await prefs.setBool('notifications_permission_asked', true);
-    await prefs.setBool('notifications_enabled', authorized);
-  } catch (e) {
-    // best-effort: ignore errors (for example on platforms where permissions
-    // are not supported or SharedPreferences fails). Do not crash the app.
-  }
-}
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  // Ask for notification permission on first app launch (best-effort, no UI changes)
-  _requestNotificationPermissionIfFirstRun();
-
-  // Load persisted UI settings before building providers so app starts with
-  // the user's saved theme and language (persisted in SharedPreferences).
-  final prefs = await SharedPreferences.getInstance();
-  final savedTheme = (prefs.getString('theme_mode') ?? 'DARK').toUpperCase();
-  final savedLang = prefs.getString('language_code');
-
-  final themeNotifier = ThemeNotifier(savedTheme);
-  final localeProvider = LocaleProvider();
-  if (savedLang != null && savedLang.isNotEmpty) {
-    localeProvider.setLocale(savedLang);
-  }
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => localeProvider),
-        ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => themeNotifier),
+        ChangeNotifierProvider(create: (context) => LocaleProvider()),
+        ChangeNotifierProvider(create: (context) => UserProvider()),
+        ChangeNotifierProvider(create: (context) => ThemeNotifier('DARK')),
       ],
       child: const MyApp(),
     ),
