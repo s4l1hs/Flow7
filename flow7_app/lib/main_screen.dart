@@ -51,7 +51,7 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     super.didChangeDependencies();
     final localizations = AppLocalizations.of(context)!;
     _navItems = [
-      {'icon': Icons.calendar_today_rounded, 'tooltip': localizations.programCalendar, 'color': Theme.of(context).colorScheme.primary},
+      {'icon': Icons.calendar_today_rounded, 'tooltip': localizations.programCalendar, 'color': Theme.of(context).colorScheme.tertiary},
       {'icon': Icons.workspace_premium_outlined, 'tooltip': localizations.subscriptions, 'color': Theme.of(context).colorScheme.secondary},
       {'icon': Icons.settings_outlined, 'tooltip': localizations.navSettings, 'color': Colors.grey},
     ];

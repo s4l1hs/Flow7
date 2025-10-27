@@ -385,7 +385,7 @@ class ProgramPageState extends State<ProgramPage> {
                     fit: BoxFit.scaleDown,
                     child: Text(
                       dfDay.format(normalized),
-                      style: TextStyle(fontSize: isArabic ? 24.sp : 32.sp, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600, color: isSelected ? Theme.of(context).colorScheme.primary : null),
+                      style: TextStyle(fontSize: isArabic ? 24.sp : 32.sp, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600, color: isSelected ? Theme.of(context).colorScheme.tertiary : null),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -710,7 +710,7 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                                         color: theme.colorScheme.primary.withOpacity(0.12),
                                         borderRadius: BorderRadius.circular(12.r),
                                       ),
-                                      child: Icon(Icons.event_available, color: theme.colorScheme.primary, size: 20.sp),
+                                      child: Icon(Icons.event_available, color: theme.colorScheme.tertiary, size: 20.sp),
                                     ),
                                     SizedBox(width: 12.w),
                                     Expanded(
@@ -824,7 +824,8 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                                           side: BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.10)),
                                         ),
                                         onPressed: () => Navigator.of(context).pop(),
-                                        child: Text(loc.cancel, style: TextStyle(fontSize: 14.sp)),
+                                        child: Text(loc.cancel, style: TextStyle(fontSize: 14.sp, color: theme.colorScheme.tertiary),
+                                        ),
                                       ),
                                     ),
                                     SizedBox(width: 12.w),

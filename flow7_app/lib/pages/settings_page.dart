@@ -354,7 +354,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
 
   Widget _buildLanguageTile(AppLocalizations localizations, ThemeData theme) {
     return ListTile(
-      leading: CircleAvatar(backgroundColor: theme.colorScheme.primary.withOpacity(0.12), child: Icon(Icons.language, color: theme.colorScheme.primary)),
+      leading: CircleAvatar(backgroundColor: theme.colorScheme.primary.withOpacity(0.12), child: Icon(Icons.language, color: theme.colorScheme.tertiary)),
       title: Text(localizations.applicationLanguage),
       subtitle: Text(_supportedLanguages[_currentLanguageCode] ?? 'English'),
       trailing: _isSavingLanguage ? SizedBox(width: 24.w, height: 24.w, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.keyboard_arrow_right, color: Colors.white70),
@@ -365,7 +365,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
   Widget _buildThemeTile(AppLocalizations localizations, ThemeData theme) {
     final isDark = _currentTheme.toUpperCase() == 'DARK';
     return SwitchListTile(
-      secondary: Padding(padding: const EdgeInsets.all(8.0), child: Icon(isDark ? Icons.dark_mode : Icons.light_mode, color: theme.colorScheme.primary)),
+      secondary: Padding(padding: const EdgeInsets.all(8.0), child: Icon(isDark ? Icons.dark_mode : Icons.light_mode, color: theme.colorScheme.tertiary)),
       title: Text(localizations.theme),
       subtitle: Text(isDark ? (localizations.darkMode) : (localizations.lightMode)),
       value: isDark,
@@ -380,7 +380,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
 
   Widget _buildNotificationsTile(AppLocalizations localizations, ThemeData theme) {
     return SwitchListTile(
-      secondary: Padding(padding: const EdgeInsets.all(8.0), child: Icon(Icons.notifications_active_outlined, color: theme.colorScheme.primary)),
+      secondary: Padding(padding: const EdgeInsets.all(8.0), child: Icon(Icons.notifications_active_outlined, color: theme.colorScheme.tertiary)),
       title: Text(localizations.notifications),
       subtitle: Text(localizations.forAllAlarms),
       value: _notificationsEnabled,
