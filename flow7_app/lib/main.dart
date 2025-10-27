@@ -9,6 +9,7 @@ import 'l10n/app_localizations.dart';
 import 'locale_provider.dart';
 import 'providers/user_provider.dart';
 import 'auth_gate.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 String backendBaseUrl = "http://127.0.0.1:8000";
 
@@ -132,7 +133,61 @@ class MyApp extends StatelessWidget {
           home: child,
         );
       },
-      child: const AuthGate(),
+      child: const FirstRunInitializer(child: AuthGate()),
     );
   }
+}
+
+/// Widget that runs once after app start to request notification permission
+/// for first-time installs. It persists a 'notification_permission_requested'
+/// flag and the resulting 'notifications_enabled' boolean in SharedPreferences.
+class FirstRunInitializer extends StatefulWidget {
+  final Widget child;
+  const FirstRunInitializer({required this.child, super.key});
+
+  @override
+  State<FirstRunInitializer> createState() => _FirstRunInitializerState();
+}
+
+class _FirstRunInitializerState extends State<FirstRunInitializer> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeRequestPermission());
+  }
+
+  Future<void> _maybeRequestPermission() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final alreadyAsked = prefs.getBool('notification_permission_requested') ?? false;
+      if (alreadyAsked) return;
+
+      // Mark as asked so we don't repeatedly prompt on subsequent launches.
+      await prefs.setBool('notification_permission_requested', true);
+
+      // Request permission from FCM. We don't block startup on this.
+      try {
+        final settings = await FirebaseMessaging.instance.requestPermission(
+          alert: true,
+          announcement: false,
+          badge: true,
+          carPlay: false,
+          criticalAlert: false,
+          provisional: false,
+          sound: true,
+        );
+        final allowed = (settings.authorizationStatus == AuthorizationStatus.authorized) || (settings.authorizationStatus == AuthorizationStatus.provisional);
+        await prefs.setBool('notifications_enabled', allowed);
+      } catch (e) {
+        // Some platforms may throw when calling requestPermission; fall back to not enabled.
+        await prefs.setBool('notifications_enabled', false);
+      }
+    } catch (e) {
+      // ignore errors silently; permission prompt is non-critical
+      debugPrint('FirstRunInitializer error: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
