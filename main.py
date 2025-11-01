@@ -56,7 +56,21 @@ class PlanORM(Base):
     updated_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 
-# Veritabanı ve tabloları oluştur
+# --- NEW: persistent user settings ORM ---
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+    uid = Column(String, primary_key=True, index=True)
+    language_code = Column(String(8), nullable=True)
+    theme = Column(String(16), nullable=True)
+    notifications_enabled = Column(Boolean, default=True, nullable=False)
+    timezone = Column(String(64), nullable=True)
+    country = Column(String(64), nullable=True)
+    city = Column(String(64), nullable=True)
+    username = Column(String(128), nullable=True)
+    created_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+# Veritabanı ve tabloları oluştur (yeni tablo dahil)
 Base.metadata.create_all(bind=engine)
 
 
@@ -441,22 +455,23 @@ def update_subscription(
 
 
 @app.get("/user/profile/", tags=["User"])
-def user_profile(current_user: User = Depends(get_current_user)):
+def user_profile(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Basit profil endpoint'i: uid, subscriptionLevel, expires_at (varsa), theme_preference,
     language_code ve notifications_enabled.
     """
-    info = USER_SUBSCRIPTIONS.get(current_user.uid, {})
-    expires = info.get("expires")
+    uid = current_user.uid
+    settings = get_or_create_user_settings(uid, db)
+    expires = USER_SUBSCRIPTIONS.get(uid, {}).get("expires")
     return {
-        "uid": current_user.uid,
-        "subscriptionLevel": info.get("level", current_user.subscription),
+        "uid": uid,
+        "subscriptionLevel": USER_SUBSCRIPTIONS.get(uid, {}).get("level", current_user.subscription),
         "expires_at": expires.isoformat() if expires else None,
-        "theme_preference": info.get("theme", current_user.theme_preference),
-        "language_code": info.get("language_code") or info.get("language") or "en",
-        "notifications_enabled": info.get("notifications_enabled") if "notifications_enabled" in info else True,
-        "username": info.get("username"),
-        "score": info.get("score", 0),
+        "theme_preference": settings.theme or current_user.theme_preference,
+        "language_code": settings.language_code or "en",
+        "notifications_enabled": bool(settings.notifications_enabled),
+        "username": settings.username,
+        "score": USER_SUBSCRIPTIONS.get(uid, {}).get("score", 0),
     }
 
 class ThemePreferenceUpdate(BaseModel):
@@ -467,22 +482,17 @@ class ThemePreferenceUpdate(BaseModel):
 @app.put("/user/theme/", tags=["User"])
 def update_user_theme(
     payload: ThemePreferenceUpdate,
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Kullanıcının tema (dark/light mode) tercihini günceller.
-    """
     uid = current_user.uid
-    
-    # In-memory sözlüğü güncelleyelim.
-    # Eğer kullanıcı daha önce abonelik bilgisi kaydetmediyse varsayılanları atarız.
-    user_info = USER_SUBSCRIPTIONS.get(uid, {"level": current_user.subscription, "theme": current_user.theme_preference})
-    
-    # Tema bilgisini güncelleyin
-    user_info["theme"] = payload.theme
-    USER_SUBSCRIPTIONS[uid] = user_info
-    
-    return {"uid": uid, "theme_preference": payload.theme}
+    settings = get_or_create_user_settings(uid, db)
+    settings.theme = payload.theme
+    settings.updated_at = datetime.now(timezone.utc)
+    db.add(settings)
+    db.commit()
+    db.refresh(settings)
+    return {"uid": uid, "theme_preference": settings.theme}
 
 # --- ADD: Language & Notifications schemas ---
 class LanguageUpdate(BaseModel):
@@ -491,33 +501,29 @@ class LanguageUpdate(BaseModel):
 class NotificationsUpdate(BaseModel):
     enabled: bool
 
-# --- ADD: language update endpoint ---
 @app.put("/user/language/", tags=["User"])
-def update_user_language(payload: LanguageUpdate, current_user: User = Depends(get_current_user)):
-    """
-    Kullanıcının tercih ettiği dili günceller.
-    Body: { "language_code": "tr" }
-    """
+def update_user_language(payload: LanguageUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     uid = current_user.uid
-    user_info = USER_SUBSCRIPTIONS.get(uid, {"level": current_user.subscription, "theme": current_user.theme_preference})
-    user_info["language_code"] = payload.language_code
-    USER_SUBSCRIPTIONS[uid] = user_info
-    return {"uid": uid, "language_code": payload.language_code}
+    settings = get_or_create_user_settings(uid, db)
+    settings.language_code = payload.language_code
+    settings.updated_at = datetime.now(timezone.utc)
+    db.add(settings)
+    db.commit()
+    db.refresh(settings)
+    return {"uid": uid, "language_code": settings.language_code}
 
-# --- ADD: notifications update endpoint ---
 @app.put("/user/notifications/", tags=["User"])
-def update_user_notifications(payload: NotificationsUpdate, current_user: User = Depends(get_current_user)):
-    """
-    Kullanıcının bildirim tercihlerini günceller.
-    Body: { "enabled": true }
-    """
+def update_user_notifications(payload: NotificationsUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     uid = current_user.uid
-    user_info = USER_SUBSCRIPTIONS.get(uid, {"level": current_user.subscription, "theme": current_user.theme_preference})
-    user_info["notifications_enabled"] = bool(payload.enabled)
-    USER_SUBSCRIPTIONS[uid] = user_info
-    return {"uid": uid, "notifications_enabled": user_info["notifications_enabled"]}
+    settings = get_or_create_user_settings(uid, db)
+    settings.notifications_enabled = bool(payload.enabled)
+    settings.updated_at = datetime.now(timezone.utc)
+    db.add(settings)
+    db.commit()
+    db.refresh(settings)
+    return {"uid": uid, "notifications_enabled": settings.notifications_enabled}
 
-# --- ADD: Notification worker ---
+# --- ADD: notification worker ---
 def send_notification_to_user(uid: str, payload: dict):
     """
     Bildirim gönderme yeri. Şu anda basitçe log/print yapıyor.
@@ -528,15 +534,51 @@ def send_notification_to_user(uid: str, payload: dict):
     print(f"[NOTIFY] to uid={uid}: {payload}")
 
 
+def get_or_create_user_settings(uid: str, db: Session):
+    """
+    DB'de user settings yoksa USER_SUBSCRIPTIONS içinden fallback alıp kaydeder.
+    Dönen: UserSettings ORM instance
+    """
+    settings = db.get(UserSettings, uid)
+    if settings:
+        return settings
+    # build from in-memory fallback if present
+    fallback = USER_SUBSCRIPTIONS.get(uid, {})
+    settings = UserSettings(
+        uid=uid,
+        language_code=fallback.get("language_code") or fallback.get("language") or "en",
+        theme=fallback.get("theme") or "LIGHT",
+        notifications_enabled=bool(fallback.get("notifications_enabled", True)),
+        timezone=fallback.get("timezone") or "Europe/Istanbul",
+        country=fallback.get("country"),
+        city=fallback.get("city"),
+        username=fallback.get("username"),
+    )
+    db.add(settings)
+    db.commit()
+    db.refresh(settings)
+    return settings
+
+
 def _user_notifications_enabled(uid: str) -> bool:
     """
-    Kullanıcının bildirim tercihlerini kontrol eder (in-memory store).
-    Varsayılan olarak True döner.
+    DB'den kontrol eder (fallback True).
     """
-    info = USER_SUBSCRIPTIONS.get(uid)
-    if not info:
+    try:
+        db = SessionLocal()
+        try:
+            s = db.get(UserSettings, uid)
+            if s is None:
+                # if not in DB, fall back to in-memory or True
+                fallback = USER_SUBSCRIPTIONS.get(uid)
+                if fallback is None:
+                    return True
+                return bool(fallback.get("notifications_enabled", True))
+            return bool(s.notifications_enabled)
+        finally:
+            db.close()
+    except Exception:
         return True
-    return bool(info.get("notifications_enabled", True))
 
 
 def schedule_notification_for_plan(plan: PlanORM):
