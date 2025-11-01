@@ -27,6 +27,25 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from zoneinfo import ZoneInfo
 import time
 import threading
+# Optional firebase-admin for sending FCM push messages from server
+FIREBASE_ADMIN_AVAILABLE = False
+try:
+    import firebase_admin
+    from firebase_admin import credentials, messaging
+    FIREBASE_ADMIN_AVAILABLE = True
+    FIREBASE_CREDENTIAL_PATH = os.getenv("FIREBASE_CREDENTIAL_PATH")
+    if FIREBASE_CREDENTIAL_PATH:
+        try:
+            cred = credentials.Certificate(FIREBASE_CREDENTIAL_PATH)
+            try:
+                firebase_admin.initialize_app(cred)
+            except Exception:
+                # already initialized
+                pass
+        except Exception:
+            FIREBASE_ADMIN_AVAILABLE = False
+except Exception:
+    FIREBASE_ADMIN_AVAILABLE = False
 
 # --- 1. CONFIGURATION & DATABASE SETUP ---
 # .env dosyasından ortam değişkenlerini yükle
@@ -64,13 +83,27 @@ class UserSettings(Base):
     theme = Column(String(16), nullable=True)
     notifications_enabled = Column(Boolean, default=True, nullable=False)
     timezone = Column(String(64), nullable=True)
+    # session_timezone: temporary timezone (e.g. while traveling). If set, it takes precedence
+    # for a limited TTL stored in session_tz_expires_at.
+    session_timezone = Column(String(64), nullable=True)
+    session_tz_expires_at = Column(SA_DateTime(timezone=True), nullable=True)
     country = Column(String(64), nullable=True)
     city = Column(String(64), nullable=True)
     username = Column(String(128), nullable=True)
+    last_seen_at = Column(SA_DateTime(timezone=True), nullable=True)
     created_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
-# Veritabanı ve tabloları oluştur (yeni tablo dahil)
+# Device token storage for push targets (server-side)
+class DeviceToken(Base):
+    __tablename__ = "device_tokens"
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid4()))
+    uid = Column(String, index=True, nullable=False)
+    token = Column(String, nullable=False, unique=True)
+    platform = Column(String(32), nullable=True)
+    created_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+# Veritabanı ve tabloları oluştur (yeni tablolar dahil)
 Base.metadata.create_all(bind=engine)
 
 
@@ -243,15 +276,45 @@ def plan_to_out(plan: PlanORM) -> dict:
 
 def _get_user_zoneinfo(uid: str) -> ZoneInfo:
     """
-    Kullanıcının USER_SUBSCRIPTIONS içindeki timezone bilgisini alır ve ZoneInfo döner;
-    geçersiz veya eksikse güvenli bir varsayılan (Europe/Istanbul) döner.
+    Resolve the effective ZoneInfo for a user.
+    Priority:
+      1. session_timezone (temporary) if set and not expired
+      2. persistent timezone stored in UserSettings.timezone
+      3. fallback USER_SUBSCRIPTIONS timezone or Europe/Istanbul
     """
+    try:
+        db = SessionLocal()
+        try:
+            s = db.get(UserSettings, uid)
+            if s:
+                # check session override
+                if s.session_timezone and s.session_tz_expires_at:
+                    if s.session_tz_expires_at.tzinfo is None:
+                        # assume UTC stored
+                        expires = s.session_tz_expires_at.replace(tzinfo=timezone.utc)
+                    else:
+                        expires = s.session_tz_expires_at
+                    if datetime.now(timezone.utc) <= expires:
+                        try:
+                            return ZoneInfo(s.session_timezone)
+                        except Exception:
+                            pass
+                # fallback to persistent timezone
+                if s.timezone:
+                    try:
+                        return ZoneInfo(s.timezone)
+                    except Exception:
+                        pass
+        finally:
+            db.close()
+    except Exception:
+        pass
+    # last fallback: in-memory or sensible default
     info = USER_SUBSCRIPTIONS.get(uid, {})
     tz_str = info.get("timezone", "Europe/Istanbul")
     try:
         return ZoneInfo(tz_str)
     except Exception:
-        # Eğer saklı timezone geçersizse fallback olarak Europe/Istanbul kullan.
         return ZoneInfo("Europe/Istanbul")
 
 
@@ -524,16 +587,6 @@ def update_user_notifications(payload: NotificationsUpdate, db: Session = Depend
     return {"uid": uid, "notifications_enabled": settings.notifications_enabled}
 
 # --- ADD: notification worker ---
-def send_notification_to_user(uid: str, payload: dict):
-    """
-    Bildirim gönderme yeri. Şu anda basitçe log/print yapıyor.
-    Burayı FCM / e-posta / WebSocket vs ile entegre edin.
-    payload örn: {"title":..., "description":..., "start_time":..., "end_time":...}
-    """
-    # TODO: replace with actual push (e.g. firebase-admin messaging)
-    print(f"[NOTIFY] to uid={uid}: {payload}")
-
-
 def get_or_create_user_settings(uid: str, db: Session):
     """
     DB'de user settings yoksa USER_SUBSCRIPTIONS içinden fallback alıp kaydeder.
@@ -542,17 +595,19 @@ def get_or_create_user_settings(uid: str, db: Session):
     settings = db.get(UserSettings, uid)
     if settings:
         return settings
-    # build from in-memory fallback if present
-    fallback = USER_SUBSCRIPTIONS.get(uid, {})
+
+    # create a new settings row using in-memory defaults if present
+    info = USER_SUBSCRIPTIONS.get(uid, {})
     settings = UserSettings(
         uid=uid,
-        language_code=fallback.get("language_code") or fallback.get("language") or "en",
-        theme=fallback.get("theme") or "LIGHT",
-        notifications_enabled=bool(fallback.get("notifications_enabled", True)),
-        timezone=fallback.get("timezone") or "Europe/Istanbul",
-        country=fallback.get("country"),
-        city=fallback.get("city"),
-        username=fallback.get("username"),
+        language_code=info.get("language_code"),
+        theme=info.get("theme"),
+        notifications_enabled=info.get("notifications_enabled", True),
+        timezone=info.get("timezone"),
+        country=info.get("country"),
+        city=info.get("city"),
+        username=info.get("username"),
+        last_seen_at=datetime.now(timezone.utc),
     )
     db.add(settings)
     db.commit()
@@ -561,24 +616,101 @@ def get_or_create_user_settings(uid: str, db: Session):
 
 
 def _user_notifications_enabled(uid: str) -> bool:
-    """
-    DB'den kontrol eder (fallback True).
-    """
+    """Return whether the user has notifications enabled (DB-backed with in-memory fallback)."""
     try:
         db = SessionLocal()
         try:
             s = db.get(UserSettings, uid)
-            if s is None:
-                # if not in DB, fall back to in-memory or True
-                fallback = USER_SUBSCRIPTIONS.get(uid)
-                if fallback is None:
-                    return True
-                return bool(fallback.get("notifications_enabled", True))
-            return bool(s.notifications_enabled)
+            if s is not None:
+                return bool(s.notifications_enabled)
         finally:
             db.close()
     except Exception:
-        return True
+        pass
+    return bool(USER_SUBSCRIPTIONS.get(uid, {}).get("notifications_enabled", True))
+
+
+def send_notification_to_user(uid: str, payload: dict):
+    """
+    Send a formatted notification to all device tokens of the given user.
+    Payload example: {"title":..., "description":..., "start_time":..., "end_time":..., "date":...}
+    """
+    try:
+        db = SessionLocal()
+        try:
+            rows = db.execute(select(DeviceToken.token).where(DeviceToken.uid == uid)).scalars().all()
+        finally:
+            db.close()
+
+        if not rows:
+            print(f"[NOTIFY] no device tokens for uid={uid}, payload={payload}")
+            return
+
+        # Resolve effective timezone for formatting times
+        try:
+            tz = _get_user_zoneinfo(uid)
+        except Exception:
+            tz = ZoneInfo("UTC")
+
+        title = payload.get("title", "Flow7")
+        description = payload.get("description", "") or ""
+
+        # format start/end times into user's timezone if date provided
+        start_display = payload.get("start_time", "")
+        end_display = payload.get("end_time", "")
+        try:
+            date_str = payload.get("date")
+            if date_str and start_display:
+                d = PyDate.fromisoformat(date_str)
+                st = PyTime.fromisoformat(start_display)
+                local_dt = datetime.combine(d, st).replace(tzinfo=tz)
+                start_display = local_dt.strftime("%H:%M")
+            if date_str and end_display:
+                et = PyTime.fromisoformat(end_display)
+                end_local = datetime.combine(PyDate.fromisoformat(date_str), et).replace(tzinfo=tz)
+                end_display = end_local.strftime("%H:%M")
+        except Exception:
+            # leave original strings if parsing fails
+            pass
+
+        # Build notification body per required format:
+        # Title
+        # Description
+        # start_time - end_time
+        body_lines = [title]
+        if description:
+            body_lines.append(description)
+        times_line = ""
+        if start_display and end_display:
+            times_line = f"{start_display} - {end_display}"
+        elif start_display:
+            times_line = f"{start_display}"
+        if times_line:
+            body_lines.append(times_line)
+        body = "\n".join(body_lines)
+
+        # Send via firebase-admin if configured
+        if FIREBASE_ADMIN_AVAILABLE:
+            try:
+                message = messaging.MulticastMessage(
+                    notification=messaging.Notification(title=title, body=body),
+                    data={"type": "plan_notification", "date": payload.get("date",""), "start_time": payload.get("start_time",""), "end_time": payload.get("end_time","")},
+                    tokens=list(rows),
+                )
+                response = messaging.send_multicast(message)
+                if response.failure_count > 0:
+                    for idx, resp in enumerate(response.responses):
+                        if not resp.success:
+                            print(f"[NOTIFY] failed token: {rows[idx]} -> {resp.exception}")
+                print(f"[NOTIFY] sent to uid={uid}: success={response.success_count}, fail={response.failure_count}")
+                return
+            except Exception as e:
+                print(f"[NOTIFY] firebase-admin send error: {e} -- falling back to log")
+
+        # fallback to logging (or other transports)
+        print(f"[NOTIFY-LOG] uid={uid} tokens={len(rows)} title={title} body={body} payload={payload}")
+    except Exception as e:
+        print(f"[NOTIFY] send error for uid={uid}: {e}")
 
 
 def schedule_notification_for_plan(plan: PlanORM):
@@ -667,6 +799,8 @@ async def _notification_worker_loop(poll_interval_seconds: int = 30):
 # --- ADD: Timezone update endpoint ---
 class TimezoneUpdate(BaseModel):
     timezone: str = Field(..., description="IANA timezone string, e.g. 'Europe/Istanbul'")
+    persist: Optional[bool] = Field(False, description="If true, save as user's persistent timezone. Otherwise treated as a temporary/session timezone")
+    ttl_hours: Optional[int] = Field(168, description="TTL in hours for session timezone (if persist is false). Default: 168h = 7 days")
 
 def _parse_uid_from_token(id_token: str) -> Optional[str]:
     """
@@ -710,9 +844,23 @@ async def timezone_header_middleware(request: Request, call_next):
                 # validate timezone string
                 try:
                     _ = ZoneInfo(tz_header)
-                    info = USER_SUBSCRIPTIONS.get(uid, {"level": "FREE", "theme": "LIGHT"})
-                    info["timezone"] = tz_header
-                    USER_SUBSCRIPTIONS[uid] = info
+                    # persist as session timezone with default TTL (7 days)
+                    try:
+                        db = SessionLocal()
+                        try:
+                            settings = get_or_create_user_settings(uid, db)
+                            settings.session_timezone = tz_header
+                            settings.session_tz_expires_at = datetime.now(timezone.utc) + timedelta(hours=168)
+                            settings.last_seen_at = datetime.now(timezone.utc)
+                            db.add(settings)
+                            db.commit()
+                        finally:
+                            db.close()
+                    except Exception:
+                        # fallback to in-memory update if DB write fails
+                        info = USER_SUBSCRIPTIONS.get(uid, {"level": "FREE", "theme": "LIGHT"})
+                        info["timezone"] = tz_header
+                        USER_SUBSCRIPTIONS[uid] = info
                     # kick off background reschedule of pending plans for this user
                     try:
                         threading.Thread(target=_reschedule_user_pending_plans_sync, args=(uid,), daemon=True).start()
@@ -728,10 +876,11 @@ async def timezone_header_middleware(request: Request, call_next):
     return response
 
 @app.put("/user/timezone/", tags=["User"])
-def update_user_timezone(payload: TimezoneUpdate, current_user: User = Depends(get_current_user)):
+def update_user_timezone(payload: TimezoneUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Kullanıcının cihazdan elde edilen IANA timezone'ını backend'e kaydet.
-    Body: { "timezone": "Europe/Istanbul" }
+    Body: { "timezone": "Europe/Istanbul", "persist": false, "ttl_hours": 168 }
+    If persist=true -> save as persistent timezone. Otherwise save as session timezone with TTL.
     """
     try:
         # validate by constructing ZoneInfo
@@ -740,15 +889,25 @@ def update_user_timezone(payload: TimezoneUpdate, current_user: User = Depends(g
         raise HTTPException(status_code=400, detail="Invalid IANA timezone identifier.")
 
     uid = current_user.uid
-    info = USER_SUBSCRIPTIONS.get(uid, {"level": current_user.subscription, "theme": current_user.theme_preference})
-    info["timezone"] = payload.timezone
-    USER_SUBSCRIPTIONS[uid] = info
+    settings = get_or_create_user_settings(uid, db)
+    now = datetime.now(timezone.utc)
+    if payload.persist:
+        settings.timezone = payload.timezone
+        settings.updated_at = now
+    else:
+        ttl = int(payload.ttl_hours or 168)
+        settings.session_timezone = payload.timezone
+        settings.session_tz_expires_at = now + timedelta(hours=ttl)
+        settings.last_seen_at = now
+    db.add(settings)
+    db.commit()
+    db.refresh(settings)
     # asynchronously reschedule pending plans for this user (best-effort)
     try:
         threading.Thread(target=_reschedule_user_pending_plans_sync, args=(uid,), daemon=True).start()
     except Exception:
         pass
-    return {"uid": uid, "timezone": payload.timezone}
+    return {"uid": uid, "timezone": payload.timezone, "persist": bool(payload.persist)}
 
 
 def _reschedule_user_pending_plans_sync(uid: str, window_days: int = 7):
