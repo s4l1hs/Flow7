@@ -27,6 +27,15 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from zoneinfo import ZoneInfo
 import time
 import threading
+# Scheduler (APScheduler) for persistent per-plan jobs
+APScheduler_AVAILABLE = False
+try:
+    from apscheduler.schedulers.background import BackgroundScheduler
+    from apscheduler.schedulers.blocking import BlockingScheduler
+    from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+    APScheduler_AVAILABLE = True
+except Exception:
+    APScheduler_AVAILABLE = False
 # Optional firebase-admin for sending FCM push messages from server
 FIREBASE_ADMIN_AVAILABLE = False
 try:
@@ -690,22 +699,67 @@ def send_notification_to_user(uid: str, payload: dict):
         body = "\n".join(body_lines)
 
         # Send via firebase-admin if configured
+        # Be robust: some firebase_admin versions or runtime environments may not have
+        # messaging.send_multicast or may behave differently. Try multicast first,
+        # on failure fall back to per-token send with retries and exponential backoff.
+        FIREBASE_RETRIES = int(os.getenv("FIREBASE_SEND_RETRIES", "3"))
+        FIREBASE_BACKOFF = float(os.getenv("FIREBASE_SEND_BACKOFF", "0.5"))
+
         if FIREBASE_ADMIN_AVAILABLE:
             try:
-                message = messaging.MulticastMessage(
-                    notification=messaging.Notification(title=title, body=body),
-                    data={"type": "plan_notification", "date": payload.get("date",""), "start_time": payload.get("start_time",""), "end_time": payload.get("end_time","")},
-                    tokens=list(rows),
-                )
-                response = messaging.send_multicast(message)
-                if response.failure_count > 0:
-                    for idx, resp in enumerate(response.responses):
-                        if not resp.success:
-                            print(f"[NOTIFY] failed token: {rows[idx]} -> {resp.exception}")
-                print(f"[NOTIFY] sent to uid={uid}: success={response.success_count}, fail={response.failure_count}")
+                tokens = list(rows)
+                data_payload = {"type": "plan_notification", "date": payload.get("date",""), "start_time": payload.get("start_time",""), "end_time": payload.get("end_time","")}
+
+                # Try multicast if available
+                if hasattr(messaging, "send_multicast") and hasattr(messaging, "MulticastMessage"):
+                    try:
+                        message = messaging.MulticastMessage(
+                            notification=messaging.Notification(title=title, body=body),
+                            data=data_payload,
+                            tokens=tokens,
+                        )
+                        response = messaging.send_multicast(message)
+                        # response may have success_count/failure_count and responses list
+                        succ = getattr(response, "success_count", None)
+                        fail = getattr(response, "failure_count", None)
+                        if fail:
+                            for idx, resp in enumerate(getattr(response, "responses", [])):
+                                if not getattr(resp, "success", False):
+                                    try:
+                                        print(f"[NOTIFY] failed token: {tokens[idx]} -> {getattr(resp, 'exception', '<err>')}")
+                                    except Exception:
+                                        pass
+                        print(f"[NOTIFY] multicast result uid={uid}: success={succ} fail={fail}")
+                        return
+                    except Exception as e:
+                        print(f"[NOTIFY] multicast send failed: {e} -- falling back to per-token send")
+
+                # Fallback: send per-token (with retries)
+                for token in tokens:
+                    sent = False
+                    last_exc = None
+                    for attempt in range(1, FIREBASE_RETRIES + 1):
+                        try:
+                            # build a simple message for single token targets
+                            if hasattr(messaging, "Message"):
+                                msg = messaging.Message(notification=messaging.Notification(title=title, body=body), data=data_payload, token=token)
+                                res = messaging.send(msg)
+                            else:
+                                # As a last resort, try send function with raw args
+                                res = messaging.send(messaging.Notification(title=title, body=body), token=token)
+                            sent = True
+                            break
+                        except Exception as e:
+                            last_exc = e
+                            sleep_time = FIREBASE_BACKOFF * (2 ** (attempt - 1))
+                            print(f"[NOTIFY] token send attempt {attempt}/{FIREBASE_RETRIES} failed for token={token}: {e}; retrying in {sleep_time}s")
+                            time.sleep(sleep_time)
+                    if not sent:
+                        print(f"[NOTIFY] failed to send to token {token} after {FIREBASE_RETRIES} attempts: {last_exc}")
+                # after per-token attempts
                 return
             except Exception as e:
-                print(f"[NOTIFY] firebase-admin send error: {e} -- falling back to log")
+                print(f"[NOTIFY] firebase-admin send error (outer): {e} -- falling back to log")
 
         # fallback to logging (or other transports)
         print(f"[NOTIFY-LOG] uid={uid} tokens={len(rows)} title={title} body={body} payload={payload}")
@@ -719,19 +773,53 @@ def schedule_notification_for_plan(plan: PlanORM):
     Mevcut uygulamada arka plan worker DB'yi periyodik tarayıp notified==False olanları işlediği
     için burada no-op yapmak yeterlidir; daha gelişmiş bir sistemde burası gerçek scheduler entegrasyonu olur.
     """
+    """
+    Schedule a single-run APScheduler job for the given plan.
+    Job id: plan_{plan.id}
+    """
     try:
-        # compute notify datetime using user's timezone (correct for DST / region)
+        if not APScheduler_AVAILABLE:
+            # fallback to logging-only behavior
+            user_zone = _get_user_zoneinfo(plan.user_id)
+            try:
+                local_dt = datetime.combine(plan.date, plan.start_time).replace(tzinfo=user_zone)
+                notify_dt_utc = local_dt.astimezone(timezone.utc)
+                print(f"[SCHEDULE-LOG] plan {plan.id} would be scheduled at utc={notify_dt_utc.isoformat()} (user_zone={user_zone})")
+            except Exception:
+                notify_dt = datetime.combine(plan.date, plan.start_time).replace(tzinfo=timezone.utc)
+                print(f"[SCHEDULE-LOG] plan {plan.id} would be scheduled (fallback) utc={notify_dt.isoformat()}")
+            return
+
+        # compute notify datetime
         user_zone = _get_user_zoneinfo(plan.user_id)
         try:
             local_dt = datetime.combine(plan.date, plan.start_time).replace(tzinfo=user_zone)
             notify_dt_utc = local_dt.astimezone(timezone.utc)
-            print(f"[SCHEDULE] plan {plan.id} scheduled at utc={notify_dt_utc.isoformat()} (user_zone={user_zone})")
         except Exception:
-            # fallback: log naive schedule in UTC
-            notify_dt = datetime.combine(plan.date, plan.start_time).replace(tzinfo=timezone.utc)
-            print(f"[SCHEDULE] plan {plan.id} scheduled (fallback) utc={notify_dt.isoformat()}")
+            notify_dt_utc = datetime.combine(plan.date, plan.start_time).replace(tzinfo=timezone.utc)
+
+        job_id = f"plan_{plan.id}"
+        # ensure scheduler exists
+        if "scheduler" in globals() and globals()["scheduler"] is not None:
+            try:
+                globals()["scheduler"].add_job(
+                    func=dispatch_notification_job,
+                    trigger="date",
+                    run_date=notify_dt_utc,
+                    id=job_id,
+                    args=[plan.id],
+                    replace_existing=True,
+                    misfire_grace_time=60,
+                )
+                print(f"[SCHEDULE] scheduled job {job_id} at {notify_dt_utc.isoformat()}")
+                return
+            except Exception as e:
+                print(f"[SCHEDULE] failed to add job to scheduler: {e}")
+
+        # fallback: just log
+        print(f"[SCHEDULE-LOG] plan {plan.id} would be scheduled at utc={notify_dt_utc.isoformat()}")
     except Exception:
-        pass
+        logger.exception("Error while scheduling plan %s", getattr(plan, "id", "<unknown>"))
 
 
 def cancel_scheduled_plan(plan_id: str):
@@ -739,63 +827,144 @@ def cancel_scheduled_plan(plan_id: str):
     Placeholder: daha gelişmiş scheduler'ı iptal etmek için kullanılır; şimdilik no-op.
     """
     try:
-        print(f"[CANCEL] cancel schedule for plan {plan_id} (no-op)")
+        job_id = f"plan_{plan_id}"
+        if "scheduler" in globals() and globals()["scheduler"] is not None:
+            try:
+                globals()["scheduler"].remove_job(job_id)
+                print(f"[CANCEL] removed job {job_id}")
+                return
+            except Exception:
+                # job may not exist
+                pass
+        print(f"[CANCEL-LOG] would cancel job {job_id} (scheduler not available or job missing)")
+    except Exception:
+        logger.exception("Error cancelling scheduled plan %s", plan_id)
+
+
+def dispatch_notification_job(plan_id: str):
+    """
+    Job callback executed by the scheduler. Loads the plan, checks user prefs and sends notification.
+    Marks plan.notified = True on success or when notifications are disabled.
+    """
+    try:
+        db = SessionLocal()
+        try:
+            plan = db.get(PlanORM, plan_id)
+            if not plan:
+                print(f"[DISPATCH] plan {plan_id} not found; skipping")
+                return
+            if plan.notified:
+                print(f"[DISPATCH] plan {plan_id} already notified; skipping")
+                return
+
+            if not _user_notifications_enabled(plan.user_id):
+                plan.notified = True
+                db.add(plan)
+                db.commit()
+                print(f"[DISPATCH] notifications disabled for user {plan.user_id}; marking plan {plan_id} as notified")
+                return
+
+            payload = {
+                "title": plan.title,
+                "description": plan.description or "",
+                "start_time": time_to_str(plan.start_time),
+                "end_time": time_to_str(plan.end_time),
+                "date": plan.date.isoformat(),
+            }
+
+            try:
+                send_notification_to_user(plan.user_id, payload)
+            except Exception as e:
+                print(f"[DISPATCH] failed to send notification for plan {plan_id}: {e}")
+
+            plan.notified = True
+            db.add(plan)
+            db.commit()
+            print(f"[DISPATCH] finished job for plan {plan_id}")
+        finally:
+            db.close()
+    except Exception:
+        logger.exception("Unhandled error in dispatch_notification_job for plan %s", plan_id)
+
+
+def _init_scheduler(start: bool = True, blocking: bool = False):
+    """
+    Initialize globals()['scheduler'] with a persistent SQLAlchemyJobStore.
+    If APScheduler isn't installed, this becomes a no-op.
+    If blocking=True, uses BlockingScheduler and .start() will block the current thread.
+    """
+    if not APScheduler_AVAILABLE:
+        print("[SCHEDULER] APScheduler not available; scheduler disabled")
+        globals()["scheduler"] = None
+        return None
+
+    if globals().get("scheduler") is not None:
+        return globals()["scheduler"]
+
+    jobstores = {"default": SQLAlchemyJobStore(url=DATABASE_URL)}
+    try:
+        if blocking:
+            sched = BlockingScheduler(jobstores=jobstores, timezone=timezone.utc)
+            globals()["scheduler"] = sched
+            return sched
+        else:
+            sched = BackgroundScheduler(jobstores=jobstores, timezone=timezone.utc)
+            globals()["scheduler"] = sched
+            if start:
+                try:
+                    sched.start()
+                    print("[SCHEDULER] background scheduler started")
+                except Exception as e:
+                    print(f"[SCHEDULER] failed to start scheduler: {e}")
+            return sched
+    except Exception as e:
+        print(f"[SCHEDULER] error initializing scheduler: {e}")
+        globals()["scheduler"] = None
+        return None
+
+
+@app.on_event("startup")
+def _on_startup_init_scheduler():
+    """FastAPI startup: initialize background scheduler and (best-effort) re-schedule pending plans."""
+    try:
+        sched = _init_scheduler(start=True, blocking=False)
+        # re-schedule pending (un-notified) plans for the near future
+        try:
+            now_utc = datetime.now(timezone.utc)
+            start_date = (now_utc - timedelta(days=1)).date()
+            end_date = (now_utc + timedelta(days=7)).date()
+            db = SessionLocal()
+            try:
+                plans = db.execute(select(PlanORM).where(
+                    PlanORM.notified == False,
+                    PlanORM.date.between(start_date, end_date)
+                )).scalars().all()
+                for p in plans:
+                    try:
+                        schedule_notification_for_plan(p)
+                    except Exception:
+                        pass
+            finally:
+                db.close()
+        except Exception:
+            pass
+    except Exception:
+        logger.exception("Error in startup scheduler initialization")
+
+
+@app.on_event("shutdown")
+def _on_shutdown_stop_scheduler():
+    try:
+        sched = globals().get("scheduler")
+        if sched is not None:
+            try:
+                sched.shutdown(wait=False)
+                print("[SCHEDULER] scheduler shutdown")
+            except Exception:
+                pass
     except Exception:
         pass
 
-
-async def _notification_worker_loop(poll_interval_seconds: int = 30):
-    """Arka plan döngüsü: belirli aralıklarla DB'den bildirim bekleyen planları kontrol eder."""
-    while True:
-        try:
-            now_utc = datetime.now(timezone.utc)
-            # limit query window to yesterday..tomorrow to cover TZ shifts and late inserts
-            start_date = (now_utc - timedelta(days=1)).date()
-            end_date = (now_utc + timedelta(days=1)).date()
-            db = SessionLocal()
-            try:
-                q = select(PlanORM).where(
-                    PlanORM.date.between(start_date, end_date),
-                    PlanORM.notified == False
-                )
-                candidates = db.execute(q).scalars().all()
-                for plan in candidates:
-                    user_zone = _get_user_zoneinfo(plan.user_id)
-                    try:
-                        plan_local_dt = datetime.combine(plan.date, plan.start_time).replace(tzinfo=user_zone)
-                    except Exception:
-                        continue
-                    plan_start_utc = plan_local_dt.astimezone(timezone.utc)
-                    plan_end_utc = None
-                    if plan.end_time:
-                        plan_end_local = datetime.combine(plan.date, plan.end_time).replace(tzinfo=user_zone)
-                        plan_end_utc = plan_end_local.astimezone(timezone.utc)
-
-                    # notify only if start <= now (allow small tolerance) and not already notified
-                    if plan_start_utc <= now_utc and (plan_end_utc is None or now_utc <= plan_end_utc):
-                        if not _user_notifications_enabled(plan.user_id):
-                            plan.notified = True
-                            db.add(plan)
-                            continue
-                        payload = {
-                            "title": plan.title,
-                            "description": plan.description or "",
-                            "start_time": time_to_str(plan.start_time),
-                            "end_time": time_to_str(plan.end_time),
-                            "date": plan.date.isoformat(),
-                        }
-                        try:
-                            send_notification_to_user(plan.user_id, payload)
-                        except Exception as e:
-                            print(f"Failed to send notification for plan {plan.id}: {e}")
-                        plan.notified = True
-                        db.add(plan)
-                db.commit()
-            finally:
-                db.close()
-        except Exception as e:
-            print("Notification worker error:", e)
-        await asyncio.sleep(poll_interval_seconds)
 # --- ADD: Timezone update endpoint ---
 class TimezoneUpdate(BaseModel):
     timezone: str = Field(..., description="IANA timezone string, e.g. 'Europe/Istanbul'")
@@ -970,6 +1139,52 @@ def user_current_time(current_user: User = Depends(get_current_user)):
         return {"uid": uid, "timezone": tz_str, "local_time": now_utc.isoformat()}
 
 # --- 7. RUN THE APP ---
-# Bu blok, dosyanın doğrudan `python main.py` ile çalıştırılmasını sağlar.
+# This block allows running either the API server or a scheduler-only process via CLI.
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Flow7 API / Scheduler runner")
+    parser.add_argument("--scheduler-only", action="store_true", help="Run only the persistent scheduler (no HTTP server).")
+    parser.add_argument("--host", default="0.0.0.0", help="Host for the API server")
+    parser.add_argument("--port", default=8000, type=int, help="Port for the API server")
+    args = parser.parse_args()
+
+    if args.scheduler_only:
+        # Initialize a blocking scheduler and start it -- jobstore is persistent.
+        if not APScheduler_AVAILABLE:
+            print("APScheduler is not installed/available. Install it to run scheduler-only mode.")
+            raise SystemExit(1)
+        sched = _init_scheduler(start=False, blocking=True)
+        if sched is None:
+            print("Failed to initialize scheduler")
+            raise SystemExit(2)
+        try:
+            # Re-schedule pending plans on startup (best-effort)
+            now_utc = datetime.now(timezone.utc)
+            start_date = (now_utc - timedelta(days=1)).date()
+            end_date = (now_utc + timedelta(days=30)).date()
+            db = SessionLocal()
+            try:
+                plans = db.execute(select(PlanORM).where(
+                    PlanORM.notified == False,
+                    PlanORM.date.between(start_date, end_date)
+                )).scalars().all()
+                for p in plans:
+                    try:
+                        schedule_notification_for_plan(p)
+                    except Exception:
+                        pass
+            finally:
+                db.close()
+
+            print("Starting blocking scheduler (CTRL+C to exit)")
+            sched.start()
+        except (KeyboardInterrupt, SystemExit):
+            try:
+                sched.shutdown(wait=False)
+            except Exception:
+                pass
+        raise SystemExit(0)
+    else:
+        # Default: run the API (the startup event will initialize a background scheduler)
+        uvicorn.run("main:app", host=args.host, port=args.port, reload=True)
