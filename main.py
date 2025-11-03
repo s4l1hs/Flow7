@@ -188,18 +188,27 @@ token_auth_scheme = HTTPBearer()
 # Keys: user uid (str) -> {"level": str, "expires": date}
 USER_SUBSCRIPTIONS = {}
 
-async def get_current_user(token: HTTPAuthorizationCredentials = Security(token_auth_scheme)) -> User:
+def get_db():
+    """Her istek için bir veritabanı oturumu sağlayan FastAPI dependency'si."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+async def get_current_user(
+    token: HTTPAuthorizationCredentials = Security(token_auth_scheme),
+    db: Session = Depends(get_db)  # <-- 1. DB BAĞIMLILIĞINI BURAYA EKLEYİN
+) -> User:
     """
     Authorization başlığından gelen Bearer token'ı doğrular ve kullanıcıyı döndürür.
-    Development: token ya doğrudan uid olabilir ya da Firebase idToken (JWT) olabilir.
-    Eğer JWT gelirse payload'tan 'sub' / 'user_id' / 'uid' / 'email' alanlarını alarak uid elde etmeye çalışır.
-    GERÇEK PROJEDE: Token'ı burada Firebase Admin SDK veya başka bir JWT kütüphanesi ile doğrulayın.
+    ...
     """
     id_token = token.credentials
     if not id_token:
         raise HTTPException(status_code=401, detail="Kimlik doğrulama token'ı sağlanmadı.")
 
-    # If firebase_admin is configured, verify ID token cryptographically.
+    # ... (Token doğrulama ve 'uid' alma mantığınız (satır 228-260) burada kalmalı) ...
     if FIREBASE_ADMIN_AVAILABLE:
         try:
             decoded = auth.verify_id_token(id_token, check_revoked=FIREBASE_CHECK_REVOKED)
@@ -207,10 +216,9 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Security(token_
             if not uid:
                 raise HTTPException(status_code=401, detail="Token doğrulandı ama uid bulunamadı.")
         except Exception as e:
-            # token invalid or revoked
             raise HTTPException(status_code=401, detail=f"Invalid or revoked token: {e}", headers={"WWW-Authenticate": "Bearer"})
     else:
-        # firebase_admin not available -> development fallback (unless REQUIRE_STRICT_AUTH forced earlier)
+        # firebase_admin not available -> development fallback
         try:
             uid = id_token
             if isinstance(id_token, str) and "." in id_token:
@@ -226,21 +234,56 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Security(token_
         except Exception:
             uid = id_token
 
-    # Use (verified or fallback) uid to build User and ensure subscription defaults
-    sub_info = USER_SUBSCRIPTIONS.get(uid)
-    subscription = sub_info["level"] if sub_info and "level" in sub_info else "FREE"
-    theme_preference = sub_info["theme"] if sub_info and "theme" in sub_info else "DARK"
+
+    # --- NEW: read persistent settings from DB so subscription/theme are authoritative ---
+    subscription = "FREE"
+    theme_preference = "DARK"
+    try:
+        # db = SessionLocal() # <-- 2. BU SATIRI SİLİN
+        # try:
+        settings = db.get(UserSettings, uid) # <-- 3. BAĞIMLILIKTAN GELEN 'db' KULLANILACAK
+        if settings:
+            subscription = settings.subscription_level or subscription
+            theme_preference = settings.theme or theme_preference
+        else:
+            # create default DB row from in-memory fallback if desired
+            fallback = USER_SUBSCRIPTIONS.get(uid, {})
+            settings = UserSettings(
+                uid=uid,
+                language_code=fallback.get("language_code") or "en",
+                theme=fallback.get("theme") or theme_preference,
+                notifications_enabled=bool(fallback.get("notifications_enabled", True)),
+                timezone=fallback.get("timezone") or "Europe/Istanbul",
+                country=fallback.get("country"),
+                city=fallback.get("city"),
+                username=fallback.get("username"),
+                subscription_level=fallback.get("level") or "FREE",
+            )
+            db.add(settings)
+            db.commit()
+            db.refresh(settings)
+            subscription = settings.subscription_level or subscription
+            theme_preference = settings.theme or theme_preference
+        # finally:
+        #     db.close() # <-- 4. BU SATIRI SİLİN
+    except Exception:
+        # On DB error fall back to in-memory values (best-effort)
+        sub_info = USER_SUBSCRIPTIONS.get(uid)
+        if sub_info:
+            subscription = sub_info.get("level", subscription)
+            theme_preference = sub_info.get("theme", theme_preference)
+
+    # Ensure a minimal in-memory entry exists for compatibility
     if uid not in USER_SUBSCRIPTIONS:
         USER_SUBSCRIPTIONS[uid] = {
             "level": subscription,
             "theme": theme_preference,
-            "timezone": "Europe/Istanbul",
-            "country": "Turkey",
-            "city": "Istanbul",
+            "timezone": None,
             "notifications_enabled": True,
         }
-    return User(uid=uid, subscription=subscription, theme_preference=theme_preference)
 
+    # Return the authenticated user model (subscription/theme populated from DB or fallback)
+    return User(uid=uid, subscription=subscription, theme_preference=theme_preference)
 
 # --- 5. DEPENDENCIES & UTILITIES ---
 def get_db():
