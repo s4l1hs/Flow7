@@ -88,6 +88,8 @@ class PlanORM(Base):
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     notified = Column(Boolean, default=False, nullable=False)
+    # UTC timestamp for when we intend to send notification (persisted so restarts keep intent)
+    notify_at = Column(SA_DateTime(timezone=True), nullable=True, index=True)
     created_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -789,12 +791,7 @@ def send_notification_to_user(uid: str, payload: dict):
 
 def schedule_notification_for_plan(plan: PlanORM):
     """
-    Placeholder: plan için zamanlanmış bildirim oluşturur.
-    Mevcut uygulamada arka plan worker DB'yi periyodik tarayıp notified==False olanları işlediği
-    için burada no-op yapmak yeterlidir; daha gelişmiş bir sistemde burası gerçek scheduler entegrasyonu olur.
-    """
-    """
-    Schedule a single-run APScheduler job for the given plan.
+    Schedule a single-run APScheduler job for the given plan and persist notify_at in DB.
     Job id: plan_{plan.id}
     """
     try:
@@ -806,8 +803,21 @@ def schedule_notification_for_plan(plan: PlanORM):
                 notify_dt_utc = local_dt.astimezone(timezone.utc)
                 print(f"[SCHEDULE-LOG] plan {plan.id} would be scheduled at utc={notify_dt_utc.isoformat()} (user_zone={user_zone})")
             except Exception:
-                notify_dt = datetime.combine(plan.date, plan.start_time).replace(tzinfo=timezone.utc)
-                print(f"[SCHEDULE-LOG] plan {plan.id} would be scheduled (fallback) utc={notify_dt.isoformat()}")
+                notify_dt_utc = datetime.combine(plan.date, plan.start_time).replace(tzinfo=timezone.utc)
+                print(f"[SCHEDULE-LOG] plan {plan.id} would be scheduled (fallback) utc={notify_dt_utc.isoformat()}")
+            # persist notify_at even in logging-only mode
+            try:
+                db = SessionLocal()
+                try:
+                    p = db.get(PlanORM, plan.id)
+                    if p:
+                        p.notify_at = notify_dt_utc
+                        db.add(p)
+                        db.commit()
+                finally:
+                    db.close()
+            except Exception:
+                pass
             return
 
         # compute notify datetime
@@ -817,6 +827,21 @@ def schedule_notification_for_plan(plan: PlanORM):
             notify_dt_utc = local_dt.astimezone(timezone.utc)
         except Exception:
             notify_dt_utc = datetime.combine(plan.date, plan.start_time).replace(tzinfo=timezone.utc)
+
+        # persist notify_at to DB so restarts can re-schedule deterministically
+        try:
+            db = SessionLocal()
+            try:
+                p = db.get(PlanORM, plan.id)
+                if p:
+                    p.notify_at = notify_dt_utc
+                    db.add(p)
+                    db.commit()
+                    db.refresh(p)
+            finally:
+                db.close()
+        except Exception as e:
+            print(f"[SCHEDULE] warning: failed to persist notify_at for plan {plan.id}: {e}")
 
         job_id = f"plan_{plan.id}"
         # ensure scheduler exists
@@ -961,6 +986,28 @@ def _on_startup_init_scheduler():
                 )).scalars().all()
                 for p in plans:
                     try:
+                        # If we have a persisted notify_at and it's in the future, prefer it;
+                        # otherwise recompute from current user timezone (useful after timezone changes).
+                        if getattr(p, "notify_at", None):
+                            try:
+                                if p.notify_at > now_utc:
+                                    # schedule exactly at persisted UTC time
+                                    if "scheduler" in globals() and globals()["scheduler"] is not None:
+                                        job_id = f"plan_{p.id}"
+                                        globals()["scheduler"].add_job(
+                                            func=dispatch_notification_job,
+                                            trigger="date",
+                                            run_date=p.notify_at,
+                                            id=job_id,
+                                            args=[p.id],
+                                            replace_existing=True,
+                                            misfire_grace_time=60,
+                                        )
+                                        print(f"[SCHEDULE] scheduled job {job_id} from persisted notify_at {p.notify_at.isoformat()}")
+                                        continue
+                            except Exception:
+                                pass
+                        # otherwise compute fresh schedule (respects current DB timezone for the user)
                         schedule_notification_for_plan(p)
                     except Exception:
                         pass
