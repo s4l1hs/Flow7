@@ -227,7 +227,7 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Security(token_
     # Use (verified or fallback) uid to build User and ensure subscription defaults
     sub_info = USER_SUBSCRIPTIONS.get(uid)
     subscription = sub_info["level"] if sub_info and "level" in sub_info else "FREE"
-    theme_preference = sub_info["theme"] if sub_info and "theme" in sub_info else "LIGHT"
+    theme_preference = sub_info["theme"] if sub_info and "theme" in sub_info else "DARK"
     if uid not in USER_SUBSCRIPTIONS:
         USER_SUBSCRIPTIONS[uid] = {
             "level": subscription,
@@ -628,7 +628,7 @@ def get_or_create_user_settings(uid: str, db: Session):
     settings = UserSettings(
         uid=uid,
         language_code=fallback.get("language_code") or fallback.get("language") or "en",
-        theme=fallback.get("theme") or "LIGHT",
+        theme=fallback.get("theme") or "DARK",
         notifications_enabled=bool(fallback.get("notifications_enabled", True)),
         timezone=fallback.get("timezone") or "Europe/Istanbul",
         country=fallback.get("country"),
@@ -1049,7 +1049,7 @@ async def timezone_header_middleware(request: Request, call_next):
                     if not info:
                         USER_SUBSCRIPTIONS[uid] = {
                             "level": "FREE",
-                            "theme": "LIGHT",
+                            "theme": "DARK",
                             "timezone": tz_header,
                             "country": None,
                             "city": None,
