@@ -40,7 +40,7 @@ except Exception:
 FIREBASE_ADMIN_AVAILABLE = False
 try:
     import firebase_admin
-    from firebase_admin import credentials, messaging
+    from firebase_admin import credentials, messaging, auth
     FIREBASE_ADMIN_AVAILABLE = True
     FIREBASE_CREDENTIAL_PATH = os.getenv("FIREBASE_CREDENTIAL_PATH")
     if FIREBASE_CREDENTIAL_PATH:
@@ -60,6 +60,13 @@ except Exception:
 # .env dosyasından ortam değişkenlerini yükle
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./flow7_revised.db")
+# Auth / Firebase strict flags
+REQUIRE_STRICT_AUTH = os.getenv("REQUIRE_STRICT_AUTH", "false").lower() == "true"
+FIREBASE_CHECK_REVOKED = os.getenv("FIREBASE_CHECK_REVOKED", "false").lower() == "true"
+
+# Fail-fast: if strict auth is required but firebase admin isn't available, abort startup
+if REQUIRE_STRICT_AUTH and not FIREBASE_ADMIN_AVAILABLE:
+    raise RuntimeError("REQUIRE_STRICT_AUTH=true but firebase_admin is not configured/available. Set FIREBASE_CREDENTIAL_PATH or disable REQUIRE_STRICT_AUTH in development.")
 
 # SQLAlchemy motoru ve oturum oluşturucu
 # check_same_thread: False -> Sadece SQLite için gereklidir.
@@ -189,52 +196,48 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Security(token_
     id_token = token.credentials
     if not id_token:
         raise HTTPException(status_code=401, detail="Kimlik doğrulama token'ı sağlanmadı.")
-    try:
-        uid = id_token  # default: token itself as uid (dev mode)
 
-        # Eğer token JWT formatındaysa (header.payload.signature), payload'tan sub/user_id çıkarmaya çalış
-        if isinstance(id_token, str) and '.' in id_token:
-            try:
-                parts = id_token.split('.')
+    # If firebase_admin is configured, verify ID token cryptographically.
+    if FIREBASE_ADMIN_AVAILABLE:
+        try:
+            decoded = auth.verify_id_token(id_token, check_revoked=FIREBASE_CHECK_REVOKED)
+            uid = decoded.get("uid") or decoded.get("sub") or decoded.get("user_id") or decoded.get("email")
+            if not uid:
+                raise HTTPException(status_code=401, detail="Token doğrulandı ama uid bulunamadı.")
+        except Exception as e:
+            # token invalid or revoked
+            raise HTTPException(status_code=401, detail=f"Invalid or revoked token: {e}", headers={"WWW-Authenticate": "Bearer"})
+    else:
+        # firebase_admin not available -> development fallback (unless REQUIRE_STRICT_AUTH forced earlier)
+        try:
+            uid = id_token
+            if isinstance(id_token, str) and "." in id_token:
+                parts = id_token.split(".")
                 if len(parts) >= 2:
                     payload_b64 = parts[1]
-                    # base64url padding
                     rem = len(payload_b64) % 4
                     if rem:
-                        payload_b64 += '=' * (4 - rem)
-                    payload_json = base64.urlsafe_b64decode(payload_b64.encode('utf-8')).decode('utf-8')
+                        payload_b64 += "=" * (4 - rem)
+                    payload_json = base64.urlsafe_b64decode(payload_b64.encode("utf-8")).decode("utf-8")
                     payload = json.loads(payload_json)
-                    # common claim names
-                    uid = payload.get('sub') or payload.get('user_id') or payload.get('uid') or payload.get('email') or uid
-            except Exception:
-                # parsing başarısızsa fallback olarak token'ı uid kabul et
-                uid = id_token
+                    uid = payload.get("sub") or payload.get("user_id") or payload.get("uid") or payload.get("email") or uid
+        except Exception:
+            uid = id_token
 
-        # Kullanıcının in-memory abonelik bilgisi varsa al
-        sub_info = USER_SUBSCRIPTIONS.get(uid)
-        subscription = sub_info["level"] if sub_info and "level" in sub_info else "FREE"
-        theme_preference = sub_info["theme"] if sub_info and "theme" in sub_info else "LIGHT"
-
-        # Ensure a default in-memory entry so user's timezone/city/country exist until user changes them.
-        # Default: Turkey / Istanbul -> IANA "Europe/Istanbul"
-        if uid not in USER_SUBSCRIPTIONS:
-            USER_SUBSCRIPTIONS[uid] = {
-                "level": subscription,
-                "theme": theme_preference,
-                "timezone": "Europe/Istanbul",
-                
-                "country": "Turkey",
-                "city": "Istanbul",
-                "notifications_enabled": True,
-            }
-
-        return User(uid=uid, subscription=subscription, theme_preference=theme_preference)
-    except Exception as e:
-        raise HTTPException(
-            status_code=401,
-            detail=f"Geçersiz kimlik doğrulama token'ı: {e}",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    # Use (verified or fallback) uid to build User and ensure subscription defaults
+    sub_info = USER_SUBSCRIPTIONS.get(uid)
+    subscription = sub_info["level"] if sub_info and "level" in sub_info else "FREE"
+    theme_preference = sub_info["theme"] if sub_info and "theme" in sub_info else "LIGHT"
+    if uid not in USER_SUBSCRIPTIONS:
+        USER_SUBSCRIPTIONS[uid] = {
+            "level": subscription,
+            "theme": theme_preference,
+            "timezone": "Europe/Istanbul",
+            "country": "Turkey",
+            "city": "Istanbul",
+            "notifications_enabled": True,
+        }
+    return User(uid=uid, subscription=subscription, theme_preference=theme_preference)
 
 
 # --- 5. DEPENDENCIES & UTILITIES ---
@@ -1004,187 +1007,46 @@ async def timezone_header_middleware(request: Request, call_next):
     """
     try:
         # header isimleri küçük/büyük farkı nedeniyle iki türlü dene
-        auth = request.headers.get("authorization") or request.headers.get("Authorization")
+        auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
         tz_header = request.headers.get("x-user-timezone") or request.headers.get("X-User-Timezone") or request.headers.get("X-Timezone")
-        if auth and tz_header and auth.lower().startswith("bearer "):
-            token = auth.split(" ", 1)[1].strip()
-            uid = _parse_uid_from_token(token)
-            if uid:
-                # validate timezone string
+        if auth_header and tz_header and auth_header.lower().startswith("bearer "):
+            token = auth_header.split(" ", 1)[1].strip()
+            uid = None
+            # Prefer verified uid when firebase_admin is available
+            if FIREBASE_ADMIN_AVAILABLE:
                 try:
-                    _ = ZoneInfo(tz_header)
-                    # persist as session timezone with default TTL (7 days)
-                    try:
-                        db = SessionLocal()
-                        try:
-                            settings = get_or_create_user_settings(uid, db)
-                            settings.session_timezone = tz_header
-                            settings.session_tz_expires_at = datetime.now(timezone.utc) + timedelta(hours=168)
-                            settings.last_seen_at = datetime.now(timezone.utc)
-                            db.add(settings)
-                            db.commit()
-                        finally:
-                            db.close()
-                    except Exception:
-                        # fallback to in-memory update if DB write fails
-                        info = USER_SUBSCRIPTIONS.get(uid, {"level": "FREE", "theme": "LIGHT"})
-                        info["timezone"] = tz_header
-                        USER_SUBSCRIPTIONS[uid] = info
-                    # kick off background reschedule of pending plans for this user
-                    try:
-                        threading.Thread(target=_reschedule_user_pending_plans_sync, args=(uid,), daemon=True).start()
-                    except Exception:
-                        pass
+                    decoded = auth.verify_id_token(token, check_revoked=FIREBASE_CHECK_REVOKED)
+                    uid = decoded.get("uid") or decoded.get("sub") or decoded.get("user_id") or decoded.get("email")
                 except Exception:
-                    # invalid timezone string -> ignore
+                    # verification failed -> fallback to minimal parser (do not block request here)
+                    uid = _parse_uid_from_token(token)
+            else:
+                uid = _parse_uid_from_token(token)
+
+            # if we have a uid, validate tz_header and update in-memory store (best-effort)
+            if uid:
+                try:
+                    # validate timezone string
+                    ZoneInfo(tz_header)
+                    info = USER_SUBSCRIPTIONS.get(uid)
+                    if not info:
+                        USER_SUBSCRIPTIONS[uid] = {
+                            "level": "FREE",
+                            "theme": "LIGHT",
+                            "timezone": tz_header,
+                            "country": None,
+                            "city": None,
+                            "notifications_enabled": True,
+                        }
+                    else:
+                        info["timezone"] = tz_header
+                except Exception:
+                    # invalid timezone or other error: ignore silently
                     pass
     except Exception:
-        # middleware must not block request on error
+        # ensure middleware never crashes the request pipeline
         pass
+
+    # Always proceed to the next handler and return response
     response = await call_next(request)
     return response
-
-@app.put("/user/timezone/", tags=["User"])
-def update_user_timezone(payload: TimezoneUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """
-    Kullanıcının cihazdan elde edilen IANA timezone'ını backend'e kaydet.
-    Body: { "timezone": "Europe/Istanbul", "persist": false, "ttl_hours": 168 }
-    If persist=true -> save as persistent timezone. Otherwise save as session timezone with TTL.
-    """
-    try:
-        # validate by constructing ZoneInfo
-        _ = ZoneInfo(payload.timezone)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid IANA timezone identifier.")
-
-    uid = current_user.uid
-    settings = get_or_create_user_settings(uid, db)
-    now = datetime.now(timezone.utc)
-    if payload.persist:
-        settings.timezone = payload.timezone
-        settings.updated_at = now
-    else:
-        ttl = int(payload.ttl_hours or 168)
-        settings.session_timezone = payload.timezone
-        settings.session_tz_expires_at = now + timedelta(hours=ttl)
-        settings.last_seen_at = now
-    db.add(settings)
-    db.commit()
-    db.refresh(settings)
-    # asynchronously reschedule pending plans for this user (best-effort)
-    try:
-        threading.Thread(target=_reschedule_user_pending_plans_sync, args=(uid,), daemon=True).start()
-    except Exception:
-        pass
-    return {"uid": uid, "timezone": payload.timezone, "persist": bool(payload.persist)}
-
-
-def _reschedule_user_pending_plans_sync(uid: str, window_days: int = 7):
-    """
-    Best-effort synchronous reschedule helper:
-    - finds un-notified plans for the user in a small future window
-    - cancels existing scheduled entries (placeholder) and re-schedules them using current timezone
-    This runs in a background thread (daemon) to avoid blocking request handling.
-    """
-    try:
-        now_utc = datetime.now(timezone.utc)
-        start_date = (now_utc - timedelta(days=1)).date()
-        end_date = (now_utc + timedelta(days=window_days)).date()
-        db = SessionLocal()
-        try:
-            plans = db.execute(select(PlanORM).where(
-                PlanORM.user_id == uid,
-                PlanORM.notified == False,
-                PlanORM.date.between(start_date, end_date)
-            )).scalars().all()
-            for p in plans:
-                try:
-                    cancel_scheduled_plan(p.id)
-                except Exception:
-                    pass
-                try:
-                    schedule_notification_for_plan(p)
-                except Exception:
-                    pass
-        finally:
-            db.close()
-    except Exception:
-        try:
-            logger.exception("Error while rescheduling pending plans for user %s", uid)
-        except Exception:
-            pass
-
-@app.get("/user/current_time/", tags=["User"])
-def user_current_time(current_user: User = Depends(get_current_user)):
-    """
-    Test endpoint: kullanıcının ayarlı timezone'una göre mevcut saati log'a yaz ve döndür.
-    İstemci test için Authorization header ile çağırmalı (token -> uid).
-    """
-    uid = current_user.uid
-    info = USER_SUBSCRIPTIONS.get(uid, {})
-    tz_str = info.get("timezone", "Europe/Istanbul")
-    try:
-        tz = ZoneInfo(tz_str)
-    except Exception:
-        tz = ZoneInfo("Europe/Istanbul")
-        tz_str = "Europe/Istanbul"
-
-    now_utc = datetime.now(timezone.utc)
-    try:
-        now_local = now_utc.astimezone(tz)
-        print(f"[USER_TIME] uid={uid} timezone={tz_str} local_time={now_local.isoformat()}")
-        return {"uid": uid, "timezone": tz_str, "local_time": now_local.isoformat()}
-    except Exception:
-        print(f"[USER_TIME] uid={uid} timezone={tz_str} could not convert, returning UTC {now_utc.isoformat()}")
-        return {"uid": uid, "timezone": tz_str, "local_time": now_utc.isoformat()}
-
-# --- 7. RUN THE APP ---
-# This block allows running either the API server or a scheduler-only process via CLI.
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Flow7 API / Scheduler runner")
-    parser.add_argument("--scheduler-only", action="store_true", help="Run only the persistent scheduler (no HTTP server).")
-    parser.add_argument("--host", default="0.0.0.0", help="Host for the API server")
-    parser.add_argument("--port", default=8000, type=int, help="Port for the API server")
-    args = parser.parse_args()
-
-    if args.scheduler_only:
-        # Initialize a blocking scheduler and start it -- jobstore is persistent.
-        if not APScheduler_AVAILABLE:
-            print("APScheduler is not installed/available. Install it to run scheduler-only mode.")
-            raise SystemExit(1)
-        sched = _init_scheduler(start=False, blocking=True)
-        if sched is None:
-            print("Failed to initialize scheduler")
-            raise SystemExit(2)
-        try:
-            # Re-schedule pending plans on startup (best-effort)
-            now_utc = datetime.now(timezone.utc)
-            start_date = (now_utc - timedelta(days=1)).date()
-            end_date = (now_utc + timedelta(days=30)).date()
-            db = SessionLocal()
-            try:
-                plans = db.execute(select(PlanORM).where(
-                    PlanORM.notified == False,
-                    PlanORM.date.between(start_date, end_date)
-                )).scalars().all()
-                for p in plans:
-                    try:
-                        schedule_notification_for_plan(p)
-                    except Exception:
-                        pass
-            finally:
-                db.close()
-
-            print("Starting blocking scheduler (CTRL+C to exit)")
-            sched.start()
-        except (KeyboardInterrupt, SystemExit):
-            try:
-                sched.shutdown(wait=False)
-            except Exception:
-                pass
-        raise SystemExit(0)
-    else:
-        # Default: run the API (the startup event will initialize a background scheduler)
-        uvicorn.run("main:app", host=args.host, port=args.port, reload=True)
