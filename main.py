@@ -1020,7 +1020,9 @@ async def timezone_header_middleware(request: Request, call_next):
     Eğer Authorization Bearer token ve X-User-Timezone header varsa:
     - header'daki IANA timezone'ı doğrular
     - doğrulursa USER_SUBSCRIPTIONS[uid]['timezone'] güncellenir
-    Bu sayede istemci her istekinde cihaz timezone bilgisini header'a koyarsa backend otomatik kaydeder.
+    - eğer DB'de kayıtlı timezone ile farklıysa DB'ye yazılır ve pending planlar yeniden schedule edilir
+    Bu sayede istemci her istekinde cihaz timezone bilgisini header'a koyarsa backend otomatik kaydeder
+    ve sunucu yeniden başlasa bile timezone kalıcı olur.
     """
     try:
         # header isimleri küçük/büyük farkı nedeniyle iki türlü dene
@@ -1045,6 +1047,8 @@ async def timezone_header_middleware(request: Request, call_next):
                 try:
                     # validate timezone string
                     ZoneInfo(tz_header)
+
+                    # Update in-memory fallback first
                     info = USER_SUBSCRIPTIONS.get(uid)
                     if not info:
                         USER_SUBSCRIPTIONS[uid] = {
@@ -1057,6 +1061,51 @@ async def timezone_header_middleware(request: Request, call_next):
                         }
                     else:
                         info["timezone"] = tz_header
+                        USER_SUBSCRIPTIONS[uid] = info
+
+                    # Persist to DB if different from stored persistent timezone (best-effort, non-blocking)
+                    try:
+                        db = SessionLocal()
+                        try:
+                            settings = db.get(UserSettings, uid)
+                            if settings:
+                                stored_tz = (settings.timezone or "").strip()
+                                if stored_tz != tz_header:
+                                    settings.timezone = tz_header
+                                    settings.updated_at = datetime.now(timezone.utc)
+                                    db.add(settings)
+                                    db.commit()
+                                    db.refresh(settings)
+                                    print(f"[TIMEZONE] middleware persisted timezone for uid={uid}: {stored_tz!r} -> {tz_header!r}")
+                                    # reschedule pending plans in background thread (don't pass db across threads)
+                                    try:
+                                        threading.Thread(target=_reschedule_user_pending_plans_sync, args=(uid,), daemon=True).start()
+                                    except Exception:
+                                        pass
+                            else:
+                                # No DB row yet: create via get_or_create_user_settings to keep consistent logic
+                                try:
+                                    settings = get_or_create_user_settings(uid, db)
+                                    if (settings.timezone or "").strip() != tz_header:
+                                        settings.timezone = tz_header
+                                        settings.updated_at = datetime.now(timezone.utc)
+                                        db.add(settings)
+                                        db.commit()
+                                        db.refresh(settings)
+                                        print(f"[TIMEZONE] middleware created settings and set timezone for uid={uid}: -> {tz_header!r}")
+                                        try:
+                                            threading.Thread(target=_reschedule_user_pending_plans_sync, args=(uid,), daemon=True).start()
+                                        except Exception:
+                                            pass
+                                except Exception:
+                                    # ignore creation errors (best-effort)
+                                    pass
+                        finally:
+                            db.close()
+                    except Exception:
+                        # DB write failed; continue silently (middleware must not break requests)
+                        pass
+
                 except Exception:
                     # invalid timezone or other error: ignore silently
                     pass
@@ -1067,3 +1116,124 @@ async def timezone_header_middleware(request: Request, call_next):
     # Always proceed to the next handler and return response
     response = await call_next(request)
     return response
+
+# --- NEW: Persistent timezone endpoint + reschedule helper ---
+def _reschedule_user_pending_plans_sync(uid: str, db: Optional[Session] = None):
+    """
+    Synchronous helper to re-schedule (cancel + schedule) pending plans for a user.
+    Intended to be run in a background thread (so it doesn't block request).
+    """
+    own_session = False
+    try:
+        if db is None:
+            db = SessionLocal()
+            own_session = True
+        # fetch user's pending (notified==False) plans in a reasonable window
+        now_utc = datetime.now(timezone.utc)
+        start_date = (now_utc - timedelta(days=1)).date()
+        end_date = (now_utc + timedelta(days=30)).date()  # reschedule for next 30 days
+        plans = db.execute(select(PlanORM).where(
+            PlanORM.user_id == uid,
+            PlanORM.notified == False,
+            PlanORM.date.between(start_date, end_date)
+        )).scalars().all()
+
+        # For each plan: cancel existing job (if any) then schedule anew
+        for p in plans:
+            try:
+                cancel_scheduled_plan(p.id)
+            except Exception:
+                pass
+            try:
+                # only schedule if notify time is in the future
+                user_zone = _get_user_zoneinfo(uid)
+                try:
+                    local_dt = datetime.combine(p.date, p.start_time).replace(tzinfo=user_zone)
+                    notify_dt_utc = local_dt.astimezone(timezone.utc)
+                except Exception:
+                    notify_dt_utc = datetime.combine(p.date, p.start_time).replace(tzinfo=timezone.utc)
+                if notify_dt_utc > now_utc:
+                    schedule_notification_for_plan(p)
+            except Exception:
+                # continue with other plans even if one fails
+                pass
+    finally:
+        if own_session and db is not None:
+            try:
+                db.close()
+            except Exception:
+                pass
+
+
+@app.put("/user/timezone/", tags=["User"])
+def update_user_timezone(
+    payload: TimezoneUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Persist user's primary timezone (UserSettings.timezone) when `persist=True`.
+    If the provided timezone differs from stored value, update DB and reschedule pending plans.
+    If persist=False, just update in-memory/session timezone (USER_SUBSCRIPTIONS) without changing DB.
+    """
+    tz_str = payload.timezone
+    persist = bool(payload.persist)
+    ttl_hours = int(payload.ttl_hours or 168)
+
+    # validate timezone string
+    try:
+        test_tz = ZoneInfo(tz_str)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Geçersiz timezone string (IANA formatı bekleniyor).")
+
+    uid = current_user.uid
+
+    # If persist requested -> update DB-backed UserSettings.timezone if different
+    if persist:
+        try:
+            settings = get_or_create_user_settings(uid, db)
+        except Exception:
+            raise HTTPException(status_code=500, detail="Kullanıcı ayarları yüklenemedi.")
+
+        old_tz = (settings.timezone or "").strip()
+        if old_tz != tz_str:
+            settings.timezone = tz_str
+            settings.updated_at = datetime.now(timezone.utc)
+            db.add(settings)
+            db.commit()
+            db.refresh(settings)
+            changed = True
+            print(f"[TIMEZONE] persisted timezone for uid={uid}: {old_tz!r} -> {tz_str!r}")
+            # Update in-memory fallback too
+            info = USER_SUBSCRIPTIONS.get(uid) or {}
+            info["timezone"] = tz_str
+            USER_SUBSCRIPTIONS[uid] = info
+            # Reschedule pending plans in background thread to avoid blocking request
+            try:
+                threading.Thread(target=_reschedule_user_pending_plans_sync, args=(uid,), daemon=True).start()
+            except Exception:
+                # best-effort; ignore failure to spawn thread
+                pass
+        else:
+            changed = False
+    else:
+        # session-only update: store in-memory and optionally spawn reschedule for immediate effect
+        info = USER_SUBSCRIPTIONS.get(uid)
+        if not info:
+            USER_SUBSCRIPTIONS[uid] = {
+                "level": "FREE",
+                "theme": "DARK",
+                "timezone": tz_str,
+                "country": None,
+                "city": None,
+                "notifications_enabled": True,
+            }
+        else:
+            USER_SUBSCRIPTIONS[uid]["timezone"] = tz_str
+        # track session expiry in memory if desired (not persisted)
+        USER_SUBSCRIPTIONS[uid]["session_tz_set_at"] = datetime.now(timezone.utc).isoformat()
+        USER_SUBSCRIPTIONS[uid]["session_ttl_hours"] = ttl_hours
+        changed = True
+        print(f"[TIMEZONE] session timezone updated for uid={uid}: {tz_str!r} (ttl_hours={ttl_hours})")
+
+    return {"uid": uid, "timezone": tz_str, "persisted": persist, "changed": bool(changed)}
