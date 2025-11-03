@@ -21,6 +21,7 @@ from sqlalchemy import (
     Date as SA_Date,
     Time as SA_Time,
     Boolean,
+    Integer as SA_Integer
 )
 import asyncio
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
@@ -99,14 +100,13 @@ class UserSettings(Base):
     theme = Column(String(16), nullable=True)
     notifications_enabled = Column(Boolean, default=True, nullable=False)
     timezone = Column(String(64), nullable=True)
-    # session_timezone: temporary timezone (e.g. while traveling). If set, it takes precedence
-    # for a limited TTL stored in session_tz_expires_at.
-    session_timezone = Column(String(64), nullable=True)
-    session_tz_expires_at = Column(SA_DateTime(timezone=True), nullable=True)
     country = Column(String(64), nullable=True)
     city = Column(String(64), nullable=True)
     username = Column(String(128), nullable=True)
-    last_seen_at = Column(SA_DateTime(timezone=True), nullable=True)
+    # NEW: persist subscription info (migrate from in-memory USER_SUBSCRIPTIONS)
+    subscription_level = Column(String(64), nullable=True, default="FREE")
+    subscription_expires_at = Column(SA_DateTime(timezone=True), nullable=True)
+    subscription_score = Column(SA_Integer, nullable=False, default=0)
     created_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -299,19 +299,6 @@ def _get_user_zoneinfo(uid: str) -> ZoneInfo:
         try:
             s = db.get(UserSettings, uid)
             if s:
-                # check session override
-                if s.session_timezone and s.session_tz_expires_at:
-                    if s.session_tz_expires_at.tzinfo is None:
-                        # assume UTC stored
-                        expires = s.session_tz_expires_at.replace(tzinfo=timezone.utc)
-                    else:
-                        expires = s.session_tz_expires_at
-                    if datetime.now(timezone.utc) <= expires:
-                        try:
-                            return ZoneInfo(s.session_timezone)
-                        except Exception:
-                            pass
-                # fallback to persistent timezone
                 if s.timezone:
                     try:
                         return ZoneInfo(s.timezone)
@@ -517,16 +504,29 @@ def delete_plan(
 @app.put("/user/subscription/", tags=["User"])
 def update_subscription(
     payload: SubscriptionUpdate,
+    db: Session = Depends(get_db), 
     current_user: User = Depends(get_current_user),
 ):
     """
-    Kullanıcının abonelik seviyesini günceller (development: in-memory).
-    Body: { "level": "pro", "days": 30 }
-    Döner: { "uid": "...", "level": "...", "expires_at": "YYYY-MM-DD" }
+    Kullanıcının abonelik seviyesini veritabanında kalıcı olarak günceller.
     """
-    expires = datetime.now(timezone.utc).date() + timedelta(days=payload.days)
-    USER_SUBSCRIPTIONS[current_user.uid] = {"level": payload.level, "expires": expires}
-    return {"uid": current_user.uid, "level": payload.level, "expires_at": expires.isoformat()}
+    settings = get_or_create_user_settings(current_user.uid, db)
+
+    expires_dt = datetime.now(timezone.utc) + timedelta(days=payload.days)
+
+    settings.subscription_level = payload.level
+    settings.subscription_expires_at = expires_dt
+    settings.updated_at = datetime.now(timezone.utc)
+    
+    db.add(settings)
+    db.commit()
+    db.refresh(settings)
+
+    if current_user.uid in USER_SUBSCRIPTIONS:
+         USER_SUBSCRIPTIONS[current_user.uid]["level"] = payload.level
+         USER_SUBSCRIPTIONS[current_user.uid]["expires"] = expires_dt
+
+    return {"uid": current_user.uid, "level": settings.subscription_level, "expires_at": settings.subscription_expires_at.isoformat()}
 
 
 @app.get("/user/profile/", tags=["User"])
@@ -537,16 +537,16 @@ def user_profile(db: Session = Depends(get_db), current_user: User = Depends(get
     """
     uid = current_user.uid
     settings = get_or_create_user_settings(uid, db)
-    expires = USER_SUBSCRIPTIONS.get(uid, {}).get("expires")
+    expires = settings.subscription_expires_at
     return {
         "uid": uid,
-        "subscriptionLevel": USER_SUBSCRIPTIONS.get(uid, {}).get("level", current_user.subscription),
+        "subscriptionLevel": settings.subscription_level or current_user.subscription,
         "expires_at": expires.isoformat() if expires else None,
         "theme_preference": settings.theme or current_user.theme_preference,
         "language_code": settings.language_code or "en",
         "notifications_enabled": bool(settings.notifications_enabled),
         "username": settings.username,
-        "score": USER_SUBSCRIPTIONS.get(uid, {}).get("score", 0),
+        "score": int(settings.subscription_score or 0),
     }
 
 class ThemePreferenceUpdate(BaseModel):
@@ -607,19 +607,36 @@ def get_or_create_user_settings(uid: str, db: Session):
     settings = db.get(UserSettings, uid)
     if settings:
         return settings
+    # build from in-memory fallback if present
+    fallback = USER_SUBSCRIPTIONS.get(uid, {})
+    # try to extract subscription fields from fallback (if any)
+    subs_level = fallback.get("level") or fallback.get("subscription_level") or "FREE"
+    subs_expires = fallback.get("expires") or fallback.get("expires_at") or None
+    # normalize expires to aware datetime in UTC if string or datetime
+    subs_expires_dt = None
+    try:
+        if isinstance(subs_expires, str):
+            subs_expires_dt = datetime.fromisoformat(subs_expires)
+            if subs_expires_dt.tzinfo is None:
+                subs_expires_dt = subs_expires_dt.replace(tzinfo=timezone.utc)
+        elif isinstance(subs_expires, datetime):
+            subs_expires_dt = subs_expires.astimezone(timezone.utc)
+    except Exception:
+        subs_expires_dt = None
+    subs_score = int(fallback.get("score", fallback.get("subscription_score", 0) or 0))
 
-    # create a new settings row using in-memory defaults if present
-    info = USER_SUBSCRIPTIONS.get(uid, {})
     settings = UserSettings(
         uid=uid,
-        language_code=info.get("language_code"),
-        theme=info.get("theme"),
-        notifications_enabled=info.get("notifications_enabled", True),
-        timezone=info.get("timezone"),
-        country=info.get("country"),
-        city=info.get("city"),
-        username=info.get("username"),
-        last_seen_at=datetime.now(timezone.utc),
+        language_code=fallback.get("language_code") or fallback.get("language") or "en",
+        theme=fallback.get("theme") or "LIGHT",
+        notifications_enabled=bool(fallback.get("notifications_enabled", True)),
+        timezone=fallback.get("timezone") or "Europe/Istanbul",
+        country=fallback.get("country"),
+        city=fallback.get("city"),
+        username=fallback.get("username"),
+        subscription_level=subs_level,
+        subscription_expires_at=subs_expires_dt,
+        subscription_score=subs_score,
     )
     db.add(settings)
     db.commit()
