@@ -7,7 +7,11 @@ import json
 
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Depends, Security, logger, Request
+from fastapi import FastAPI, HTTPException, Depends, Security, Request
+import logging
+
+# proper module logger (use Python logging, not fastapi.logger which lacks .exception)
+logger = logging.getLogger(__name__)
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator
@@ -37,92 +41,28 @@ try:
     APScheduler_AVAILABLE = True
 except Exception:
     APScheduler_AVAILABLE = False
-# Optional firebase-admin for sending FCM push messages from server
-FIREBASE_ADMIN_AVAILABLE = False
-try:
-    import firebase_admin
-    from firebase_admin import credentials, messaging, auth
-    FIREBASE_ADMIN_AVAILABLE = True
-    FIREBASE_CREDENTIAL_PATH = os.getenv("FIREBASE_CREDENTIAL_PATH")
-    if FIREBASE_CREDENTIAL_PATH:
-        try:
-            cred = credentials.Certificate(FIREBASE_CREDENTIAL_PATH)
-            try:
-                firebase_admin.initialize_app(cred)
-            except Exception:
-                # already initialized
-                pass
-        except Exception:
-            FIREBASE_ADMIN_AVAILABLE = False
-except Exception:
-    FIREBASE_ADMIN_AVAILABLE = False
+# Firebase / firebase_admin initialization is handled in flow7_core.config
 
-# --- 1. CONFIGURATION & DATABASE SETUP ---
-# .env dosyasından ortam değişkenlerini yükle
-load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./flow7_revised.db")
-# Auth / Firebase strict flags
-REQUIRE_STRICT_AUTH = os.getenv("REQUIRE_STRICT_AUTH", "false").lower() == "true"
-FIREBASE_CHECK_REVOKED = os.getenv("FIREBASE_CHECK_REVOKED", "false").lower() == "true"
+# --- Modularized config, DB and models ---
+from flow7_core.config import DATABASE_URL, FIREBASE_ADMIN_AVAILABLE, FIREBASE_CHECK_REVOKED
+from flow7_core.db import engine, SessionLocal, Base, get_db
+from flow7_core.models import PlanORM, UserSettings, DeviceToken
+from flow7_core.auth import get_current_user, token_auth_scheme
+from flow7_core.state import USER_SUBSCRIPTIONS
 
-# Fail-fast: if strict auth is required but firebase admin isn't available, abort startup
-if REQUIRE_STRICT_AUTH and not FIREBASE_ADMIN_AVAILABLE:
-    raise RuntimeError("REQUIRE_STRICT_AUTH=true but firebase_admin is not configured/available. Set FIREBASE_CREDENTIAL_PATH or disable REQUIRE_STRICT_AUTH in development.")
+# bring helpers from modularized modules
+from flow7_core.notifications import get_time_obj_from_str, time_to_str, send_notification_to_user, _get_user_zoneinfo
+from flow7_core.scheduler import schedule_notification_for_plan, cancel_scheduled_plan, init_and_reschedule, shutdown, _reschedule_user_pending_plans_sync
 
-# SQLAlchemy motoru ve oturum oluşturucu
-# check_same_thread: False -> Sadece SQLite için gereklidir.
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
-
-
-# --- 2. DATABASE (ORM) MODEL ---
-class PlanORM(Base):
-    """Veritabanındaki 'plans' tablosunu temsil eden SQLAlchemy ORM modeli."""
-    __tablename__ = "plans"
-    id = Column(String, primary_key=True, index=True)
-    user_id = Column(String, index=True, nullable=False)
-    date = Column(SA_Date, index=True, nullable=False)
-    start_time = Column(SA_Time, nullable=False)
-    end_time = Column(SA_Time, nullable=False)
-    title = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    notified = Column(Boolean, default=False, nullable=False)
-    # UTC timestamp for when we intend to send notification (persisted so restarts keep intent)
-    notify_at = Column(SA_DateTime(timezone=True), nullable=True, index=True)
-    created_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-
-
-# --- NEW: persistent user settings ORM ---
-class UserSettings(Base):
-    __tablename__ = "user_settings"
-    uid = Column(String, primary_key=True, index=True)
-    language_code = Column(String(8), nullable=True)
-    theme = Column(String(16), nullable=True)
-    notifications_enabled = Column(Boolean, default=True, nullable=False)
-    timezone = Column(String(64), nullable=True)
-    country = Column(String(64), nullable=True)
-    city = Column(String(64), nullable=True)
-    username = Column(String(128), nullable=True)
-    # NEW: persist subscription info (migrate from in-memory USER_SUBSCRIPTIONS)
-    subscription_level = Column(String(64), nullable=True, default="FREE")
-    subscription_expires_at = Column(SA_DateTime(timezone=True), nullable=True)
-    subscription_score = Column(SA_Integer, nullable=False, default=0)
-    created_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-
-# Device token storage for push targets (server-side)
-class DeviceToken(Base):
-    __tablename__ = "device_tokens"
-    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid4()))
-    uid = Column(String, index=True, nullable=False)
-    token = Column(String, nullable=False, unique=True)
-    platform = Column(String(32), nullable=True)
-    created_at = Column(SA_DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-
-# Veritabanı ve tabloları oluştur (yeni tablolar dahil)
+# Ensure DB tables exist (models imported above)
 Base.metadata.create_all(bind=engine)
+
+# Lazy import firebase messaging/auth symbols if firebase_admin is installed/configured
+try:
+    from firebase_admin import messaging, auth
+except Exception:
+    messaging = None
+    auth = None
 
 
 # --- 3. PYDANTIC SCHEMAS (DATA TRANSFER OBJECTS) ---
@@ -181,118 +121,9 @@ class User(BaseModel):
     subscription: str = "FREE" # DB'den veya token'dan alınabilir
     theme_preference: str = "DARK"
 
-# Token doğrulama şeması
-token_auth_scheme = HTTPBearer()
+# Token doğrulama şeması provided by flow7_core.auth (imported above)
 
-# In-memory subscription store for development/testing.
-# Keys: user uid (str) -> {"level": str, "expires": date}
-USER_SUBSCRIPTIONS = {}
-
-def get_db():
-    """Her istek için bir veritabanı oturumu sağlayan FastAPI dependency'si."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-async def get_current_user(
-    token: HTTPAuthorizationCredentials = Security(token_auth_scheme),
-    db: Session = Depends(get_db)  # <-- 1. DB BAĞIMLILIĞINI BURAYA EKLEYİN
-) -> User:
-    """
-    Authorization başlığından gelen Bearer token'ı doğrular ve kullanıcıyı döndürür.
-    ...
-    """
-    id_token = token.credentials
-    if not id_token:
-        raise HTTPException(status_code=401, detail="Kimlik doğrulama token'ı sağlanmadı.")
-
-    # ... (Token doğrulama ve 'uid' alma mantığınız (satır 228-260) burada kalmalı) ...
-    if FIREBASE_ADMIN_AVAILABLE:
-        try:
-            decoded = auth.verify_id_token(id_token, check_revoked=FIREBASE_CHECK_REVOKED)
-            uid = decoded.get("uid") or decoded.get("sub") or decoded.get("user_id") or decoded.get("email")
-            if not uid:
-                raise HTTPException(status_code=401, detail="Token doğrulandı ama uid bulunamadı.")
-        except Exception as e:
-            raise HTTPException(status_code=401, detail=f"Invalid or revoked token: {e}", headers={"WWW-Authenticate": "Bearer"})
-    else:
-        # firebase_admin not available -> development fallback
-        try:
-            uid = id_token
-            if isinstance(id_token, str) and "." in id_token:
-                parts = id_token.split(".")
-                if len(parts) >= 2:
-                    payload_b64 = parts[1]
-                    rem = len(payload_b64) % 4
-                    if rem:
-                        payload_b64 += "=" * (4 - rem)
-                    payload_json = base64.urlsafe_b64decode(payload_b64.encode("utf-8")).decode("utf-8")
-                    payload = json.loads(payload_json)
-                    uid = payload.get("sub") or payload.get("user_id") or payload.get("uid") or payload.get("email") or uid
-        except Exception:
-            uid = id_token
-
-
-    # --- NEW: read persistent settings from DB so subscription/theme are authoritative ---
-    subscription = "FREE"
-    theme_preference = "DARK"
-    try:
-        # db = SessionLocal() # <-- 2. BU SATIRI SİLİN
-        # try:
-        settings = db.get(UserSettings, uid) # <-- 3. BAĞIMLILIKTAN GELEN 'db' KULLANILACAK
-        if settings:
-            subscription = settings.subscription_level or subscription
-            theme_preference = settings.theme or theme_preference
-        else:
-            # create default DB row from in-memory fallback if desired
-            fallback = USER_SUBSCRIPTIONS.get(uid, {})
-            settings = UserSettings(
-                uid=uid,
-                language_code=fallback.get("language_code") or "en",
-                theme=fallback.get("theme") or theme_preference,
-                notifications_enabled=bool(fallback.get("notifications_enabled", True)),
-                timezone=fallback.get("timezone") or "Europe/Istanbul",
-                country=fallback.get("country"),
-                city=fallback.get("city"),
-                username=fallback.get("username"),
-                subscription_level=fallback.get("level") or "FREE",
-            )
-            db.add(settings)
-            db.commit()
-            db.refresh(settings)
-            subscription = settings.subscription_level or subscription
-            theme_preference = settings.theme or theme_preference
-        # finally:
-        #     db.close() # <-- 4. BU SATIRI SİLİN
-    except Exception:
-        # On DB error fall back to in-memory values (best-effort)
-        sub_info = USER_SUBSCRIPTIONS.get(uid)
-        if sub_info:
-            subscription = sub_info.get("level", subscription)
-            theme_preference = sub_info.get("theme", theme_preference)
-
-    # Ensure a minimal in-memory entry exists for compatibility
-    if uid not in USER_SUBSCRIPTIONS:
-        USER_SUBSCRIPTIONS[uid] = {
-            "level": subscription,
-            "theme": theme_preference,
-            "timezone": None,
-            "notifications_enabled": True,
-        }
-
-    # Return the authenticated user model (subscription/theme populated from DB or fallback)
-    return User(uid=uid, subscription=subscription, theme_preference=theme_preference)
-
-# --- 5. DEPENDENCIES & UTILITIES ---
-def get_db():
-    """Her istek için bir veritabanı oturumu sağlayan FastAPI dependency'si."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# get_current_user and get_db are provided by flow7_core modules (imported above)
 
 # Abonelik limitleri
 SUBSCRIPTION_LIMITS_IN_DAYS = {"FREE": 14, "PRO": 60, "ULTRA": 365}
@@ -307,15 +138,7 @@ def check_planning_date_limit(user: User, target_date: PyDate):
             detail=f"{user.subscription} aboneliği ile en fazla {limit_date.isoformat()} tarihine kadar plan yapabilirsiniz.",
         )
 
-def get_time_obj_from_str(time_str: str) -> PyTime:
-    """HH:MM formatındaki string'i Python time nesnesine çevirir."""
-    return PyTime.fromisoformat(time_str)
-
-def time_to_str(t: Optional[PyTime]) -> Optional[str]:
-    """Python time nesnesini 'HH:MM' stringine çevirir (None ise None döner)."""
-    if t is None:
-        return None
-    return t.strftime("%H:%M")
+# time helpers are provided by flow7_core.notifications and imported at module top
 
 def plan_to_out(plan: PlanORM) -> dict:
     """PlanORM nesnesini API response'a uygun primitive dict'e çevirir."""
@@ -331,35 +154,7 @@ def plan_to_out(plan: PlanORM) -> dict:
     }
 
 
-def _get_user_zoneinfo(uid: str) -> ZoneInfo:
-    """
-    Resolve the effective ZoneInfo for a user.
-    Priority:
-      1. session_timezone (temporary) if set and not expired
-      2. persistent timezone stored in UserSettings.timezone
-      3. fallback USER_SUBSCRIPTIONS timezone or Europe/Istanbul
-    """
-    try:
-        db = SessionLocal()
-        try:
-            s = db.get(UserSettings, uid)
-            if s:
-                if s.timezone:
-                    try:
-                        return ZoneInfo(s.timezone)
-                    except Exception:
-                        pass
-        finally:
-            db.close()
-    except Exception:
-        pass
-    # last fallback: in-memory or sensible default
-    info = USER_SUBSCRIPTIONS.get(uid, {})
-    tz_str = info.get("timezone", "Europe/Istanbul")
-    try:
-        return ZoneInfo(tz_str)
-    except Exception:
-        return ZoneInfo("Europe/Istanbul")
+# _get_user_zoneinfo is implemented in flow7_core.notifications and imported at module top
 
 
 # --- 6. API ENDPOINTS (ROUTING) ---
@@ -406,7 +201,15 @@ def create_plan(
     )).scalars().first()
 
     if existing_plan:
-        raise HTTPException(status_code=409, detail="Belirtilen zaman aralığında mevcut bir planınız var (zaman çakışması).")
+        # Return conflict with the conflicting plan details to help the client show a helpful message
+        conflict = {
+            "id": existing_plan.id,
+            "date": existing_plan.date.isoformat() if getattr(existing_plan, 'date', None) else None,
+            "start_time": time_to_str(existing_plan.start_time),
+            "end_time": time_to_str(existing_plan.end_time),
+            "title": existing_plan.title,
+        }
+        raise HTTPException(status_code=409, detail={"message": "Belirtilen zaman aralığında mevcut bir planınız var (zaman çakışması).", "conflict": conflict})
 
     new_plan = PlanORM(
         id=str(uuid4()),
@@ -466,6 +269,7 @@ def update_plan(
     plan_data: PlanUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    force: Optional[bool] = False,  # query param to allow forcing update by removing conflicts
 ):
     """
     Mevcut bir planı günceller.
@@ -482,16 +286,45 @@ def update_plan(
     end_time_obj = get_time_obj_from_str(plan_data.end_time)
 
     # Kendisi hariç diğer planlarla çakışma kontrolü
-    existing_plan = db.execute(select(PlanORM).where(
+    conflicts = db.execute(select(PlanORM).where(
         PlanORM.id != plan_id,
         PlanORM.user_id == current_user.uid,
         PlanORM.date == plan_data.date,
         PlanORM.start_time < end_time_obj,
         PlanORM.end_time > start_time_obj
-    )).scalars().first()
+    )).scalars().all()
 
-    if existing_plan:
-        raise HTTPException(status_code=409, detail="Güncellenen zaman aralığı başka bir planla çakışıyor.")
+    if conflicts:
+        if force:
+            # delete all conflicting plans (user asked to force the update)
+            deleted = []
+            try:
+                for cp in conflicts:
+                    deleted.append(cp.id)
+                    try:
+                        # cancel scheduled jobs if any
+                        cancel_scheduled_plan(cp.id)
+                    except Exception:
+                        pass
+                    db.delete(cp)
+                db.commit()
+                print(f"[FORCE-UPDATE] deleted conflicting plans for user {current_user.uid}: {deleted}")
+            except Exception:
+                db.rollback()
+                raise HTTPException(status_code=500, detail="Failed to remove conflicting plans for force update")
+        else:
+            # return all conflicts so client can show them
+            conflict_list = [
+                {
+                    "id": c.id,
+                    "date": c.date.isoformat() if getattr(c, 'date', None) else None,
+                    "start_time": time_to_str(c.start_time),
+                    "end_time": time_to_str(c.end_time),
+                    "title": c.title,
+                }
+                for c in conflicts
+            ]
+            raise HTTPException(status_code=409, detail={"message": "Güncellenen zaman aralığı başka bir planla çakışıyor.", "conflicts": conflict_list})
 
     # Verileri güncelle (time alanlarını time objesine çevir)
     db_plan.date = plan_data.date
@@ -704,376 +537,36 @@ def _user_notifications_enabled(uid: str) -> bool:
     return bool(USER_SUBSCRIPTIONS.get(uid, {}).get("notifications_enabled", True))
 
 
-def send_notification_to_user(uid: str, payload: dict):
-    """
-    Send a formatted notification to all device tokens of the given user.
-    Payload example: {"title":..., "description":..., "start_time":..., "end_time":..., "date":...}
-    """
-    try:
-        db = SessionLocal()
-        try:
-            rows = db.execute(select(DeviceToken.token).where(DeviceToken.uid == uid)).scalars().all()
-        finally:
-            db.close()
-
-        if not rows:
-            print(f"[NOTIFY] no device tokens for uid={uid}, payload={payload}")
-            return
-
-        # Resolve effective timezone for formatting times
-        try:
-            tz = _get_user_zoneinfo(uid)
-        except Exception:
-            tz = ZoneInfo("UTC")
-
-        title = payload.get("title", "Flow7")
-        description = payload.get("description", "") or ""
-
-        # format start/end times into user's timezone if date provided
-        start_display = payload.get("start_time", "")
-        end_display = payload.get("end_time", "")
-        try:
-            date_str = payload.get("date")
-            if date_str and start_display:
-                d = PyDate.fromisoformat(date_str)
-                st = PyTime.fromisoformat(start_display)
-                local_dt = datetime.combine(d, st).replace(tzinfo=tz)
-                start_display = local_dt.strftime("%H:%M")
-            if date_str and end_display:
-                et = PyTime.fromisoformat(end_display)
-                end_local = datetime.combine(PyDate.fromisoformat(date_str), et).replace(tzinfo=tz)
-                end_display = end_local.strftime("%H:%M")
-        except Exception:
-            # leave original strings if parsing fails
-            pass
-
-        # Build notification body per required format:
-        # Title
-        # Description
-        # start_time - end_time
-        body_lines = [title]
-        if description:
-            body_lines.append(description)
-        times_line = ""
-        if start_display and end_display:
-            times_line = f"{start_display} - {end_display}"
-        elif start_display:
-            times_line = f"{start_display}"
-        if times_line:
-            body_lines.append(times_line)
-        body = "\n".join(body_lines)
-
-        # Send via firebase-admin if configured
-        # Be robust: some firebase_admin versions or runtime environments may not have
-        # messaging.send_multicast or may behave differently. Try multicast first,
-        # on failure fall back to per-token send with retries and exponential backoff.
-        FIREBASE_RETRIES = int(os.getenv("FIREBASE_SEND_RETRIES", "3"))
-        FIREBASE_BACKOFF = float(os.getenv("FIREBASE_SEND_BACKOFF", "0.5"))
-
-        if FIREBASE_ADMIN_AVAILABLE:
-            try:
-                tokens = list(rows)
-                data_payload = {"type": "plan_notification", "date": payload.get("date",""), "start_time": payload.get("start_time",""), "end_time": payload.get("end_time","")}
-
-                # Try multicast if available
-                if hasattr(messaging, "send_multicast") and hasattr(messaging, "MulticastMessage"):
-                    try:
-                        message = messaging.MulticastMessage(
-                            notification=messaging.Notification(title=title, body=body),
-                            data=data_payload,
-                            tokens=tokens,
-                        )
-                        response = messaging.send_multicast(message)
-                        # response may have success_count/failure_count and responses list
-                        succ = getattr(response, "success_count", None)
-                        fail = getattr(response, "failure_count", None)
-                        if fail:
-                            for idx, resp in enumerate(getattr(response, "responses", [])):
-                                if not getattr(resp, "success", False):
-                                    try:
-                                        print(f"[NOTIFY] failed token: {tokens[idx]} -> {getattr(resp, 'exception', '<err>')}")
-                                    except Exception:
-                                        pass
-                        print(f"[NOTIFY] multicast result uid={uid}: success={succ} fail={fail}")
-                        return
-                    except Exception as e:
-                        print(f"[NOTIFY] multicast send failed: {e} -- falling back to per-token send")
-
-                # Fallback: send per-token (with retries)
-                for token in tokens:
-                    sent = False
-                    last_exc = None
-                    for attempt in range(1, FIREBASE_RETRIES + 1):
-                        try:
-                            # build a simple message for single token targets
-                            if hasattr(messaging, "Message"):
-                                msg = messaging.Message(notification=messaging.Notification(title=title, body=body), data=data_payload, token=token)
-                                res = messaging.send(msg)
-                            else:
-                                # As a last resort, try send function with raw args
-                                res = messaging.send(messaging.Notification(title=title, body=body), token=token)
-                            sent = True
-                            break
-                        except Exception as e:
-                            last_exc = e
-                            sleep_time = FIREBASE_BACKOFF * (2 ** (attempt - 1))
-                            print(f"[NOTIFY] token send attempt {attempt}/{FIREBASE_RETRIES} failed for token={token}: {e}; retrying in {sleep_time}s")
-                            time.sleep(sleep_time)
-                    if not sent:
-                        print(f"[NOTIFY] failed to send to token {token} after {FIREBASE_RETRIES} attempts: {last_exc}")
-                # after per-token attempts
-                return
-            except Exception as e:
-                print(f"[NOTIFY] firebase-admin send error (outer): {e} -- falling back to log")
-
-        # fallback to logging (or other transports)
-        print(f"[NOTIFY-LOG] uid={uid} tokens={len(rows)} title={title} body={body} payload={payload}")
-    except Exception as e:
-        print(f"[NOTIFY] send error for uid={uid}: {e}")
+# send_notification_to_user is implemented in flow7_core.notifications and imported at module top
 
 
-def schedule_notification_for_plan(plan: PlanORM):
-    """
-    Schedule a single-run APScheduler job for the given plan and persist notify_at in DB.
-    Job id: plan_{plan.id}
-    """
-    try:
-        if not APScheduler_AVAILABLE:
-            # fallback to logging-only behavior
-            user_zone = _get_user_zoneinfo(plan.user_id)
-            try:
-                local_dt = datetime.combine(plan.date, plan.start_time).replace(tzinfo=user_zone)
-                notify_dt_utc = local_dt.astimezone(timezone.utc)
-                print(f"[SCHEDULE-LOG] plan {plan.id} would be scheduled at utc={notify_dt_utc.isoformat()} (user_zone={user_zone})")
-            except Exception:
-                notify_dt_utc = datetime.combine(plan.date, plan.start_time).replace(tzinfo=timezone.utc)
-                print(f"[SCHEDULE-LOG] plan {plan.id} would be scheduled (fallback) utc={notify_dt_utc.isoformat()}")
-            # persist notify_at even in logging-only mode
-            try:
-                db = SessionLocal()
-                try:
-                    p = db.get(PlanORM, plan.id)
-                    if p:
-                        p.notify_at = notify_dt_utc
-                        db.add(p)
-                        db.commit()
-                finally:
-                    db.close()
-            except Exception:
-                pass
-            return
-
-        # compute notify datetime
-        user_zone = _get_user_zoneinfo(plan.user_id)
-        try:
-            local_dt = datetime.combine(plan.date, plan.start_time).replace(tzinfo=user_zone)
-            notify_dt_utc = local_dt.astimezone(timezone.utc)
-        except Exception:
-            notify_dt_utc = datetime.combine(plan.date, plan.start_time).replace(tzinfo=timezone.utc)
-
-        # persist notify_at to DB so restarts can re-schedule deterministically
-        try:
-            db = SessionLocal()
-            try:
-                p = db.get(PlanORM, plan.id)
-                if p:
-                    p.notify_at = notify_dt_utc
-                    db.add(p)
-                    db.commit()
-                    db.refresh(p)
-            finally:
-                db.close()
-        except Exception as e:
-            print(f"[SCHEDULE] warning: failed to persist notify_at for plan {plan.id}: {e}")
-
-        job_id = f"plan_{plan.id}"
-        # ensure scheduler exists
-        if "scheduler" in globals() and globals()["scheduler"] is not None:
-            try:
-                globals()["scheduler"].add_job(
-                    func=dispatch_notification_job,
-                    trigger="date",
-                    run_date=notify_dt_utc,
-                    id=job_id,
-                    args=[plan.id],
-                    replace_existing=True,
-                    misfire_grace_time=60,
-                )
-                print(f"[SCHEDULE] scheduled job {job_id} at {notify_dt_utc.isoformat()}")
-                return
-            except Exception as e:
-                print(f"[SCHEDULE] failed to add job to scheduler: {e}")
-
-        # fallback: just log
-        print(f"[SCHEDULE-LOG] plan {plan.id} would be scheduled at utc={notify_dt_utc.isoformat()}")
-    except Exception:
-        logger.exception("Error while scheduling plan %s", getattr(plan, "id", "<unknown>"))
+# schedule_notification_for_plan is implemented in flow7_core.scheduler and imported at module top
 
 
-def cancel_scheduled_plan(plan_id: str):
-    """
-    Placeholder: daha gelişmiş scheduler'ı iptal etmek için kullanılır; şimdilik no-op.
-    """
-    try:
-        job_id = f"plan_{plan_id}"
-        if "scheduler" in globals() and globals()["scheduler"] is not None:
-            try:
-                globals()["scheduler"].remove_job(job_id)
-                print(f"[CANCEL] removed job {job_id}")
-                return
-            except Exception:
-                # job may not exist
-                pass
-        print(f"[CANCEL-LOG] would cancel job {job_id} (scheduler not available or job missing)")
-    except Exception:
-        logger.exception("Error cancelling scheduled plan %s", plan_id)
+# Note: `cancel_scheduled_plan` is imported from `flow7_core.scheduler` at module top.
+# Do NOT define a local function with the same name here — that would shadow the imported
+# function and (if implemented incorrectly) can introduce recursion. Calls in this module
+# (e.g. in update/delete flows) should resolve to the imported implementation.
 
 
-def dispatch_notification_job(plan_id: str):
-    """
-    Job callback executed by the scheduler. Loads the plan, checks user prefs and sends notification.
-    Marks plan.notified = True on success or when notifications are disabled.
-    """
-    try:
-        db = SessionLocal()
-        try:
-            plan = db.get(PlanORM, plan_id)
-            if not plan:
-                print(f"[DISPATCH] plan {plan_id} not found; skipping")
-                return
-            if plan.notified:
-                print(f"[DISPATCH] plan {plan_id} already notified; skipping")
-                return
-
-            if not _user_notifications_enabled(plan.user_id):
-                plan.notified = True
-                db.add(plan)
-                db.commit()
-                print(f"[DISPATCH] notifications disabled for user {plan.user_id}; marking plan {plan_id} as notified")
-                return
-
-            payload = {
-                "title": plan.title,
-                "description": plan.description or "",
-                "start_time": time_to_str(plan.start_time),
-                "end_time": time_to_str(plan.end_time),
-                "date": plan.date.isoformat(),
-            }
-
-            try:
-                send_notification_to_user(plan.user_id, payload)
-            except Exception as e:
-                print(f"[DISPATCH] failed to send notification for plan {plan_id}: {e}")
-
-            plan.notified = True
-            db.add(plan)
-            db.commit()
-            print(f"[DISPATCH] finished job for plan {plan_id}")
-        finally:
-            db.close()
-    except Exception:
-        logger.exception("Unhandled error in dispatch_notification_job for plan %s", plan_id)
-
-
-def _init_scheduler(start: bool = True, blocking: bool = False):
-    """
-    Initialize globals()['scheduler'] with a persistent SQLAlchemyJobStore.
-    If APScheduler isn't installed, this becomes a no-op.
-    If blocking=True, uses BlockingScheduler and .start() will block the current thread.
-    """
-    if not APScheduler_AVAILABLE:
-        print("[SCHEDULER] APScheduler not available; scheduler disabled")
-        globals()["scheduler"] = None
-        return None
-
-    if globals().get("scheduler") is not None:
-        return globals()["scheduler"]
-
-    jobstores = {"default": SQLAlchemyJobStore(url=DATABASE_URL)}
-    try:
-        if blocking:
-            sched = BlockingScheduler(jobstores=jobstores, timezone=timezone.utc)
-            globals()["scheduler"] = sched
-            return sched
-        else:
-            sched = BackgroundScheduler(jobstores=jobstores, timezone=timezone.utc)
-            globals()["scheduler"] = sched
-            if start:
-                try:
-                    sched.start()
-                    print("[SCHEDULER] background scheduler started")
-                except Exception as e:
-                    print(f"[SCHEDULER] failed to start scheduler: {e}")
-            return sched
-    except Exception as e:
-        print(f"[SCHEDULER] error initializing scheduler: {e}")
-        globals()["scheduler"] = None
-        return None
+# dispatch logic is implemented in flow7_core.scheduler as _dispatch_notification_job
 
 
 @app.on_event("startup")
 def _on_startup_init_scheduler():
-    """FastAPI startup: initialize background scheduler and (best-effort) re-schedule pending plans."""
+    """App startup: initialize the modular scheduler and reschedule pending plans."""
     try:
-        sched = _init_scheduler(start=True, blocking=False)
-        # re-schedule pending (un-notified) plans for the near future
-        try:
-            now_utc = datetime.now(timezone.utc)
-            start_date = (now_utc - timedelta(days=1)).date()
-            end_date = (now_utc + timedelta(days=7)).date()
-            db = SessionLocal()
-            try:
-                plans = db.execute(select(PlanORM).where(
-                    PlanORM.notified == False,
-                    PlanORM.date.between(start_date, end_date)
-                )).scalars().all()
-                for p in plans:
-                    try:
-                        # If we have a persisted notify_at and it's in the future, prefer it;
-                        # otherwise recompute from current user timezone (useful after timezone changes).
-                        if getattr(p, "notify_at", None):
-                            try:
-                                if p.notify_at > now_utc:
-                                    # schedule exactly at persisted UTC time
-                                    if "scheduler" in globals() and globals()["scheduler"] is not None:
-                                        job_id = f"plan_{p.id}"
-                                        globals()["scheduler"].add_job(
-                                            func=dispatch_notification_job,
-                                            trigger="date",
-                                            run_date=p.notify_at,
-                                            id=job_id,
-                                            args=[p.id],
-                                            replace_existing=True,
-                                            misfire_grace_time=60,
-                                        )
-                                        print(f"[SCHEDULE] scheduled job {job_id} from persisted notify_at {p.notify_at.isoformat()}")
-                                        continue
-                            except Exception:
-                                pass
-                        # otherwise compute fresh schedule (respects current DB timezone for the user)
-                        schedule_notification_for_plan(p)
-                    except Exception:
-                        pass
-            finally:
-                db.close()
-        except Exception:
-            pass
+        init_and_reschedule()
     except Exception:
-        logger.exception("Error in startup scheduler initialization")
+        logger.exception("Error initializing scheduler on startup")
 
 
 @app.on_event("shutdown")
 def _on_shutdown_stop_scheduler():
     try:
-        sched = globals().get("scheduler")
-        if sched is not None:
-            try:
-                sched.shutdown(wait=False)
-                print("[SCHEDULER] scheduler shutdown")
-            except Exception:
-                pass
+        shutdown()
     except Exception:
-        pass
+        logger.exception("Error shutting down scheduler on stop")
 
 # --- ADD: Timezone update endpoint ---
 class TimezoneUpdate(BaseModel):
@@ -1207,52 +700,7 @@ async def timezone_header_middleware(request: Request, call_next):
     response = await call_next(request)
     return response
 
-# --- NEW: Persistent timezone endpoint + reschedule helper ---
-def _reschedule_user_pending_plans_sync(uid: str, db: Optional[Session] = None):
-    """
-    Synchronous helper to re-schedule (cancel + schedule) pending plans for a user.
-    Intended to be run in a background thread (so it doesn't block request).
-    """
-    own_session = False
-    try:
-        if db is None:
-            db = SessionLocal()
-            own_session = True
-        # fetch user's pending (notified==False) plans in a reasonable window
-        now_utc = datetime.now(timezone.utc)
-        start_date = (now_utc - timedelta(days=1)).date()
-        end_date = (now_utc + timedelta(days=30)).date()  # reschedule for next 30 days
-        plans = db.execute(select(PlanORM).where(
-            PlanORM.user_id == uid,
-            PlanORM.notified == False,
-            PlanORM.date.between(start_date, end_date)
-        )).scalars().all()
-
-        # For each plan: cancel existing job (if any) then schedule anew
-        for p in plans:
-            try:
-                cancel_scheduled_plan(p.id)
-            except Exception:
-                pass
-            try:
-                # only schedule if notify time is in the future
-                user_zone = _get_user_zoneinfo(uid)
-                try:
-                    local_dt = datetime.combine(p.date, p.start_time).replace(tzinfo=user_zone)
-                    notify_dt_utc = local_dt.astimezone(timezone.utc)
-                except Exception:
-                    notify_dt_utc = datetime.combine(p.date, p.start_time).replace(tzinfo=timezone.utc)
-                if notify_dt_utc > now_utc:
-                    schedule_notification_for_plan(p)
-            except Exception:
-                # continue with other plans even if one fails
-                pass
-    finally:
-        if own_session and db is not None:
-            try:
-                db.close()
-            except Exception:
-                pass
+# _reschedule_user_pending_plans_sync is implemented in flow7_core.scheduler and imported at module top
 
 
 @app.put("/user/timezone/", tags=["User"])
