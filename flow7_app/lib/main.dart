@@ -10,6 +10,7 @@ import 'locale_provider.dart';
 import 'providers/user_provider.dart';
 import 'auth_gate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 String backendBaseUrl = "http://127.0.0.1:8000";
 
@@ -89,11 +90,10 @@ class MyApp extends StatelessWidget {
               primary: brandDeep,
               secondary: brandViolet,
               tertiary: brandAccent,
-              background: bgLight,
               surface: cardLight,
               onPrimary: Colors.white,
             ),
-            appBarTheme: AppBarTheme(backgroundColor: Colors.transparent, foregroundColor: const Color(0xFF042028), elevation: 0),
+            appBarTheme: const AppBarTheme(backgroundColor: Colors.transparent, foregroundColor: Color(0xFF042028), elevation: 0),
             cardTheme: CardThemeData(color: cardLight, elevation: 8, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r))),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
@@ -103,7 +103,15 @@ class MyApp extends StatelessWidget {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
               ),
             ),
-            textTheme: ThemeData.light().textTheme.apply(bodyColor: const Color(0xFF042028)),
+            // Use a nicer font pairing: Poppins for body text and Sora for headings
+            textTheme: (() {
+              final base = GoogleFonts.poppinsTextTheme(ThemeData.light().textTheme);
+              return base.copyWith(
+                headlineLarge: GoogleFonts.sora(textStyle: base.headlineLarge?.copyWith(fontWeight: FontWeight.w700, fontSize: 28)),
+                headlineMedium: GoogleFonts.sora(textStyle: base.headlineMedium?.copyWith(fontWeight: FontWeight.w600, fontSize: 20)),
+                titleLarge: GoogleFonts.sora(textStyle: base.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
+              ).apply(bodyColor: const Color(0xFF042028));
+            })(),
             visualDensity: VisualDensity.adaptivePlatformDensity,
             pageTransitionsTheme: const PageTransitionsTheme(builders: { TargetPlatform.iOS: CupertinoPageTransitionsBuilder(), TargetPlatform.android: FadeUpwardsPageTransitionsBuilder() }),
           ),
@@ -114,11 +122,10 @@ class MyApp extends StatelessWidget {
               primary: brandDarkPrimary,
               secondary: brandDarkAccent,
               tertiary: brandDeep,
-              background: bgDark,
               surface: cardDark,
               onPrimary: Colors.white,
             ),
-            appBarTheme: AppBarTheme(backgroundColor: Colors.transparent, foregroundColor: Colors.white, elevation: 0),
+            appBarTheme: const AppBarTheme(backgroundColor: Colors.transparent, foregroundColor: Colors.white, elevation: 0),
             cardTheme: CardThemeData(color: cardDark, elevation: 14, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r))),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
@@ -128,7 +135,15 @@ class MyApp extends StatelessWidget {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
               ),
             ),
-            textTheme: ThemeData.dark().textTheme.apply(bodyColor: Colors.white),
+            // Dark theme uses the same pairing (Poppins body, Sora headings)
+            textTheme: (() {
+              final base = GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme);
+              return base.copyWith(
+                headlineLarge: GoogleFonts.sora(textStyle: base.headlineLarge?.copyWith(fontWeight: FontWeight.w700, fontSize: 28)),
+                headlineMedium: GoogleFonts.sora(textStyle: base.headlineMedium?.copyWith(fontWeight: FontWeight.w600, fontSize: 20)),
+                titleLarge: GoogleFonts.sora(textStyle: base.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
+              ).apply(bodyColor: Colors.white);
+            })(),
           ),
           home: child,
         );

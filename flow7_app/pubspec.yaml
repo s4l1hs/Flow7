@@ -27,6 +27,7 @@ dependencies:
   google_generative_ai: ^0.4.7
   flutter_slidable: ^4.0.3
   # Diğer paketleri terminalden ekleyeceğiz
+  google_fonts: ^5.0.0
 
 dev_dependencies:
   flutter_test:
