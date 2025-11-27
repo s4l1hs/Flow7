@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import '../providers/user_provider.dart';
+import '../components/animated_fade_in.dart';
 
 class SubscriptionPage extends StatefulWidget {
   final String idToken;
@@ -137,13 +138,15 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.symmetric(horizontal: 8.w),
                 itemCount: plans.length,
-                physics: BouncingScrollPhysics(),
+                physics: const BouncingScrollPhysics(),
                 itemBuilder: (context, index) {
                   final plan = plans[index];
-                  return Padding(
+                  final card = Padding(
                     padding: EdgeInsets.symmetric(horizontal: 6.w), // küçük yatay boşluk her kart arasında
                     child: _buildSubscriptionCard(theme, localizations, plan, currentLevel),
                   );
+
+                  return StaggeredFadeIn(index: index, baseDelay: const Duration(milliseconds: 30), stepDelay: const Duration(milliseconds: 90), duration: const Duration(milliseconds: 520), offsetY: 0.14, child: card);
                 },
               ),
             ),
@@ -152,7 +155,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
               child: Text(localizations.subscriptionNote, style: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.7) ?? Colors.grey.shade400, fontSize: 12.sp), textAlign: TextAlign.center),
             ),
             SizedBox(height: 6.h),
-            if (_isProcessing) Center(child: Padding(padding: EdgeInsets.only(top: 6.h), child: CircularProgressIndicator()))
+            if (_isProcessing) Center(child: Padding(padding: EdgeInsets.only(top: 6.h), child: const CircularProgressIndicator()))
           ],
         ),
       ),
@@ -233,7 +236,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                         Container(
                           padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: [Colors.white24, Colors.white10]),
+                            gradient: const LinearGradient(colors: [Colors.white24, Colors.white10]),
                             color: Colors.white24,
                             borderRadius: BorderRadius.circular(8.r),
                           ),
@@ -248,7 +251,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                             ],
                           ),
                         ),
-                      Spacer(),
+                      const Spacer(),
                       if (!isFree)
                         Container(
                           padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),

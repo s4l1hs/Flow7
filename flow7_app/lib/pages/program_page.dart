@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:collection/collection.dart';
 import '../services/api_service.dart';
+import '../components/animated_fade_in.dart';
 import '../l10n/app_localizations.dart';
 import 'dart:ui';
 import 'dart:math' as math;
@@ -18,7 +19,7 @@ class ProgramPage extends StatefulWidget {
 class ProgramPageState extends State<ProgramPage> {
   final ApiService _apiService = ApiService();
   late PageController _pageController;
-  DateTime _baseWeekStart = _getStartOfWeek(DateTime.now());
+  final DateTime _baseWeekStart = _getStartOfWeek(DateTime.now());
   DateTime _currentWeekStart;
   DateTime? _selectedDay;
   int _weekLimit = 2;
@@ -275,7 +276,11 @@ class ProgramPageState extends State<ProgramPage> {
 
     showDialog(context: context, builder: (context) {
       return PlanDialog(initialDate: date, plan: plan, onSave: (data) {
-        if (isEditing) _onUpdatePlan(plan['id'].toString(), data); else _onCreatePlan(data);
+        if (isEditing) {
+          _onUpdatePlan(plan['id'].toString(), data);
+        } else {
+          _onCreatePlan(data);
+        }
       });
     });
   }
@@ -366,53 +371,65 @@ class ProgramPageState extends State<ProgramPage> {
         final dateKey = DateFormat('yyyy-MM-dd').format(normalized);
         final hasPlans = _groupedPlans[dateKey]?.isNotEmpty ?? false;
 
-        return Expanded(child: Padding(padding: EdgeInsets.symmetric(horizontal: 6.w), child: GestureDetector(
-          onTap: () => setState(() => _selectedDay = normalized),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 320),
-            padding: EdgeInsets.symmetric(vertical: 10.h),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16.r),
-              gradient: isSelected ? LinearGradient(colors: [Theme.of(context).colorScheme.primary.withOpacity(0.18), Theme.of(context).colorScheme.tertiary.withOpacity(0.06)]) : null,
-              border: isSelected ? Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.12)) : Border.all(color: Colors.transparent),
-              boxShadow: isSelected ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.06), blurRadius: 18.r, offset: Offset(0,8.h))] : null,
-            ),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              SizedBox(
-                height: 18.h,
-                child: Center(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      dfDay.format(normalized),
-                      style: TextStyle(fontSize: isArabic ? 24.sp : 32.sp, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600, color: isSelected ? Theme.of(context).colorScheme.tertiary : null),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+        return Expanded(
+          child: StaggeredFadeIn(
+            index: index,
+            baseDelay: const Duration(milliseconds: 6),
+            stepDelay: const Duration(milliseconds: 22),
+            duration: const Duration(milliseconds: 340),
+            offsetY: 0.22,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6.w),
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedDay = normalized),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 320),
+                  padding: EdgeInsets.symmetric(vertical: 10.h),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16.r),
+                    gradient: isSelected ? LinearGradient(colors: [Theme.of(context).colorScheme.primary.withOpacity(0.18), Theme.of(context).colorScheme.tertiary.withOpacity(0.06)]) : null,
+                    border: isSelected ? Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.12)) : Border.all(color: Colors.transparent),
+                    boxShadow: isSelected ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.06), blurRadius: 18.r, offset: Offset(0,8.h))] : null,
                   ),
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    SizedBox(
+                      height: 18.h,
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            dfDay.format(normalized),
+                            style: TextStyle(fontSize: isArabic ? 24.sp : 32.sp, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600, color: isSelected ? Theme.of(context).colorScheme.tertiary : null),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 6.h),
+                    Container(
+                      width: 46.r,
+                      height: 46.r,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: isSelected
+                            ? LinearGradient(colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.tertiary])
+                            : (isToday ? LinearGradient(colors: [Colors.grey.shade700, Colors.grey.shade600]) : null),
+                      ),
+                      alignment: Alignment.center,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(dfNum.format(normalized), style: TextStyle(color: (isSelected || isToday) ? Colors.white : null, fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                    SizedBox(height: 6.h),
+                    if (hasPlans) Container(width: 8.w, height: 8.w, decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondary, shape: BoxShape.circle))
+                  ]),
                 ),
               ),
-              SizedBox(height: 6.h),
-              Container(
-                width: 46.r,
-                height: 46.r,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: isSelected
-                      ? LinearGradient(colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.tertiary])
-                      : (isToday ? LinearGradient(colors: [Colors.grey.shade700, Colors.grey.shade600]) : null),
-                ),
-                alignment: Alignment.center,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(dfNum.format(normalized), style: TextStyle(color: (isSelected || isToday) ? Colors.white : null, fontWeight: FontWeight.w700)),
-                ),
-              ),
-              SizedBox(height: 6.h),
-              if (hasPlans) Container(width: 8.w, height: 8.w, decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondary, shape: BoxShape.circle))
-            ]),
+            ),
           ),
-        )));
+        );
       })),
     );
   }
@@ -440,7 +457,7 @@ class ProgramPageState extends State<ProgramPage> {
       final desc = (plan['description'] ?? '').toString();
       final color = Theme.of(context).colorScheme.primary;
 
-      return GestureDetector(
+      final item = GestureDetector(
         onTap: () => showPlanDialog(plan: plan),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           SizedBox(width: 72.w, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [Text(start, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700)), if (end.isNotEmpty) Text(end, style: TextStyle(fontSize: 11.sp)), SizedBox(height: 6.h)])),
@@ -494,6 +511,14 @@ class ProgramPageState extends State<ProgramPage> {
             ),
           )
      ]));
+
+        return StaggeredFadeIn(
+          index: index,
+          baseDelay: const Duration(milliseconds: 16),
+          stepDelay: const Duration(milliseconds: 36),
+          duration: const Duration(milliseconds: 380),
+          offsetY: 0.26,
+          child: item);
     });
   }
 
@@ -584,7 +609,7 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
   }
 
   Future<void> _selectTime(BuildContext context, TextEditingController controller) async {
-    final parsed = _parseHm(controller.text) ?? TimeOfDay(hour: 9, minute: 0);
+    final parsed = _parseHm(controller.text) ?? const TimeOfDay(hour: 9, minute: 0);
     final selected = await showTimePicker(context: context, initialTime: parsed);
     if (selected != null) controller.text = '${selected.hour.toString().padLeft(2, '0')}:${selected.minute.toString().padLeft(2, '0')}';
   }
@@ -656,7 +681,7 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                             Container(
                               width: 56.r,
                               height: 56.r,
-                              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white24),
+                              decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white24),
                               child: Center(
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
@@ -723,7 +748,7 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                                           isDense: true,
                                           contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
                                           filled: true,
-                                          fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
+                                          fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceContainerHighest,
                                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
                                         ),
                                         style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700),
@@ -743,7 +768,7 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                                           labelText: loc.startLabel,
                                           prefixIcon: Icon(Icons.schedule, size: 18.sp),
                                           filled: true,
-                                          fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
+                                          fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceContainerHighest,
                                           contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
                                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
                                           suffixIcon: Icon(Icons.access_time_outlined, size: 18.sp),
@@ -764,7 +789,7 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                                           labelText: loc.endLabel,
                                           prefixIcon: Icon(Icons.schedule, size: 18.sp),
                                           filled: true,
-                                          fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
+                                          fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceContainerHighest,
                                           contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
                                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
                                           suffixIcon: Icon(Icons.access_time_outlined, size: 18.sp),
@@ -800,9 +825,9 @@ class _PlanDialogState extends State<PlanDialog> with SingleTickerProviderStateM
                                       decoration: InputDecoration(
                                         labelText: loc.descriptionLabel,
                                         alignLabelWithHint: true,
-                                        prefixIcon: Padding(padding: EdgeInsets.only(bottom: 8.h), child: Icon(Icons.short_text)),
+                                        prefixIcon: Padding(padding: EdgeInsets.only(bottom: 8.h), child: const Icon(Icons.short_text)),
                                         filled: true,
-                                        fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceVariant,
+                                        fillColor: theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surfaceContainerHighest,
                                         contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: _descFocused ? 16.h : 12.h),
                                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
                                       ),

@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'l10n/app_localizations.dart';
 import 'locale_provider.dart';
 import 'providers/user_provider.dart';
+import 'providers/animation_settings.dart';
 import 'auth_gate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -31,6 +32,7 @@ void main() async {
         ChangeNotifierProvider(create: (context) => LocaleProvider()),
         ChangeNotifierProvider(create: (context) => UserProvider()),
         ChangeNotifierProvider(create: (context) => ThemeNotifier('DARK')),
+        ChangeNotifierProvider(create: (context) => AnimationSettings()),
       ],
       child: const MyApp(),
     ),
@@ -168,7 +170,14 @@ class _FirstRunInitializerState extends State<FirstRunInitializer> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeRequestPermission());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _maybeRequestPermission();
+      // load animation settings
+      try {
+        final anim = Provider.of<AnimationSettings>(context, listen: false);
+        await anim.load();
+      } catch (_) {}
+    });
   }
 
   Future<void> _maybeRequestPermission() async {

@@ -133,7 +133,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     return Scaffold(
       body: Stack(
         children: [
-          Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [theme.colorScheme.background, Colors.black], begin: Alignment.topCenter, end: Alignment.bottomCenter))),
+          Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [theme.colorScheme.surface, Colors.black], begin: Alignment.topCenter, end: Alignment.bottomCenter))),
 
           AnimatedBuilder(
             animation: _backgroundController,
@@ -291,7 +291,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                                   margin: EdgeInsets.only(right: 12.w),
                                                   width: 36.w,
                                                   height: 36.w,
-                                                  decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                                                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
                                                   child: Padding(
                                                     padding: EdgeInsets.all(6.w),
                                                     child: Image.asset('assets/images/google_logo.png', fit: BoxFit.contain, errorBuilder: (c, e, s) {

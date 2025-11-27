@@ -10,6 +10,9 @@ import '../l10n/app_localizations.dart';
 import '../locale_provider.dart';
 import '../main.dart';
 import '../providers/user_provider.dart';
+import '../components/rounded_card.dart';
+import '../components/accent_list_tile.dart';
+import '../components/animated_fade_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -19,7 +22,7 @@ class SettingsPage extends StatefulWidget {
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderStateMixin {
+class _SettingsPageState extends State<SettingsPage> {
   bool _isSavingLanguage = false;
   bool _isSavingNotifications = false;
   String _currentTheme = 'DARK';
@@ -31,7 +34,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
   String _currentLanguageCode = 'en';
   String? _username; 
 
-  late final AnimationController _animationController;
+  // profile entrance handled by FadeInUp helper
 
   final Map<String, String> _supportedLanguages = {
     'en': 'English', 'tr': 'Türkçe', 'de': 'Deutsch', 'fr': 'Français', 'es': 'Español',
@@ -41,16 +44,13 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserProfile();
-      _animationController.forward();
     });
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
     super.dispose();
   }
 
@@ -242,22 +242,19 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
             ListView(
               padding: EdgeInsets.fromLTRB(18.w, 0.h, 18.w, 12.h),
               children: [
-                Transform.translate(
-                  offset: Offset(0, -0.h),
-                  child: FadeTransition(opacity: _animationController, child: _buildProfileHeader(theme, localizations)),
-                ),
+                FadeInUp(delay: const Duration(milliseconds: 40), child: _buildProfileHeader(theme, localizations)),
                 SizedBox(height: 4.h),
 
                 _buildCardSection(title: localizations.general, child: Column(children: [
                   _buildLanguageTile(localizations, theme),
-                  Divider(color: Colors.white12, height: 1, indent: 68),
+                  const Divider(color: Colors.white12, height: 1, indent: 68),
                   _buildThemeTile(localizations, theme),
-                  Divider(color: Colors.white12, height: 1, indent: 68),
+                  const Divider(color: Colors.white12, height: 1, indent: 68),
                   _buildNotificationsTile(localizations, theme),
                 ])),
                 SizedBox(height: 18.h),
                 _buildCardSection(title: localizations.account, child: Column(children: [
-                  Divider(color: Colors.white12, height: 1),
+                  const Divider(color: Colors.white12, height: 1),
                   _buildSignOutTile(localizations, theme),
                 ])),
                 SizedBox(height: 28.h),
@@ -301,42 +298,39 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
     } catch (_) {
     }
 
-    return Card(
+    return RoundedCard(
+      padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
+      borderRadius: 16,
       elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-      color: theme.colorScheme.surface.withOpacity(0.08),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 72.w, height: 72.w,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(colors: [theme.colorScheme.secondary, theme.colorScheme.primary]),
-                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 12.r, offset: Offset(0,8.h))],
-                  ),
-                  child: Center(child: Text((displayName.isNotEmpty)? displayName[0].toUpperCase() : 'A', style: TextStyle(color: Colors.white, fontSize: 28.sp, fontWeight: FontWeight.bold))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 72.w,
+                height: 72.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(colors: [theme.colorScheme.secondary, theme.colorScheme.primary]),
+                  boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 12.r, offset: Offset(0,8.h))],
                 ),
-                SizedBox(width: 14.w),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Expanded(child: Text(displayName, style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
-                    ]),
-                    SizedBox(height: 4.h),
-                    Text(memberSinceText, style: TextStyle(color: Colors.white70, fontSize: 12.sp), overflow: TextOverflow.ellipsis),
+                child: Center(child: Text((displayName.isNotEmpty)? displayName[0].toUpperCase() : 'A', style: TextStyle(color: Colors.white, fontSize: 28.sp, fontWeight: FontWeight.bold))),
+              ),
+              SizedBox(width: 14.w),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Expanded(child: Text(displayName, style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
                   ]),
-                )
-              ],
-            ),
-            SizedBox(height: 8.h),
-            const SizedBox.shrink(),
-          ],
-        ),
+                  SizedBox(height: 4.h),
+                  Text(memberSinceText, style: TextStyle(color: Colors.white70, fontSize: 12.sp), overflow: TextOverflow.ellipsis),
+                ]),
+              )
+            ],
+          ),
+          SizedBox(height: 8.h),
+        ],
       ),
     );
   }
@@ -344,20 +338,16 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
   Widget _buildCardSection({required String title, required Widget child}) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Padding(padding: EdgeInsets.only(left: 6.w, bottom: 8.h), child: Text(title.toUpperCase(), style: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.bold, letterSpacing: 1.2))),
-      Card(
-        color: Theme.of(context).colorScheme.surface.withOpacity(0.06),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
-        child: Padding(padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h), child: child),
-      )
+      RoundedCard(borderRadius: 14, padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h), child: child)
     ]);
   }
 
   Widget _buildLanguageTile(AppLocalizations localizations, ThemeData theme) {
-    return ListTile(
-      leading: CircleAvatar(backgroundColor: theme.colorScheme.primary.withOpacity(0.12), child: Icon(Icons.language, color: theme.colorScheme.tertiary)),
-      title: Text(localizations.applicationLanguage),
-      subtitle: Text(_supportedLanguages[_currentLanguageCode] ?? 'English'),
-      trailing: _isSavingLanguage ? SizedBox(width: 24.w, height: 24.w, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.keyboard_arrow_right, color: Colors.white70),
+    return AccentListTile(
+      icon: Icons.language,
+      title: localizations.applicationLanguage,
+      subtitle: _supportedLanguages[_currentLanguageCode] ?? 'English',
+      trailing: _isSavingLanguage ? SizedBox(width: 24.w, height: 24.w, child: const CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.keyboard_arrow_right, color: Colors.white70),
       onTap: () => _showLanguageBottomSheet(localizations, theme),
     );
   }
@@ -369,7 +359,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
       title: Text(localizations.theme),
       subtitle: Text(isDark ? (localizations.darkMode) : (localizations.lightMode)),
       value: isDark,
-      activeColor: theme.colorScheme.secondary,
+      activeThumbColor: theme.colorScheme.secondary,
       onChanged: (enabled) {
         final newTheme = enabled ? 'DARK' : 'LIGHT';
         setState(() => _currentTheme = newTheme);
@@ -384,7 +374,7 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
       title: Text(localizations.notifications),
       subtitle: Text(localizations.forAllAlarms),
       value: _notificationsEnabled,
-      activeColor: theme.colorScheme.secondary,
+      activeThumbColor: theme.colorScheme.secondary,
       onChanged: _isSavingNotifications ? null : (value) => _saveNotificationSetting(value),
     );
   }
